@@ -1,0 +1,3 @@
+[submodule "external/axi"]
+	path = external/axi
+	url = https://github.com/pulp-platform/axi.git
