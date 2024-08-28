@@ -7,14 +7,20 @@ localparam ADDR_WIDTH   = 32'd32;
 localparam DATA_WIDTH   = 32'd128;
 
 logic clk, rst_n;
+
 logic write_valid, write_ready, write_done;
 logic write_data_ready, write_data_valid;
 logic [ADDR_WIDTH - 1 : 0]  write_addr, write_len;
 logic [DATA_WIDTH - 1 : 0]  write_data;
 
-int i;
+logic read_valid, read_ready, read_done;
+logic read_data_ready, read_data_valid;
+logic [ADDR_WIDTH - 1 : 0]  read_addr, read_len;
+logic [DATA_WIDTH - 1 : 0]  read_data;
+
 
 task axi_write(input int bytes, addr);
+    int i;
     write_addr <= addr;
     write_len <= bytes;
     write_valid <= 1'b1;
@@ -30,20 +36,45 @@ task axi_write(input int bytes, addr);
     write_data_valid <= 1'b0;
 endtask
 
+task axi_read(input int bytes, addr);
+    read_addr <= addr;
+    read_len <= bytes;
+    read_valid <= 1'b1;
+    @(posedge clk)
+    while (read_ready != 1'b1) @(posedge clk);
+    read_valid <= 1'b0;
+
+    read_data_ready <= 1'b1;
+    for (int i = 0; i < bytes / (DATA_WIDTH / 8); ) begin
+        @(posedge clk);
+        if ( read_data_valid == 1'b1 ) i = i + 1;
+    end
+    read_data_ready <= 1'b0;
+endtask
+
 initial begin
     write_valid <= 1'b0;
     write_data_valid <= 1'b0;
     write_addr <= 'd0;
     write_len <= 'd0;
-    write_data_valid <= 'd0;
+
+    read_valid <= 1'b0;
+    read_data_ready <= 1'b0;
+    read_addr <= 'd0;
+    read_len <= 'd0;
+
     @(posedge rst_n);
     @(posedge axi.aw_ready);
     @(posedge clk);
     @(posedge clk);
 
     axi_write(16, 0);
+    axi_write(32, 16);
 
-    axi_write(32, 0);
+    axi_read(48, 0);
+    axi_read(16, 32);
+    @(posedge clk);
+    axi_read(32, 0);
 
     @(posedge clk);
 
@@ -83,17 +114,17 @@ dma #(
     .write_addr_i        ( write_addr ),
     .write_len_i         ( write_len ),
     .write_done_o        ( write_done ),
-    .read_valid_i        (  ),
-    .read_ready_o        (  ),
-    .read_addr_i         (  ),
-    .read_len_i          (  ),
-    .read_done_o         (  ),
+    .read_valid_i        ( read_valid ),
+    .read_ready_o        ( read_ready ),
+    .read_addr_i         ( read_addr ),
+    .read_len_i          ( read_len ),
+    .read_done_o         ( read_done ),
     .write_data_i        ( write_data ),
     .write_data_valid_i  ( write_data_valid ),
     .write_data_ready_o  ( write_data_ready ),
-    .read_data_i         (  ),
-    .read_data_valid_i   (  ),
-    .read_data_ready_o   (  ),
+    .read_data_o         ( read_data ),
+    .read_data_valid_o   ( read_data_valid ),
+    .read_data_ready_i   ( read_data_ready ),
     .axi                 ( axi )
 );
 

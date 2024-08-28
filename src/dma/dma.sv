@@ -23,9 +23,9 @@ module dma #(
     input   logic                           write_data_valid_i          ,
     output  logic                           write_data_ready_o          ,
     // read fifo
-    input   logic   [DATA_WIDTH - 1 : 0]    read_data_i                 ,
-    input   logic                           read_data_valid_i           ,
-    output  logic                           read_data_ready_o           ,
+    output  logic   [DATA_WIDTH - 1 : 0]    read_data_o                 ,
+    output  logic                           read_data_valid_o           ,
+    input   logic                           read_data_ready_i           ,
     // axi interface
     AXI_BUS.Master                          axi                         
 );
@@ -50,6 +50,7 @@ assign axi.ar_prot      =   'd0;
 assign axi.ar_qos       =   'd0;
 assign axi.ar_region    =   'd0;
 assign axi.ar_user      =   'd0;
+assign axi.ar_id        =   'd0;
 
 // write side
 
@@ -94,7 +95,6 @@ always_ff @( posedge clk, negedge rst_n )
     if ( aw_accepetd )              axi.aw_addr <= 'd0;             else
     if ( |write_len )               axi.aw_addr <= write_addr;      
 
-// fixed len to 0
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   axi.aw_len <= 'd0;              else
     if ( aw_accepetd )              axi.aw_len <= 'd0;              else
@@ -137,25 +137,66 @@ assign axi.w_last = axi.w_valid & write_cnt == 'd1;
 
 // read side
 
-// read control chanel
+logic                       start_read, ar_accepted;
+logic [ADDR_WIDTH - 1 : 0]  read_len, read_addr;
 logic [ADDR_WIDTH - 1 : 0]  read_transactions_counter;
 
-always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   axi.ar_valid <= 1'b0;
+assign start_read   =   read_valid_i & read_ready_o;
+assign ar_accepted  =   axi.ar_valid & axi.ar_ready;
+assign read_done_o  =   ~|read_transactions_counter & ~|read_len;
 
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   axi.ar_addr <= 'd0;
-
-// fixed len to 0
-always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   axi.ar_len <= 'd0;
+    if ( ~rst_n )                   read_ready_o <= 1'b1;                   else
+    if ( start_read )               read_ready_o <= 1'b0;                   else
+    if ( read_done_o )              read_ready_o <= 1'b1;
 
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   axi.ar_size <= 'd0;
+    if ( ~rst_n )                   read_len <= 'd0;                        else
+    if ( start_read )               read_len <= read_len_i / DATA_BYTES;    else
+    if ( ar_accepted )              read_len <= read_len - (read_len >= MAX_BURST ? MAX_BURST : read_len);
 
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   axi.ar_burst <= 'd0;
+    if ( ~rst_n )                   read_addr <= 'd0;                       else
+    if ( start_read )               read_addr <= read_addr_i;               else
+    if ( ar_accepted )              read_addr <= read_addr + (read_len >= MAX_BURST ? MAX_BURST : write_len);
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   read_transactions_counter <= 'd0;                               else
+    if ( ar_accepted & axi.r_ready & 
+        axi.r_valid & axi.r_last )  read_transactions_counter <= read_transactions_counter;         else
+    if ( ar_accepted )              read_transactions_counter <= read_transactions_counter + 1'b1;  else
+    if ( axi.r_ready & 
+        axi.r_valid & axi.r_last )  read_transactions_counter <= read_transactions_counter - 1'b1;
+
+// read control chanel
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   axi.ar_valid <= 1'b0;               else
+    if ( ar_accepted )              axi.ar_valid <= 1'b0;               else
+    if ( |read_len )                axi.ar_valid <= 1'b1;               
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   axi.ar_addr <= 'd0;                 else
+    if ( ar_accepted )              axi.ar_addr <= 'd0;                 else
+    if ( |read_len )                axi.ar_addr <= read_addr;
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   axi.ar_len <= 'd0;                  else
+    if ( ar_accepted )              axi.ar_len <= 'd0;                  else
+    if ( |read_len )                axi.ar_len <= read_len >= MAX_BURST ? MAX_TRANSACTIONS : read_len - 1'b1;
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   axi.ar_size <= 'd0;                 else
+    if ( ar_accepted )              axi.ar_size <= 'd0;                 else
+    if ( |read_len )                axi.ar_size <= 3'($clog2(DATA_WIDTH / 8));
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   axi.ar_burst <= 'd0;                else
+    if ( ar_accepted )              axi.ar_burst <= 'd0;                else
+    if ( |read_len )                axi.ar_burst <= 'd1;                // INCR burst
 
 // read chanel
+assign read_data_valid_o    = axi.r_valid;
+assign read_data_o          = axi.r_data;
+assign axi.r_ready          = read_data_ready_i;
 
 endmodule
