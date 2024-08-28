@@ -54,12 +54,12 @@ assign axi.ar_id        =   'd0;
 
 // write side
 
-logic                       start_write, aw_accepetd;
+logic                       start_write, aw_accepted;
 logic [ADDR_WIDTH - 1 : 0]  write_len, write_addr;
 logic [ADDR_WIDTH - 1 : 0]  write_transactions_counter;
 
 assign start_write = write_valid_i & write_ready_o;
-assign aw_accepetd = axi.aw_ready & axi.aw_valid;
+assign aw_accepted = axi.aw_ready & axi.aw_valid;
 assign write_done_o = ~|write_transactions_counter & ~|write_len;
 
 always_ff @( posedge clk, negedge rst_n )
@@ -70,44 +70,44 @@ always_ff @( posedge clk, negedge rst_n )
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   write_len <= 'd0;               else
     if ( start_write )              write_len <= write_len_i / DATA_BYTES;       else
-    if ( aw_accepetd )              write_len <= write_len - (write_len >= MAX_BURST ? MAX_BURST : write_len);
+    if ( aw_accepted )              write_len <= write_len - (write_len >= MAX_BURST ? MAX_BURST : write_len);
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   write_addr <= 'd0;              else
     if ( start_write )              write_addr <= write_addr_i;     else
-    if ( aw_accepetd )              write_addr <= write_addr + (write_len >= MAX_BURST ? MAX_BURST : write_len);
+    if ( aw_accepted )              write_addr <= write_addr + (write_len >= MAX_BURST ? MAX_BURST : write_len);
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                       write_transactions_counter <= 1'b0;                                 else
-    if ( aw_accepetd & 
+    if ( aw_accepted & 
             axi.b_ready & axi.b_valid ) write_transactions_counter <= write_transactions_counter;           else
-    if ( aw_accepetd )                  write_transactions_counter <= write_transactions_counter + 1'b1;    else
+    if ( aw_accepted )                  write_transactions_counter <= write_transactions_counter + 1'b1;    else
     if ( axi.b_ready & axi.b_valid )    write_transactions_counter <= write_transactions_counter - 1'b1;
 
 // write control chanels
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   axi.aw_valid <= 1'b0;           else
-    if ( aw_accepetd )              axi.aw_valid <= 1'b0;           else
+    if ( aw_accepted )              axi.aw_valid <= 1'b0;           else
     if ( |write_len )               axi.aw_valid <= 1'b1;           
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   axi.aw_addr <= 'd0;             else
-    if ( aw_accepetd )              axi.aw_addr <= 'd0;             else
+    if ( aw_accepted )              axi.aw_addr <= 'd0;             else
     if ( |write_len )               axi.aw_addr <= write_addr;      
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   axi.aw_len <= 'd0;              else
-    if ( aw_accepetd )              axi.aw_len <= 'd0;              else
+    if ( aw_accepted )              axi.aw_len <= 'd0;              else
     if ( |write_len )               axi.aw_len <= write_len >= MAX_BURST ? MAX_TRANSACTIONS : write_len - 1'b1;              
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   axi.aw_size <= 'd0;             else
-    if ( aw_accepetd )              axi.aw_size <= 'd0;             else
+    if ( aw_accepted )              axi.aw_size <= 'd0;             else
     if ( |write_len )               axi.aw_size <= 3'($clog2(DATA_WIDTH / 8));
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   axi.aw_burst <= 'd0;            else
-    if ( aw_accepetd )              axi.aw_burst <= 'd0;            else
+    if ( aw_accepted )              axi.aw_burst <= 'd0;            else
     if ( |write_len )               axi.aw_burst <= 'd1;            // INCR burst
 
 // b chanel
@@ -127,7 +127,7 @@ logic [ADDR_WIDTH - 1 : 0]  write_cnt;
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   write_cnt <= 'd0;               else
     if ( axi.w_ready & axi.w_valid )write_cnt <= write_cnt - 1'b1;  else
-    if ( aw_accepetd )              write_cnt <= write_len >= MAX_BURST ? MAX_BURST : write_len;
+    if ( aw_accepted )              write_cnt <= write_len >= MAX_BURST ? MAX_BURST : write_len;
 
 assign axi.w_last = axi.w_valid & write_cnt == 'd1;
 
