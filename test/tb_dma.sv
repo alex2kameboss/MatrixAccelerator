@@ -29,6 +29,9 @@ function void init_mem();
     mem[i] = i[7:0];
 endfunction
 
+int total_write_tests = 0;
+int passed_write_test = 0;
+
 task axi_write(input int bytes, addr);
     int i;
     write_addr <= addr;
@@ -41,7 +44,7 @@ task axi_write(input int bytes, addr);
     @(negedge clk);
     for (int i = 0; i < bytes / DATA_BYTES;) begin
       if ( write_data_ready == 1'b1 ) begin
-        write_data <= { >> {mem[addr + i +: DATA_BYTES]}};
+        write_data <= { >> {mem[addr + i * DATA_BYTES +: DATA_BYTES]}};
         write_data_valid <= 1'b1;
         i = i + 1;
       end
@@ -51,6 +54,8 @@ task axi_write(input int bytes, addr);
 endtask
 
 task axi_read(input int bytes, addr);
+    logic pass;
+    pass <= 1'b1;
     read_addr <= addr;
     read_len <= bytes;
     read_valid <= 1'b1;
@@ -61,12 +66,17 @@ task axi_read(input int bytes, addr);
     for (int i = 0; i < bytes / DATA_BYTES; ) begin
         if ( read_data_valid == 1'b1 ) begin
           read_data_ready <= 1'b1;
+          pass <= pass & read_data == { >> {mem[addr + i * DATA_BYTES +: DATA_BYTES]}};
           i = i + 1;
         end
         @(negedge clk);
     end
     read_data_ready <= 1'b0;
     write_data = 'dx;
+
+    if ( pass ) passed_write_test = passed_write_test + 1;
+    else        $display("FAILED read test, len = %d, addr = %d", bytes, addr);
+    total_write_tests = total_write_tests + 1;
 endtask
 
 initial begin
@@ -97,6 +107,10 @@ initial begin
     axi_read(32, 0);
 
     @(posedge clk);
+
+    $display("Total tests = %d", total_write_tests);
+    $display("Passed tests = %d", passed_write_test);
+    $display("Tests coverage: %3.0f %%", (passed_write_test * 100) / total_write_tests);
 
     $finish;
 end
