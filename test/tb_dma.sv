@@ -5,6 +5,7 @@ module tb_dma();
 
 localparam ADDR_WIDTH   = 32'd32;
 localparam DATA_WIDTH   = 32'd128;
+localparam DATA_BYTES   = DATA_WIDTH / 8;
 
 logic clk, rst_n;
 
@@ -18,6 +19,15 @@ logic read_data_ready, read_data_valid;
 logic [ADDR_WIDTH - 1 : 0]  read_addr, read_len;
 logic [DATA_WIDTH - 1 : 0]  read_data;
 
+localparam MEM_SIZE = 1024 * 1024; // 1 MB
+
+logic [7 : 0] mem [MEM_SIZE - 1 : 0];
+
+function void init_mem();
+  int i;
+  for (i = 0; i < MEM_SIZE; i = i + 1)
+    mem[i] = i[7:0];
+endfunction
 
 task axi_write(input int bytes, addr);
     int i;
@@ -28,10 +38,14 @@ task axi_write(input int bytes, addr);
     while (write_ready != 1'b1) @(posedge clk);
     write_valid <= 1'b0;
 
-    write_data_valid <= 1'b1;
-    for (int i = 0; i < bytes / (DATA_WIDTH / 8); ) begin
-        @(posedge clk);
-        if ( write_data_ready == 1'b1 ) i = i + 1;
+    @(negedge clk);
+    for (int i = 0; i < bytes / DATA_BYTES;) begin
+      if ( write_data_ready == 1'b1 ) begin
+        write_data <= { >> {mem[addr + i +: DATA_BYTES]}};
+        write_data_valid <= 1'b1;
+        i = i + 1;
+      end
+      @(negedge clk);
     end
     write_data_valid <= 1'b0;
 endtask
@@ -44,15 +58,19 @@ task axi_read(input int bytes, addr);
     while (read_ready != 1'b1) @(posedge clk);
     read_valid <= 1'b0;
 
-    read_data_ready <= 1'b1;
-    for (int i = 0; i < bytes / (DATA_WIDTH / 8); ) begin
-        @(posedge clk);
-        if ( read_data_valid == 1'b1 ) i = i + 1;
+    for (int i = 0; i < bytes / DATA_BYTES; ) begin
+        if ( read_data_valid == 1'b1 ) begin
+          read_data_ready <= 1'b1;
+          i = i + 1;
+        end
+        @(negedge clk);
     end
     read_data_ready <= 1'b0;
+    write_data = 'dx;
 endtask
 
 initial begin
+    write_data = 'dx;
     write_valid <= 1'b0;
     write_data_valid <= 1'b0;
     write_addr <= 'd0;
@@ -64,6 +82,9 @@ initial begin
     read_len <= 'd0;
 
     @(posedge rst_n);
+
+    init_mem();
+
     @(posedge axi.aw_ready);
     @(posedge clk);
     @(posedge clk);
@@ -73,7 +94,6 @@ initial begin
 
     axi_read(48, 0);
     axi_read(16, 32);
-    @(posedge clk);
     axi_read(32, 0);
 
     @(posedge clk);
@@ -81,9 +101,9 @@ initial begin
     $finish;
 end
 
-always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                               write_data <= 'd0;      else
-    if ( write_data_ready & write_data_valid )  write_data <= write_data + 1'b1;
+//always_ff @( posedge clk, negedge rst_n )
+//    if ( ~rst_n )                               write_data <= 'd0;      else
+//    if ( write_data_ready & write_data_valid )  write_data <= write_data + 1'b1;
 
 clk_rstn i_clk_gen (.clk, .rst_n);
 
