@@ -116,10 +116,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 // write chanel
 assign axi.w_user = 'd0;
-assign axi.w_strb = {(DATA_WIDTH / 8){write_data_valid_i}};
-assign axi.w_data = write_data_i;
-assign axi.w_valid = write_data_valid_i;
-assign write_data_ready_o = axi.w_ready;
+assign axi.w_strb = {(DATA_WIDTH / 8){axi.w_valid}};
 
 logic [ADDR_WIDTH - 1 : 0]  write_cnt;
 
@@ -194,9 +191,55 @@ always_ff @( posedge clk, negedge rst_n )
     if ( ar_accepted )              axi.ar_burst <= 'd0;                else
     if ( |read_len )                axi.ar_burst <= 'd1;                // INCR burst
 
-// read chanel
-assign read_data_valid_o    = axi.r_valid;
-assign read_data_o          = axi.r_data;
-assign axi.r_ready          = read_data_ready_i;
+
+// fifos
+
+logic write_fifo_w_incr, write_fifo_r_incr;
+logic write_fifo_w_full, write_fifo_r_empty;
+
+assign write_fifo_w_incr    = write_data_valid_i & write_data_ready_o;
+assign write_fifo_r_incr    = axi.w_ready & axi.w_valid;
+assign write_data_ready_o   = ~write_fifo_w_full;
+assign axi.w_valid          = ~write_fifo_r_empty;
+
+async_fifo #(
+    .DATA_WIDTH( DATA_WIDTH ),
+    .FIFO_DEPTH( MAX_BURST )    
+) write_fifo (
+    .w_clk     ( clk                ) ,   // write interface clock
+    .w_reset_n ( rst_n              ) ,   // write interface async reset
+    .w_incr_i  ( write_fifo_w_incr  ) ,   // write iterface increment
+    .w_full_o  ( write_fifo_w_full  ) ,   // write interface full
+    .w_data    ( write_data_i       ) ,   // write data
+    .r_clk     ( clk                ) ,   // read interface clock
+    .r_reset_n ( rst_n              ) ,   // read interface async reset
+    .r_incr_i  ( write_fifo_r_incr  ) ,   // read increment
+    .r_empty_o ( write_fifo_r_empty ) ,   // read interface empty
+    .r_data    ( axi.w_data         )     // read data
+);
+
+logic read_fifo_w_incr, read_fifo_r_incr;
+logic read_fifo_w_full, read_fifo_r_empty;
+
+assign read_fifo_w_incr     = axi.r_ready & axi.r_valid;
+assign read_fifo_r_incr     = read_data_valid_o & read_data_ready_i;
+assign read_data_valid_o    = ~read_fifo_r_empty;
+assign axi.r_ready          = ~read_fifo_w_full;
+
+async_fifo #(
+    .DATA_WIDTH( DATA_WIDTH ),
+    .FIFO_DEPTH( MAX_BURST )    
+) read_fifo (
+    .w_clk     ( clk                ) ,   // write interface clock
+    .w_reset_n ( rst_n              ) ,   // write interface async reset
+    .w_incr_i  ( read_fifo_w_incr   ) ,   // write iterface increment
+    .w_full_o  ( read_fifo_w_full   ) ,   // write interface full
+    .w_data    ( axi.r_data         ) ,   // write data
+    .r_clk     ( clk                ) ,   // read interface clock
+    .r_reset_n ( rst_n              ) ,   // read interface async reset
+    .r_incr_i  ( read_fifo_r_incr   ) ,   // read increment
+    .r_empty_o ( read_fifo_r_empty  ) ,   // read interface empty
+    .r_data    ( read_data_o        )     // read data
+);
 
 endmodule
