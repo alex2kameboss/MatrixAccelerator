@@ -112,7 +112,7 @@ initial begin
     $display("Passed tests = %d", passed_write_test);
     $display("Tests coverage: %3.0f %%", (passed_write_test * 100) / total_write_tests);
 
-    $finish;
+    $stop;
 end
 
 //always_ff @( posedge clk, negedge rst_n )
@@ -191,5 +191,72 @@ axi_sim_mem_intf #(
     .mon_r_beat_count_o(        ),
     .mon_r_last_o      (        )
   );
+
+// checkers
+
+valid_ready_checker #(
+    .DATA_WIDTH(ADDR_WIDTH)
+) i_write_addr_vr_checker (
+    .clk    ( clk         ),
+    .valid  ( write_valid ),
+    .ready  ( write_ready ),
+    .data   ( write_addr  )
+);
+valid_ready_checker #(
+    .DATA_WIDTH(ADDR_WIDTH)
+) i_write_len_vr_checker (
+    .clk    ( clk         ),
+    .valid  ( write_valid ),
+    .ready  ( write_ready ),
+    .data   ( write_len   )
+);
+
+valid_ready_checker #(
+    .DATA_WIDTH(DATA_WIDTH)
+) i_write_data_vr_checker (
+    .clk    ( clk               ),
+    .valid  ( write_data_valid  ),
+    .ready  ( write_data_ready  ),
+    .data   ( write_data        )
+);
+
+
+valid_ready_checker #(
+    .DATA_WIDTH(ADDR_WIDTH)
+) i_read_addr_vr_checker (
+    .clk    ( clk         ),
+    .valid  ( read_valid ),
+    .ready  ( read_ready ),
+    .data   ( read_addr  )
+);
+valid_ready_checker #(
+    .DATA_WIDTH(ADDR_WIDTH)
+) i_read_len_vr_checker (
+    .clk    ( clk         ),
+    .valid  ( read_valid ),
+    .ready  ( read_ready ),
+    .data   ( read_len   )
+);
+
+valid_ready_checker #(
+    .DATA_WIDTH(DATA_WIDTH)
+) i_read_data_vr_checker (
+    .clk    ( clk              ),
+    .valid  ( read_data_valid  ),
+    .ready  ( read_data_ready  ),
+    .data   ( read_data        )
+);
+
+
+/*axi_mem_monitor #(
+    .MEM_SIZE   ( MEM_SIZE    ),
+    .DATA_WIDTH ( DATA_WIDTH  ),
+    .ADDR_WIDTH ( ADDR_WIDTH  )
+) i_axi_mem_checker (
+    .aclk   ( clk   ),
+    .arst_n ( rst_n ),
+    .mem    ( mem   ),
+    .axi    ( axi   )
+);*/
 
 endmodule
