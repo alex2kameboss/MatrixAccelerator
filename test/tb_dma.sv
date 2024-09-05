@@ -159,6 +159,8 @@ dma #(
     .read_data_o         ( read_data ),
     .read_data_valid_o   ( read_data_valid ),
     .read_data_ready_i   ( read_data_ready ),
+    .aclk                ( clk )       ,
+    .arst_n              ( rst_n )       ,
     .axi                 ( axi )
 );
 
