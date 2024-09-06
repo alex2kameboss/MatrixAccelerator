@@ -59,6 +59,7 @@ assign axi.ar_id        =   'd0;
 logic                       start_write, aw_accepted, write_ready_aclk, write_valid_aclk, write_done_aclk;
 logic [ADDR_WIDTH - 1 : 0]  write_len, write_addr, write_len_aclk, write_addr_aclk;
 logic [ADDR_WIDTH - 1 : 0]  write_transactions_counter;
+logic [$clog2(DATA_BYTES) - 1 : 0]  write_len_remain_bits;
 
 assign start_write = write_valid_aclk & write_ready_aclk;
 assign aw_accepted = axi.aw_ready & axi.aw_valid;
@@ -71,8 +72,12 @@ always_ff @( posedge aclk, negedge arst_n )
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  write_len <= 'd0;               else
-    if ( start_write )              write_len <= write_len_aclk / DATA_BYTES;       else
+    if ( start_write )              write_len <= write_len_aclk / DATA_BYTES + |write_len_aclk[$clog2(DATA_BYTES) - 1 : 0];       else
     if ( aw_accepted )              write_len <= write_len - (write_len >= MAX_BURST ? MAX_BURST : write_len);
+
+always_ff @( posedge aclk, negedge arst_n )
+    if ( ~arst_n )                  write_len_remain_bits <= 'd0;               else
+    if ( start_write )              write_len_remain_bits <= write_len_aclk[$clog2(DATA_BYTES) - 1 : 0];
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  write_addr <= 'd0;              else
@@ -117,11 +122,24 @@ always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.b_ready <= 1'b1;
 
 // write chanel
-assign axi.w_user = 'd0;
-assign axi.w_strb = {(DATA_WIDTH / 8){axi.w_valid}};
 
+logic [DATA_BYTES - 1 : 0]  write_strobe;
 logic [ADDR_WIDTH - 1 : 0]  write_cnt;
 
+strobe_generator #(
+    .STROBE_WIDTH(DATA_BYTES)
+) i_write_strobe_generator (
+    .en      ( ~|write_len & |write_len_remain_bits & write_cnt == 'd1 ),   // if not enable, the strobe is all 1
+    .value   ( write_len_remain_bits ),
+    .strobe  ( write_strobe )
+);
+
+assign axi.w_user = 'd0;
+assign axi.w_strb = write_strobe & {DATA_BYTES{axi.w_valid}};
+
+//always_ff @( posedge aclk, negedge arst_n )
+//    if ( ~arst_n )                  axi.w_strb <= 'd0;              else
+//    if ( |write_cnt )               axi.w_strb <= write_strobe;
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  write_cnt <= 'd0;               else
@@ -147,7 +165,7 @@ always_ff @( posedge aclk, negedge arst_n )
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  read_len <= 'd0;                        else
-    if ( start_read )               read_len <= read_len_aclk / DATA_BYTES;    else
+    if ( start_read )               read_len <= read_len_aclk / DATA_BYTES + |read_len_aclk[$clog2(DATA_BYTES) - 1 : 0]; else // if are less B than data bus
     if ( ar_accepted )              read_len <= read_len - (read_len >= MAX_BURST ? MAX_BURST : read_len);
 
 always_ff @( posedge aclk, negedge arst_n )
@@ -192,6 +210,14 @@ always_ff @( posedge aclk, negedge arst_n )
 
 // fifos
 
+logic [DATA_WIDTH - 1 : 0]  write_strobed_data;
+
+genvar write_fifo_i;
+generate
+    for ( write_fifo_i = 0; write_fifo_i < DATA_BYTES; write_fifo_i = write_fifo_i + 1 )
+    assign axi.w_data[(write_fifo_i + 1) * 8 - 1 : write_fifo_i * 8] = write_strobed_data[(write_fifo_i + 1) * 8 - 1 : write_fifo_i * 8] & {8{write_strobe[write_fifo_i] & axi.w_valid}};
+endgenerate
+
 logic write_fifo_w_incr, write_fifo_r_incr;
 logic write_fifo_w_full, write_fifo_r_empty;
 
@@ -213,7 +239,7 @@ async_fifo #(
     .r_reset_n ( arst_n             ) ,   // read interface async reset
     .r_incr_i  ( write_fifo_r_incr  ) ,   // read increment
     .r_empty_o ( write_fifo_r_empty ) ,   // read interface empty
-    .r_data    ( axi.w_data         )     // read data
+    .r_data    ( write_strobed_data )     // read data
 );
 
 logic read_fifo_w_incr, read_fifo_r_incr;
