@@ -76,7 +76,7 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  write_len <= 'd0;               else
     if ( start_write )              write_len <= write_len_aclk / DATA_BYTES + |write_len_aclk[$clog2(DATA_BYTES) - 1 : 0];       else
-    if ( aw_accepted )              write_len <= write_len - (write_len >= MAX_BURST ? MAX_BURST : write_len);
+    if ( aw_accepted )              write_len <= write_len - ({1'b0, axi.aw_len} + 1'b1);
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  write_len_remain_bits <= 'd0;               else
@@ -85,7 +85,7 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  write_addr <= 'd0;              else
     if ( start_write )              write_addr <= write_addr_aclk;     else
-    if ( aw_accepted )              write_addr <= write_addr + (write_len >= MAX_BURST ? MAX_BURST_SIZE : write_len);
+    if ( aw_accepted )              write_addr <= write_addr + ({1'b0, axi.aw_len} + 1'b1) * DATA_BYTES;
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                      write_transactions_counter <= 1'b0;                                 else
@@ -106,7 +106,7 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_len <= 'd0;              else
     if ( aw_accepted )              axi.aw_len <= 'd0;              else
-    if ( |write_len & ~|write_cnt ) axi.aw_len <= write_len + write_addr[11 : 0] >= MAX_BURST ? MAX_TRANSACTIONS - write_addr[11 : 0] : write_len - 1'b1;              
+    if ( |write_len & ~|write_cnt ) axi.aw_len <= (write_len + write_addr[11 : 0]) >= MAX_BURST ? MAX_TRANSACTIONS - write_addr[11 : $clog2(DATA_BYTES)] : write_len - 1'b1;              
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_size <= 'd0;             else

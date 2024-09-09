@@ -107,7 +107,7 @@ initial begin
     @(posedge clk);
 
     axi_write(4 * 1024, DATA_BYTES);
-    axi_write(4 * 1024 - DATA_BYTES, 2 * DATA_BYTES);
+    axi_write(2 * DATA_BYTES, 4 * 1024 - DATA_BYTES);
     axi_write(MEM_SIZE, 0);
 
     repeat(10) begin
