@@ -33,8 +33,9 @@ module dma #(
 );
 
 localparam DATA_BYTES       = DATA_WIDTH / 8;
-localparam MAX_BURST        = 4 * 1024 / DATA_BYTES; // 4 KB
-localparam MAX_TRANSACTIONS = 8'(MAX_BURST / DATA_BYTES - 1);
+localparam MAX_BURST_SIZE   = 256 * DATA_BYTES >= 4 * 1024 ? 4 * 1024 : 256 * DATA_BYTES; // max 4 KB
+localparam MAX_BURST        = MAX_BURST_SIZE / DATA_BYTES;
+localparam MAX_TRANSACTIONS = 8'(MAX_BURST - 1);
 
 // const protocol signals
 assign axi.aw_lock      =   'd0;
@@ -56,7 +57,8 @@ assign axi.ar_id        =   'd0;
 
 // write side
 
-logic                       start_write, aw_accepted, write_ready_aclk, write_valid_aclk, write_done_aclk;
+logic [ADDR_WIDTH - 1 : 0]  write_cnt;
+logic                       start_write, aw_accepted, write_ready_aclk, write_valid_aclk, write_done_aclk, b_accepted;
 logic [ADDR_WIDTH - 1 : 0]  write_len, write_addr, write_len_aclk, write_addr_aclk;
 logic [ADDR_WIDTH - 1 : 0]  write_transactions_counter;
 logic [$clog2(DATA_BYTES) - 1 : 0]  write_len_remain_bits;
@@ -64,6 +66,7 @@ logic [$clog2(DATA_BYTES) - 1 : 0]  write_len_remain_bits;
 assign start_write = write_valid_aclk & write_ready_aclk;
 assign aw_accepted = axi.aw_ready & axi.aw_valid;
 assign write_done_aclk = ~|write_transactions_counter & ~|write_len;
+assign b_accepted = axi.b_ready & axi.b_valid;
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  write_ready_aclk <= 1'b0;           else
@@ -82,40 +85,38 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  write_addr <= 'd0;              else
     if ( start_write )              write_addr <= write_addr_aclk;     else
-    if ( aw_accepted )              write_addr <= write_addr + (write_len >= MAX_BURST ? MAX_BURST : write_len);
+    if ( aw_accepted )              write_addr <= write_addr + (write_len >= MAX_BURST ? MAX_BURST_SIZE : write_len);
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                      write_transactions_counter <= 1'b0;                                 else
-    if ( aw_accepted & 
-            axi.b_ready & axi.b_valid ) write_transactions_counter <= write_transactions_counter;           else
     if ( aw_accepted )                  write_transactions_counter <= write_transactions_counter + 1'b1;    else
-    if ( axi.b_ready & axi.b_valid )    write_transactions_counter <= write_transactions_counter - 1'b1;
+    if ( b_accepted )                   write_transactions_counter <= write_transactions_counter - 1'b1;
 
 // write control chanels
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_valid <= 1'b0;           else
     if ( aw_accepted )              axi.aw_valid <= 1'b0;           else
-    if ( |write_len )               axi.aw_valid <= 1'b1;           
+    if ( |write_len & ~|write_cnt )  axi.aw_valid <= 1'b1;           
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_addr <= 'd0;             else
     if ( aw_accepted )              axi.aw_addr <= 'd0;             else
-    if ( |write_len )               axi.aw_addr <= write_addr;      
+    if ( |write_len & ~|write_cnt )               axi.aw_addr <= write_addr;      
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_len <= 'd0;              else
     if ( aw_accepted )              axi.aw_len <= 'd0;              else
-    if ( |write_len )               axi.aw_len <= write_len >= MAX_BURST ? MAX_TRANSACTIONS : write_len - 1'b1;              
+    if ( |write_len & ~|write_cnt ) axi.aw_len <= write_len + write_addr[11 : 0] >= MAX_BURST ? MAX_TRANSACTIONS - write_addr[11 : 0] : write_len - 1'b1;              
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_size <= 'd0;             else
     if ( aw_accepted )              axi.aw_size <= 'd0;             else
-    if ( |write_len )               axi.aw_size <= 3'($clog2(DATA_WIDTH / 8));
+    if ( |write_len & ~|write_cnt )               axi.aw_size <= 3'($clog2(DATA_WIDTH / 8));
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_burst <= 'd0;            else
     if ( aw_accepted )              axi.aw_burst <= 'd0;            else
-    if ( |write_len )               axi.aw_burst <= 'd1;            // INCR burst
+    if ( |write_len & ~|write_cnt )               axi.aw_burst <= 'd1;            // INCR burst
 
 // b chanel
 always_ff @( posedge aclk, negedge arst_n )
@@ -124,7 +125,6 @@ always_ff @( posedge aclk, negedge arst_n )
 // write chanel
 
 logic [DATA_BYTES - 1 : 0]  write_strobe;
-logic [ADDR_WIDTH - 1 : 0]  write_cnt;
 
 strobe_generator #(
     .STROBE_WIDTH(DATA_BYTES)
@@ -135,6 +135,11 @@ strobe_generator #(
 );
 
 assign axi.w_user = 'd0;
+
+//always_ff @( posedge aclk, negedge arst_n )
+//    if ( ~arst_n )                  axi.aw_id <= 'd0;              else
+//    if ( aw_accepted )              axi.aw_id <= axi.aw_id + 1'b1;
+
 assign axi.w_strb = write_strobe & {DATA_BYTES{axi.w_valid}};
 
 //always_ff @( posedge aclk, negedge arst_n )
@@ -144,7 +149,7 @@ assign axi.w_strb = write_strobe & {DATA_BYTES{axi.w_valid}};
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  write_cnt <= 'd0;               else
     if ( axi.w_ready & axi.w_valid )write_cnt <= write_cnt - 1'b1;  else
-    if ( aw_accepted )              write_cnt <= write_len >= MAX_BURST ? MAX_BURST : write_len;
+    if ( aw_accepted )              write_cnt <= {1'b0, axi.aw_len} + 1'b1;
 
 assign axi.w_last = axi.w_valid & write_cnt == 'd1;
 
@@ -166,12 +171,12 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  read_len <= 'd0;                        else
     if ( start_read )               read_len <= read_len_aclk / DATA_BYTES + |read_len_aclk[$clog2(DATA_BYTES) - 1 : 0]; else // if are less B than data bus
-    if ( ar_accepted )              read_len <= read_len - (read_len >= MAX_BURST ? MAX_BURST : read_len);
+    if ( axi.r_last )               read_len <= read_len - ({1'b0, axi.aw_len} + 1'b1);
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  read_addr <= 'd0;                       else
     if ( start_read )               read_addr <= read_addr_aclk;               else
-    if ( ar_accepted )              read_addr <= read_addr + (read_len >= MAX_BURST ? MAX_BURST : write_len);
+    if ( ar_accepted )              read_addr <= read_addr + ({1'b0, axi.aw_len} + 1'b1) * DATA_BYTES;
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  read_transactions_counter <= 'd0;                               else

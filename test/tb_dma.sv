@@ -32,8 +32,12 @@ endfunction
 int total_write_tests = 0;
 int passed_write_test = 0;
 
-task axi_write(input int bytes, addr);
+task automatic axi_write;
+input int bytes; 
+input int addr;
+begin
     int i;
+    $display("axi_write(bytes: %d, addr: %d)", bytes, addr);
     write_addr <= addr;
     write_len <= bytes;
     write_valid <= 1'b1;
@@ -52,6 +56,7 @@ task axi_write(input int bytes, addr);
     end
     write_data_valid <= 1'b0;
     wait(write_done);
+end
 endtask
 
 task axi_read(input int bytes, addr);
@@ -101,20 +106,17 @@ initial begin
     @(posedge clk);
     @(posedge clk);
 
-    axi_write(16, 0);
-    axi_write(32, 16);
+    axi_write(4 * 1024, DATA_BYTES);
+    axi_write(4 * 1024 - DATA_BYTES, 2 * DATA_BYTES);
+    axi_write(MEM_SIZE, 0);
 
-    axi_read(48, 0);
-    axi_read(16, 32);
-    axi_read(32, 0);
-
-    axi_write(21, 48);
+    repeat(10) begin
+        static int bytes = DATA_BYTES * $urandom_range(1, (MEM_SIZE / 2) / DATA_BYTES);
+        static int addr = DATA_BYTES * $urandom_range(0, (MEM_SIZE / 2) / DATA_BYTES);
+        axi_read(bytes, addr);
+    end
 
     @(posedge clk);
-    @(posedge clk);
-    @(posedge clk);
-    @(posedge clk);
-
 
     $display("Total tests = %d", total_write_tests);
     $display("Passed tests = %d", passed_write_test);
