@@ -106,7 +106,7 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_len <= 'd0;              else
     if ( aw_accepted )              axi.aw_len <= 'd0;              else
-    if ( |write_len & ~|write_cnt ) axi.aw_len <= (write_len + write_addr[11 : 0]) >= MAX_BURST ? MAX_TRANSACTIONS - write_addr[11 : $clog2(DATA_BYTES)] : write_len - 1'b1;              
+    if ( |write_len & ~|write_cnt ) axi.aw_len <= (write_len + write_addr[11 : $clog2(DATA_BYTES)]) >= MAX_BURST ? MAX_TRANSACTIONS - write_addr[11 : $clog2(DATA_BYTES)] : write_len - 1'b1;              
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_size <= 'd0;             else
@@ -171,12 +171,12 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  read_len <= 'd0;                        else
     if ( start_read )               read_len <= read_len_aclk / DATA_BYTES + |read_len_aclk[$clog2(DATA_BYTES) - 1 : 0]; else // if are less B than data bus
-    if ( axi.r_last )               read_len <= read_len - ({1'b0, axi.aw_len} + 1'b1);
+    if ( ar_accepted )              read_len <= read_len - ({1'b0, axi.ar_len} + 1'b1);
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  read_addr <= 'd0;                       else
     if ( start_read )               read_addr <= read_addr_aclk;               else
-    if ( ar_accepted )              read_addr <= read_addr + ({1'b0, axi.aw_len} + 1'b1) * DATA_BYTES;
+    if ( ar_accepted )              read_addr <= read_addr + ({1'b0, axi.ar_len} + 1'b1) * DATA_BYTES;
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  read_transactions_counter <= 'd0;                               else
@@ -200,7 +200,7 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.ar_len <= 'd0;                  else
     if ( ar_accepted )              axi.ar_len <= 'd0;                  else
-    if ( |read_len )                axi.ar_len <= read_len >= MAX_BURST ? MAX_TRANSACTIONS : read_len - 1'b1;
+    if ( |read_len )                axi.ar_len <= (read_len + read_addr[11 : $clog2(DATA_BYTES)]) >= MAX_BURST ? MAX_TRANSACTIONS - read_addr[11 : $clog2(DATA_BYTES)] : (read_len - 1'b1);
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.ar_size <= 'd0;                 else

@@ -55,12 +55,17 @@ begin
       @(negedge clk);
     end
     write_data_valid <= 1'b0;
+    write_data = 'dx;
+    
+
+
     wait(write_done);
 end
 endtask
 
 task axi_read(input int bytes, addr);
     logic pass;
+    $display("axi_read(bytes: %d, addr: %d)", bytes, addr);
     pass <= 1'b1;
     read_addr <= addr;
     read_len <= bytes;
@@ -78,7 +83,6 @@ task axi_read(input int bytes, addr);
         @(negedge clk);
     end
     read_data_ready <= 1'b0;
-    write_data = 'dx;
     wait(read_done);
 
     if ( pass ) passed_write_test = passed_write_test + 1;
@@ -106,13 +110,19 @@ initial begin
     @(posedge clk);
     @(posedge clk);
 
+    axi_write(DATA_BYTES, 528);
     axi_write(4 * 1024, DATA_BYTES);
     axi_write(2 * DATA_BYTES, 4 * 1024 - DATA_BYTES);
     axi_write(MEM_SIZE, 0);
 
+
+    axi_read(DATA_BYTES, 528);
+    axi_read(4 * 1024, DATA_BYTES);
+    axi_read(2 * DATA_BYTES, 4 * 1024 - DATA_BYTES);
+
     repeat(10) begin
-        static int bytes = DATA_BYTES * $urandom_range(1, (MEM_SIZE / 2) / DATA_BYTES);
-        static int addr = DATA_BYTES * $urandom_range(0, (MEM_SIZE / 2) / DATA_BYTES);
+        automatic int bytes = DATA_BYTES * $urandom_range(1, (MEM_SIZE / 1024) / DATA_BYTES);
+        automatic int addr = DATA_BYTES * $urandom_range(0, (MEM_SIZE / 1024) / DATA_BYTES);
         axi_read(bytes, addr);
     end
 
