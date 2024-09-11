@@ -45,14 +45,14 @@ begin
     while (write_ready != 1'b1) @(posedge clk);
     write_valid <= 1'b0;
 
-    @(negedge clk);
+    @(posedge clk);
     for (int i = 0; i < bytes / DATA_BYTES + |bytes[$clog2(DATA_BYTES) - 1 : 0];) begin
       if ( write_data_ready == 1'b1 ) begin
         write_data <= { >> {mem[addr + i * DATA_BYTES +: DATA_BYTES]}};
         write_data_valid <= 1'b1;
         i = i + 1;
       end
-      @(negedge clk);
+      @(posedge clk);
     end
     write_data_valid <= 1'b0;
     write_data = 'dx;
