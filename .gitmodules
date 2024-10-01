@@ -1,3 +1,6 @@
 [submodule "external/axi"]
 	path = external/axi
 	url = https://github.com/pulp-platform/axi.git
+[submodule "external/common_cells"]
+	path = external/common_cells
+	url = https://github.com/pulp-platform/common_cells.git
