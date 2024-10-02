@@ -279,6 +279,47 @@ begin
 end
 endtask
 
+task load_register;
+    input int w;
+    input int h;
+    input ma_pkg::dtype dt;
+    input logic [4 : 0] r;
+    input int addr;
+begin
+    int bytes, i;
+
+    $display("Load register");
+
+    // define first
+    define_register(w, h, dt, r);
+
+    // load data
+    rd <= r;
+    funct3 <= 3'd1;
+
+    @(posedge clk)
+    valid <= 1'b1;
+    @(posedge clk)
+    while (ready != 1'b1) @(posedge clk);
+    valid <= 1'b0;
+
+    // wait the controller to be available again
+    @(posedge clk)
+    while (ready != 1'b1) @(posedge clk);
+
+    // check data in regfile
+    bytes = w * h;
+
+    if ( dt == ma_pkg::INT16 | dt == ma_pkg::UINT16 )
+      bytes = bytes * 2;
+    else if ( dt == ma_pkg::INT32 | dt == ma_pkg::UINT32 )
+      bytes = bytes * 4;
+
+    for ( i = 0; i < bytes; i = i + DATA_BYTES )
+      assert(i_dut.memory_bank[0].i_mem_bank.mem[i / DATA_BYTES] == { >> {mem[addr + i +: DATA_BYTES]}});
+end
+endtask
+
 int register;
 
 initial begin
@@ -317,6 +358,8 @@ initial begin
 
     for ( register = 0; register < 32; register = register + 1 )
       define_register(16, 16, 'd0, register);
+
+    load_register(16, 16, 'd0, 'd0, 'd0);
 
     @(posedge clk);
     @(posedge clk);

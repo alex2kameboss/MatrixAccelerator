@@ -38,7 +38,13 @@ module control_unit #(
     input   logic                                                   dma_read_ready  ,
     output  logic               [ADDR_WIDTH - 1 : 0]                dma_read_addr   ,
     output  logic               [ADDR_WIDTH - 1 : 0]                dma_read_len    ,
-    input   logic                                                   dma_read_done   
+    input   logic                                                   dma_read_done   ,
+    // control signals
+// for memory
+    output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd_cfg          ,
+    output  logic                                                   start_addr_gen  ,
+    output  logic                                                   load            ,
+    output  logic                                                   store           
 );
 
 ma_pkg::register_file_line  rft [REGISTER_NUMBERS - 1 : 0];
@@ -91,6 +97,17 @@ always_ff @( posedge clk, negedge rst_n )
 
 // memory operations
 
+logic [2 : 0] bytes_len;
+always_comb begin
+    case (rft[rd])
+        ma_pkg::INT16   :   bytes_len <= 'd2;
+        ma_pkg::UINT16  :   bytes_len <= 'd2;
+        ma_pkg::INT32   :   bytes_len <= 'd4;
+        ma_pkg::UINT32  :   bytes_len <= 'd4;
+        default         :   bytes_len <= 'd1;
+    endcase
+end
+
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
         dma_write_valid <= 'd0;
@@ -100,7 +117,7 @@ always_ff @( posedge clk, negedge rst_n )
     if ( valid & ready & ~arth_data & ~define & ~ld_st & rft[rd].in_mem) begin
         dma_write_valid <= 'd1;
         dma_write_addr  <= addr;
-        dma_write_len   <= rft[rd].width * rft[rd].height; // TODO: update this code
+        dma_write_len   <= rft[rd].width * rft[rd].height * bytes_len; // TODO: update this code
     end else
     if ( dma_write_valid & dma_write_ready ) begin
         dma_write_valid <= 'd0;
@@ -117,7 +134,7 @@ always_ff @( posedge clk, negedge rst_n )
     if ( valid & ready & ~arth_data & ~define & ld_st ) begin
         dma_read_valid <= 'd1;
         dma_read_addr  <= addr;
-        dma_read_len   <= rft[rd].width * rft[rd].height; // TODO: update this code
+        dma_read_len   <= rft[rd].width * rft[rd].height * bytes_len; // TODO: update this code
     end else
     if ( dma_read_valid & dma_read_ready ) begin
         dma_read_valid <= 'd0;
@@ -138,5 +155,24 @@ posedge_detector i_read_done (
     .signal ( dma_read_done         ) ,
     .flag   ( dma_read_done_edge    ) 
 );
+
+// control signals
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                               rd_cfg <= 'd0;      else
+    if ( valid & ready )                        rd_cfg <= rd;       
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                               load <= 'd0;        else
+    if ( valid & ready & ~arth_data & 
+        ~define & ld_st )                       load <= 'd1;        else
+    if ( operation_done )                       load <= 'd0;        
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                               store <= 'd0;       else
+    if ( valid & ready & ~arth_data & 
+        ~define & ~ld_st )                      store <= 'd1;       else 
+    if ( operation_done )                       store <= 'd0;       
+
 
 endmodule
