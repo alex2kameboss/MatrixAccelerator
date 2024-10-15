@@ -320,6 +320,81 @@ begin
 end
 endtask
 
+task compute_operation;
+    input int w;
+    input int h;
+    input ma_pkg::dtype dt;
+    input logic [4 : 0] rr;
+    input logic [4 : 0] r1;
+    input logic [4 : 0] r2;
+    input int addr1;
+    input int addr2;
+    input ma_pkg::operation o;
+begin
+  int bytes, i;
+
+    $display("Arithmetic operation");
+
+    // load registers
+    load_register(w, h, dt, r1, addr1);
+    load_register(w, h, dt, r2, addr2);
+    define_register(w, h, dt, rr);
+
+    funct3 <= 3'd4;
+    rs1 <= r1;
+    rs2 <= r2;
+    rd <= rr;
+    op <= o;
+
+    @(posedge clk)
+    valid <= 1'b1;
+    @(posedge clk)
+    while (ready != 1'b1) @(posedge clk);
+    valid <= 1'b0;
+
+    // wait the controller to be available again
+    @(posedge clk)
+    while (ready != 1'b1) @(posedge clk);
+end
+endtask
+
+task compute_operation_wo_load;
+    input int w;
+    input int h;
+    input ma_pkg::dtype dt;
+    input logic [4 : 0] rr;
+    input logic [4 : 0] r1;
+    input logic [4 : 0] r2;
+    input int addr1;
+    input int addr2;
+    input ma_pkg::operation o;
+begin
+  int bytes, i;
+
+    $display("Arithmetic operation without load");
+
+    // define register
+    define_register(w, h, dt, rr);
+
+    funct3 <= 3'd4;
+    rs1 <= r1;
+    rs2 <= r2;
+    rd <= rr;
+    op <= o;
+
+    @(posedge clk)
+    valid <= 1'b1;
+    @(posedge clk)
+    while (ready != 1'b1) @(posedge clk);
+    valid <= 1'b0;
+
+    // wait the controller to be available again
+    @(posedge clk)
+    while (ready != 1'b1) @(posedge clk);
+end
+endtask
+
+
 int register;
 
 initial begin
@@ -360,11 +435,16 @@ initial begin
       define_register(16, 16, 'd0, register);
 
     load_register(16, 16, 'd0, 'd0, 'd0);
+    load_register(8, 8, 'd0, 'd0, 'd0);
+
+    compute_operation(8, 8, 'd0, 'd2, 'd0, 'd1, 'd0, 'd0, 'd2);
+    @(posedge clk);
+    compute_operation_wo_load(8, 8, 'd0, 'd3, 'd0, 'd2, 'd0, 'd0, 'd1);
 
     @(posedge clk);
     @(posedge clk);
 
-    $finish;
+    $stop;
 end
 
 endmodule;

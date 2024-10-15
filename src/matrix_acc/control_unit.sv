@@ -40,20 +40,27 @@ module control_unit #(
     output  logic               [ADDR_WIDTH - 1 : 0]                dma_read_len    ,
     input   logic                                                   dma_read_done   ,
     // control signals
+    input   logic                                                   arth_done       ,
 // for memory
     output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd_cfg          ,
     output  logic                                                   start_addr_gen  ,
     output  logic                                                   load            ,
-    output  logic                                                   store           
+    output  logic                                                   store           ,
+    output  logic                                                   arith           ,
+    output  logic               [ADDR_WIDTH - 1 : 0]                arith_len       ,
+    output  ma_pkg::dtype                                           dtype_cfg       ,
+    output  ma_pkg::operation                                       op_cfg          ,
+    output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1_cfg         ,
+    output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2_cfg         
 );
 
 ma_pkg::register_file_line  rft [REGISTER_NUMBERS - 1 : 0];
 
-logic dma_write_done_edge, dma_read_done_edge;
+logic dma_write_done_edge, dma_read_done_edge, arth_done_edge;
 logic operation_done;
-logic write_operation, read_operation, define_operation;
+logic write_operation, read_operation, define_operation, arth_operation;
 
-assign operation_done = ~define_operation & ~write_operation & ~read_operation;
+assign operation_done = ~define_operation & ~write_operation & ~read_operation & ~arth_operation;
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                           write_operation <= 1'b0;    else
@@ -66,6 +73,11 @@ always_ff @( posedge clk, negedge rst_n )
     if ( dma_read_done_edge )               read_operation <= 1'b0;     else
     if ( valid & ready & ~arth_data & 
             ~define & ld_st )               read_operation <= 1'b1;
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                           arth_operation <= 1'b0;     else
+    if ( arth_done_edge )                   arth_operation <= 1'b0;     else
+    if ( valid & ready & arth_data )        arth_operation <= 1'b1;
 
 assign define_operation = valid & ready & ~arth_data & define;
 
@@ -91,7 +103,7 @@ always_ff @( posedge clk, negedge rst_n )
         rft[rd].valid   <= 1'b1;
         rft[rd].in_mem  <= 1'b0;
     end else
-    if ( valid & ready & ~arth_data & ~define & ld_st ) begin
+    if ( valid & ready & (~arth_data & ~define & ld_st | arth_data) ) begin
         rft[rd].in_mem  <= 1'b1;
     end
 
@@ -156,6 +168,13 @@ posedge_detector i_read_done (
     .flag   ( dma_read_done_edge    ) 
 );
 
+posedge_detector i_arth_done (
+    .clk    ( clk                   ) ,
+    .rst_n  ( rst_n                 ) ,
+    .signal ( arth_done             ) ,
+    .flag   ( arth_done_edge        ) 
+);
+
 // control signals
 
 always_ff @( posedge clk, negedge rst_n )
@@ -174,5 +193,33 @@ always_ff @( posedge clk, negedge rst_n )
         ~define & ~ld_st )                      store <= 'd1;       else 
     if ( operation_done )                       store <= 'd0;       
 
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                               arith <= 'd0;       else
+    if ( valid & ready & arth_data )            arith <= 'd1;       else 
+    if ( arth_done )                            arith <= 'd0;
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                               arith_len <= 'd0;       else
+    if ( valid & ready & arth_data )            arith_len <= rft[rd].width * rft[rd].height * bytes_len;       else  // TODO: update this code
+    if ( arth_done )                            arith_len <= 'd0;
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                               start_addr_gen <= 'd0;  else
+    if ( valid & ready & 
+        ~(~arth_data & define))                 start_addr_gen <= 'd1;  else 
+    if ( start_addr_gen )                       start_addr_gen <= 'd0;       
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
+        dtype_cfg   <= 'd0;
+        op_cfg      <= 'd0;
+        rs1_cfg     <= 'd0;
+        rs2_cfg     <= 'd0;
+    end else if ( valid & ready & arth_data ) begin
+        dtype_cfg   <= dtype;
+        op_cfg      <= op;
+        rs1_cfg     <= rs1;
+        rs2_cfg     <= rs2;
+    end
 
 endmodule
