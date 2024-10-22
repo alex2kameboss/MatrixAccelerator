@@ -440,6 +440,8 @@ initial begin
     compute_operation(8, 8, 'd0, 'd2, 'd0, 'd1, 'd0, 'd0, 'd2);
     @(posedge clk);
     compute_operation_wo_load(8, 8, 'd0, 'd3, 'd0, 'd2, 'd0, 'd0, 'd1);
+    @(posedge clk);
+    compute_operation(4, 4, 'd4, 'd2, 'd0, 'd1, 'd0, 'd0, 'd2);
 
     @(posedge clk);
     @(posedge clk);

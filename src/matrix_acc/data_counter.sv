@@ -24,9 +24,11 @@ always_ff @( posedge clk, negedge rst_n )
     if ( clear )                start <= 'd0;               else
     if ( load | store | arith ) start <= 'd1;               
 
-always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )               clear <= 'd0;               else
-                                clear <= cnt == 'd1 & cnt_up;
+//always_ff @( posedge clk, negedge rst_n )
+//    if ( ~rst_n )               clear <= 'd0;               else
+//                                clear <= cnt == 'd1 & cnt_up;
+
+assign clear = cnt == 'd1 & cnt_up;                            
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )               cnt <= 'd0;                 else

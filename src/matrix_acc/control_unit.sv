@@ -111,7 +111,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 logic [2 : 0] bytes_len;
 always_comb begin
-    case (rft[rd])
+    case (rft[rd].dtype)
         ma_pkg::INT16   :   bytes_len <= 'd2;
         ma_pkg::UINT16  :   bytes_len <= 'd2;
         ma_pkg::INT32   :   bytes_len <= 'd4;

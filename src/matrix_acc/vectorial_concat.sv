@@ -18,7 +18,9 @@ logic   [$clog2(NUMBER_OF_ALU) - 1 : 0] cnt;
 logic                                   next;
 
 always_ff @( posedge clk, negedge rst_n )
-    valid <= next;
+    if ( ~rst_n )                       valid <= 'd0;       else
+    if ( en )                           valid <= next;      else
+                                        valid <= 'd0;       
 
 assign next = (dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32) |
                 cnt == 'd1 & (dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) |
