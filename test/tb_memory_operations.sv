@@ -22,6 +22,7 @@ localparam int unsigned TbAxiIdWidthSlaves =  TbAxiIdWidthMasters + $clog2(TbNum
 localparam int unsigned TbAxiAddrWidth     =  32'd32;
 localparam int unsigned TbAxiStrbWidth     =  TbAxiDataWidth / 8;
 localparam int unsigned TbAxiUserWidth     =  5;
+localparam NUMBER_OF_REGISTERS = 32;
 
 localparam axi_pkg::xbar_cfg_t xbar_cfg = '{
     NoSlvPorts:         TbNumMasters,
@@ -192,9 +193,9 @@ opcode_decoder i_op_decoder (
 );
 
 ma_data_path #(
-    .ADDR_WIDTH         ( ADDR_WIDTH ),
-    .REGISTER_NUMBERS   ( 32 ),
-    .DMA_DATA_WIDTH     ( DATA_WIDTH )  
+    .ADDR_WIDTH         ( ADDR_WIDTH          ),
+    .REGISTER_NUMBERS   ( NUMBER_OF_REGISTERS ),
+    .DMA_DATA_WIDTH     ( DATA_WIDTH          )  
 ) i_dut (
     .aclk       ( clk ),
     .arst_n     ( rst_n ),
@@ -217,6 +218,17 @@ ma_data_path #(
     .height     ( height    ),
     .dtype      ( dtype     )               
 );
+
+localparam MEMORY_SIZE      = 1024 * 1024 * 8; // 1MB
+localparam MEMORY_DEPTH     = MEMORY_SIZE / DATA_WIDTH;
+logic [DATA_WIDTH - 1 : 0] buffers_clone [NUMBER_OF_REGISTERS - 1 : 0] [0 : MEMORY_DEPTH - 1];
+
+genvar i;
+generate
+  for ( i = 0; i < NUMBER_OF_REGISTERS; i = i + 1 ) begin : buffers_copy
+    assign buffers_clone[i] = i_dut.memory_bank[i].i_mem_bank.mem;
+  end
+endgenerate
 
 dma #(
     .ADDR_WIDTH ( ADDR_WIDTH )  ,
@@ -287,6 +299,7 @@ task load_register;
     input int addr;
 begin
     int bytes, i;
+    bit pass;
 
     $display("Load register");
 
@@ -315,8 +328,10 @@ begin
     else if ( dt == ma_pkg::INT32 | dt == ma_pkg::UINT32 )
       bytes = bytes * 4;
 
+    pass = 1'b1;
     for ( i = 0; i < bytes; i = i + DATA_BYTES )
-      assert(i_dut.memory_bank[0].i_mem_bank.mem[i / DATA_BYTES] == { >> {mem[addr + i +: DATA_BYTES]}});
+      pass = pass & (buffers_clone[r][i / DATA_BYTES] == { >> {mem[addr + i +: DATA_BYTES]}});
+    assert(pass);
 end
 endtask
 
