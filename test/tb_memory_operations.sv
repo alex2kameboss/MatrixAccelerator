@@ -348,30 +348,25 @@ task compute_operation;
 begin
   int bytes, i;
 
-    $display("Arithmetic operation");
+  $display("Arithmetic operation: %d, %d, %s, %d, %d, %d, %d, %d, %s", w, h, dt, rr, r1, r2, addr1, addr2, o);
 
-    // load registers
-    load_register(w, h, dt, r1, addr1);
-    load_register(w, h, dt, r2, addr2);
-    define_register(w, h, dt, rr);
+  // load registers
+  load_register(w, h, dt, r1, addr1);
+  load_register(w, h, dt, r2, addr2);
 
-    funct3 <= 3'd4;
-    rs1 <= r1;
-    rs2 <= r2;
-    rd <= rr;
-    op <= o;
+  compute_operation_wo_load(w, h, dt, rr, r1, r2, addr1, addr2, o);
 
-    @(posedge clk)
-    valid <= 1'b1;
-    @(posedge clk)
-    while (ready != 1'b1) @(posedge clk);
-    valid <= 1'b0;
-
-    // wait the controller to be available again
-    @(posedge clk)
-    while (ready != 1'b1) @(posedge clk);
 end
 endtask
+
+function int alu (int x, y, ma_pkg::operation o);
+  case (o)
+    ma_pkg::ADD : alu = x + y;
+    ma_pkg::SUB : alu = x - y;
+    ma_pkg::DIV : alu = x / y;
+    default:      alu = x * y;
+  endcase
+endfunction
 
 task compute_operation_wo_load;
     input int w;
@@ -384,28 +379,51 @@ task compute_operation_wo_load;
     input int addr2;
     input ma_pkg::operation o;
 begin
-  int bytes, i;
+  int bytes, i, j;
+  bit pass;
 
-    $display("Arithmetic operation without load");
+  $display("Arithmetic operation without load");
 
-    // define register
-    define_register(w, h, dt, rr);
+  // define register
+  define_register(w, h, dt, rr);
 
-    funct3 <= 3'd4;
-    rs1 <= r1;
-    rs2 <= r2;
-    rd <= rr;
-    op <= o;
+  funct3 <= 3'd4;
+  rs1 <= r1;
+  rs2 <= r2;
+  rd <= rr;
+  op <= o;
 
-    @(posedge clk)
-    valid <= 1'b1;
-    @(posedge clk)
-    while (ready != 1'b1) @(posedge clk);
-    valid <= 1'b0;
+  @(posedge clk)
+  valid <= 1'b1;
+  @(posedge clk)
+  while (ready != 1'b1) @(posedge clk);
+  valid <= 1'b0;
 
-    // wait the controller to be available again
-    @(posedge clk)
-    while (ready != 1'b1) @(posedge clk);
+  // wait the controller to be available again
+  @(posedge clk)
+  while (ready != 1'b1) @(posedge clk);
+
+  // check result
+  bytes = w * h;
+
+  if ( dt == ma_pkg::INT16 | dt == ma_pkg::UINT16 )
+    bytes = bytes * 2;
+  else if ( dt == ma_pkg::INT32 | dt == ma_pkg::UINT32 )
+    bytes = bytes * 4;
+
+  pass = 1'b1;
+  for ( i = 0; i < bytes; i = i + DATA_BYTES ) begin
+    if ( dt == ma_pkg::INT32 | dt == ma_pkg::UINT32 ) 
+      for ( j = 0; j < DATA_BYTES / 4; j = j + 1 )
+        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 32  - 1 -: 32 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 32 -: 32 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 32 -: 32 ], o));
+    else if ( dt == ma_pkg::INT16 | dt == ma_pkg::UINT16 ) 
+      for ( j = 0; j < DATA_BYTES / 2; j = j + 1 )
+        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], o)[15 : 0]);
+    else if ( dt == ma_pkg::INT8 | dt == ma_pkg::UINT8 ) 
+      for ( j = 0; j < DATA_BYTES; j = j + 1 )
+        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], o)[7 : 0]);
+  end
+  assert(pass);
 end
 endtask
 
