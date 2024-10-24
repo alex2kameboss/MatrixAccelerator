@@ -45,7 +45,7 @@ logic                                       ready    ;
 logic                                       arth_data;
 logic                                       define   ;
 logic                                       ld_st    ;
-logic               [ADDR_WIDTH - 1 : 0]    addr     ;
+logic               [ADDR_WIDTH - 1 : 0]    dut_addr ;
 ma_pkg::operation                           op       ;
 logic                                       scalar_op;
 logic               [ADDR_WIDTH - 1 : 0]    scalar   ;
@@ -207,7 +207,7 @@ ma_data_path #(
     .arth_data  ( arth_data ),
     .define     ( define    ),
     .ld_st      ( ld_st     ),
-    .addr       ( addr      ),
+    .addr       ( dut_addr  ),
     .op         ( op        ),
     .scalar_op  ( scalar_op ),
     .scalar     ( scalar    ),
@@ -309,6 +309,7 @@ begin
     // load data
     rd <= r;
     funct3 <= 3'd1;
+    dut_addr <= addr;
 
     @(posedge clk)
     valid <= 1'b1;
@@ -427,6 +428,49 @@ begin
 end
 endtask
 
+task store_register;
+    input logic [4 : 0] r;
+    input int addr;
+begin
+    int bytes, i, j;
+    bit pass;
+    logic [7 : 0] line [DATA_BYTES - 1 : 0];
+
+    $display("Store register");
+
+    // load data
+    rd <= r;
+    funct3 <= 3'd2;
+    dut_addr <= addr;
+
+    @(posedge clk)
+    valid <= 1'b1;
+    @(posedge clk)
+    while (ready != 1'b1) @(posedge clk);
+    valid <= 1'b0;
+
+    // wait the controller to be available again
+    @(posedge clk)
+    while (ready != 1'b1) @(posedge clk);
+
+    // check data in regfile
+    bytes = i_dut.i_ccu.rft[r].width * i_dut.i_ccu.rft[r].width;
+
+    if ( i_dut.i_ccu.rft[r].dtype == ma_pkg::INT16 | i_dut.i_ccu.rft[r].dtype == ma_pkg::UINT16 )
+      bytes = bytes * 2;
+    else if ( i_dut.i_ccu.rft[r].dtype == ma_pkg::INT32 | i_dut.i_ccu.rft[r].dtype == ma_pkg::UINT32 )
+      bytes = bytes * 4;
+
+    pass = 1'b1;
+    for ( i = 0; i < bytes; i = i + DATA_BYTES ) begin
+      for ( j = 0; j < DATA_BYTES; j = j + 1 ) begin
+        line[j] = i_sim_mem.i_sim_mem.mem[addr + i + j];
+      end
+      pass = pass & (buffers_clone[r][i / DATA_BYTES] == { >> {line}});
+    end
+    assert(pass);
+end
+endtask
 
 int register;
 
@@ -445,7 +489,7 @@ initial begin
 
     // ccu
     valid       <= 'd0;
-    addr        <= 'd0;
+    dut_addr    <= 'd0;
     op          <= 'd0;
     scalar      <= 'd0;
     rd          <= 'd0;
@@ -462,7 +506,7 @@ initial begin
     @(posedge slave[0].aw_ready);
     @(posedge clk);
     @(posedge clk);
-    dma_axi_write(MEM_SIZE, 0); // init memory
+    dma_axi_write(MEM_SIZE / 2, 0); // init memory
 
     for ( register = 0; register < 32; register = register + 1 )
       define_register(16, 16, 'd0, register);
@@ -475,6 +519,9 @@ initial begin
     compute_operation_wo_load(8, 8, 'd0, 'd3, 'd0, 'd2, 'd0, 'd0, 'd1);
     @(posedge clk);
     compute_operation(4, 4, 'd4, 'd2, 'd0, 'd1, 'd0, 'd0, 'd2);
+
+    store_register('d2, MEM_SIZE);
+    store_register('d1, MEM_SIZE);
 
     @(posedge clk);
     @(posedge clk);

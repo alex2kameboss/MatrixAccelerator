@@ -52,6 +52,9 @@ logic                                                   load, store     ;
 logic   [DMA_DATA_WIDTH - 1 : 0]    dma_read_data       ;          
 logic                           dma_read_data_valid ;          
 logic                           dma_read_data_ready ;       
+logic   [DMA_DATA_WIDTH - 1 : 0]    dma_write_data       ;          
+logic                           dma_write_data_valid ;          
+logic                           dma_write_data_ready ;    
 logic               [ADDR_WIDTH - 1 : 0]                arith_len       ;
 
 logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd_cfg          ;
@@ -129,9 +132,9 @@ dma #(
     .read_done_o        ( dma_read_done     ) ,
     // data fifos
     // write fifo
-    .write_data_i       (  ) ,
-    .write_data_valid_i (  ) ,
-    .write_data_ready_o (  ) ,
+    .write_data_i       ( dma_write_data       ) ,
+    .write_data_valid_i ( dma_write_data_valid ) ,
+    .write_data_ready_o ( dma_write_data_ready ) ,
     // read fifo
     .read_data_o        ( dma_read_data       ) ,
     .read_data_valid_o  ( dma_read_data_valid ) ,
@@ -152,7 +155,7 @@ logic                               mem_w_en [REGISTER_NUMBERS - 1 : 0], mem_wri
 logic   [MEM_ADDR_WIDTH - 1 : 0]    mem_w_addr;
 logic   [DMA_DATA_WIDTH - 1 : 0]    mem_w_data, mem_w_alu;
 
-logic                               mem_next_addr;
+logic                               mem_next_addr, mem_next_addr_splitter, mem_next_addr_write;
 
 logic   [MEM_ADDR_WIDTH - 1 : 0]    mem_r_addr;
 
@@ -167,10 +170,15 @@ logic   [DMA_DATA_WIDTH - 1 : 0]    mem_r_op2;
 logic   [ALU_WIDTH - 1 : 0]    op1_alu [NUMBER_OF_ALU - 1 : 0];
 logic   [ALU_WIDTH - 1 : 0]    op2_alu [NUMBER_OF_ALU - 1 : 0];
 logic   [ALU_WIDTH - 1 : 0]    res_alu [NUMBER_OF_ALU - 1 : 0];
+logic                          data_cnt_up;
 
 assign mem_w_data = arith ? mem_w_alu : dma_read_data;
 assign mem_write = dma_read_data_valid & dma_read_data_ready;
 assign mem_w_incr = mem_write | arith & mem_w_res;
+assign data_cnt_up = mem_w_incr | mem_next_addr_write;
+
+assign mem_next_addr_write = dma_write_data_valid & dma_write_data_ready;
+assign mem_next_addr = mem_next_addr_splitter | mem_next_addr_write;
 
 genvar i;
 generate
@@ -194,6 +202,7 @@ endgenerate
 
 assign mem_r_op1 = mem_r[rs1_cfg];
 assign mem_r_op2 = mem_r[rs2_cfg];
+assign dma_write_data = mem_r[rd_cfg];
 
 logic w_adr_gen_reset, w_adr_len_reset;
 assign w_adr_gen_reset = start_addr_gen | w_adr_len_reset;
@@ -209,7 +218,7 @@ data_counter #(
     .store       ( store            ),
     .arith_bytes ( arith_len        ),
     .arith       ( arith            ),
-    .cnt_up      ( mem_w_incr       ),
+    .cnt_up      ( data_cnt_up      ),
     .clear       ( w_adr_len_reset  )
 );
 
@@ -250,7 +259,7 @@ vectorial_splitter #(
     .op2_in     ( mem_r_op2         ),
     .op1_out    ( op1_alu           ),
     .op2_out    ( op2_alu           ),
-    .next       ( mem_next_addr     )
+    .next       ( mem_next_addr_splitter     )
 );
 
 //assign arith_done = mem_w_addr == arith_len[MEM_ADDR_WIDTH + $clog2(DMA_DATA_WIDTH / 8) - 1 : $clog2(DMA_DATA_WIDTH / 8)];
@@ -274,6 +283,19 @@ always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )               concat_en <= 'd0;       else
     if ( w_adr_len_reset )      concat_en <= 'd0;       else
     if ( arith )                concat_en <= 'd1;      
+
+logic store_edge;
+posedge_detector i_arth_done (
+    .clk    ( clk           ) ,
+    .rst_n  ( rst_n         ) ,
+    .signal ( store         ) ,
+    .flag   ( store_edge    ) 
+);
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )               dma_write_data_valid <= 'd0;    else
+    if ( w_adr_len_reset )      dma_write_data_valid <= 'd0;    else
+    if ( store_edge )           dma_write_data_valid <= 'd1;
 
 //delay_line #(
 //    .DATA_WIDTH     ( 1 ) ,
