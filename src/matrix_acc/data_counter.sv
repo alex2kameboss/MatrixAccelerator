@@ -14,6 +14,8 @@ module data_counter #(
     output  logic                           clear       
 );
     
+logic arith_edge, load_edge, store_edge;
+
 localparam DMA_BYTES = DMA_WIDTH / 8;
 
 logic [DATA_WIDTH - $clog2(DMA_BYTES) : 0]  cnt;
@@ -22,7 +24,9 @@ logic                       start;
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )               start <= 'd0;               else
     if ( clear )                start <= 'd0;               else
-    if ( load | store | arith ) start <= 'd1;               
+    if ( load_edge | 
+            store_edge | 
+            arith_edge )        start <= 'd1;               
 
 //always_ff @( posedge clk, negedge rst_n )
 //    if ( ~rst_n )               clear <= 'd0;               else
@@ -34,9 +38,30 @@ always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )               cnt <= 'd0;                 else
     if ( start & cnt_up)        cnt <= cnt - 1'b1;          else
     if ( ~start ) begin
-        if ( arith )                cnt <= arith_bytes[DATA_WIDTH - 1 : $clog2(DMA_BYTES)];         else
-        if ( load )                 cnt <= load_bytes[DATA_WIDTH - 1 : $clog2(DMA_BYTES)];          else
-        if ( store )                cnt <= store_bytes[DATA_WIDTH - 1 : $clog2(DMA_BYTES)];         
+        if ( arith_edge )           cnt <= arith_bytes[DATA_WIDTH - 1 : $clog2(DMA_BYTES)];         else
+        if ( load_edge )            cnt <= load_bytes[DATA_WIDTH - 1 : $clog2(DMA_BYTES)];          else
+        if ( store_edge )           cnt <= store_bytes[DATA_WIDTH - 1 : $clog2(DMA_BYTES)];         
     end
+
+posedge_detector i_arith_edge (
+    .clk    ( clk           ),
+    .rst_n  ( rst_n         ),
+    .signal ( arith         ),
+    .flag   ( arith_edge    ) 
+);
+
+posedge_detector i_load_edge (
+    .clk    ( clk           ),
+    .rst_n  ( rst_n         ),
+    .signal ( load          ),
+    .flag   ( load_edge     ) 
+);
+
+posedge_detector i_store_edge (
+    .clk    ( clk           ),
+    .rst_n  ( rst_n         ),
+    .signal ( store         ),
+    .flag   ( store_edge    ) 
+);
 
 endmodule
