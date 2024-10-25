@@ -399,8 +399,8 @@ initial begin
   vectorial_operation_test('d2, 'd0, 'd1, SUB, INT8, 8, 8, MEM_SIZE, 'h0, 'h0);
   vectorial_operation_test('d2, 'd0, 'd1, ADD, INT8, 8, 8, MEM_SIZE, MEM_SIZE, 'h0);
 
-  //vectorial_operation_test('d2, 'd0, 'd1, SUB, INT16, 4, 4, MEM_SIZE, 'h0, 'h0);
-  //vectorial_operation_test('d2, 'd0, 'd1, ADD, INT16, 4, 4, MEM_SIZE, MEM_SIZE, 'h0);
+  vectorial_operation_test('d2, 'd0, 'd1, SUB, INT16, 4, 4, MEM_SIZE, 'h0, 'h0);
+  vectorial_operation_test('d2, 'd0, 'd1, ADD, INT16, 4, 4, MEM_SIZE, MEM_SIZE, 'h0);
 
   vectorial_operation_test('d2, 'd0, 'd1, SUB, INT32, 4, 4, MEM_SIZE, 'h0, 'h0);
   vectorial_operation_test('d2, 'd0, 'd1, ADD, INT32, 4, 4, MEM_SIZE, MEM_SIZE, 'h0);

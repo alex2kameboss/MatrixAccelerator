@@ -69,7 +69,7 @@ always_ff @( posedge clk, negedge rst_n )
     if ( en ) begin
         if (dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32)
             rez_out[(i + 1) * 8 - 1 -: 8] <= rez_in_byte[i / NUMBER_OF_ALU][ i % IN_BYTES ];
-        else if ((dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) & i / 2 % 2 == cnt)
+        else if ((dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) & (i / 2 + 1) % 2 == cnt)
             rez_out[(i + 1) * 8 - 1 -: 8] <= rez_in_byte[i / NUMBER_OF_ALU][i % 2];
         else if ((dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8) & (NUMBER_OF_ALU - 1 - i % NUMBER_OF_ALU == cnt))
             rez_out[(i + 1) * 8 - 1 -: 8] <= rez_in_byte[i / NUMBER_OF_ALU][0];
