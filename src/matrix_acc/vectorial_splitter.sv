@@ -18,9 +18,9 @@ localparam NUMBER_OF_ALU = IN_DATA_WIDTH / OUT_DATA_WIDTH;
 
 logic   [$clog2(NUMBER_OF_ALU) - 1 : 0]   cnt;
 
-assign next = (dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32) |
+assign next = ((dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32) |
                 cnt == 'd1 & (dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) |
-                cnt == 'd3 & (dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8);
+                cnt == 'd3 & (dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8)) & en;
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                       cnt <= 'd0;         else

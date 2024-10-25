@@ -205,7 +205,7 @@ assign mem_r_op2 = mem_r[rs2_cfg];
 assign dma_write_data = mem_r[rd_cfg];
 
 logic w_adr_gen_reset, w_adr_len_reset;
-assign w_adr_gen_reset = start_addr_gen | w_adr_len_reset;
+assign w_adr_gen_reset = w_adr_len_reset;
 
 data_counter #(
     .DATA_WIDTH( ADDR_WIDTH )
