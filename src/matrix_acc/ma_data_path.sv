@@ -65,6 +65,9 @@ ma_pkg::operation                                       op_cfg          ;
 logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1_cfg         ;
 logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2_cfg         ;
 
+logic                                                   scalar_op_cfg   ;
+logic               [ADDR_WIDTH - 1 : 0]                scalar_cfg      ;  
+
 control_unit #(
     .ADDR_WIDTH        ( ADDR_WIDTH       ),
     .REGISTER_NUMBERS  ( REGISTER_NUMBERS )
@@ -106,7 +109,9 @@ control_unit #(
     .dtype_cfg       ( dtype_cfg        ),
     .op_cfg          ( op_cfg           ),
     .rs1_cfg         ( rs1_cfg          ),
-    .rs2_cfg         ( rs2_cfg          ) 
+    .rs2_cfg         ( rs2_cfg          ),
+    .scalar_op_cfg   ( scalar_op_cfg    ),
+    .scalar_cfg      ( scalar_cfg       ) 
 );
 
 assign dma_read_data_ready = load;
@@ -201,7 +206,7 @@ assign mem_w_en[i] = rd_cfg == i & ((load | store) & mem_write | arith & mem_w_r
 endgenerate
 
 assign mem_r_op1 = mem_r[rs1_cfg];
-assign mem_r_op2 = mem_r[rs2_cfg];
+assign mem_r_op2 = scalar_op_cfg ? {NUMBER_OF_ALU{scalar_cfg}} : mem_r[rs2_cfg];
 assign dma_write_data = mem_r[rd_cfg];
 
 logic w_adr_gen_reset, w_adr_len_reset;

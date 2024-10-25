@@ -17,7 +17,7 @@ module control_unit #(
     input   logic               [ADDR_WIDTH - 1 : 0]                addr            ,
 // arithmetics data 
     input   ma_pkg::operation                                       op              ,
-    input   logic                                                   scalar_op       ,
+    input   logic                                                   scalar_op       ,   // 1 vector-scalar operation, 0 vector-vector operation 
     input   logic               [ADDR_WIDTH - 1 : 0]                scalar          ,
     input   logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd              ,
     input   logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1             ,
@@ -51,7 +51,9 @@ module control_unit #(
     output  ma_pkg::dtype                                           dtype_cfg       ,
     output  ma_pkg::operation                                       op_cfg          ,
     output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1_cfg         ,
-    output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2_cfg         
+    output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2_cfg         ,
+    output  logic                                                   scalar_op_cfg   ,
+    output  logic               [ADDR_WIDTH - 1 : 0]                scalar_cfg              
 );
 
 ma_pkg::register_file_line  rft [REGISTER_NUMBERS - 1 : 0];
@@ -219,6 +221,18 @@ always_ff @( posedge clk, negedge rst_n )
         op_cfg      <= ma_pkg::NOP;
         rs1_cfg     <= 'd0;
         rs2_cfg     <= 'd0;
+    end
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
+        scalar_op_cfg <= 'd0;
+        scalar_cfg <= 'd0;
+    end else if ( valid & ready & arth_data & scalar_op ) begin
+        scalar_op_cfg <= scalar_op;
+        scalar_cfg <= scalar;
+    end else  if ( arth_done ) begin
+        scalar_op_cfg <= 'd0;
+        scalar_cfg <= 'd0;
     end
 
 endmodule

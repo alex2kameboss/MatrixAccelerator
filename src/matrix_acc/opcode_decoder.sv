@@ -40,7 +40,7 @@ always_comb begin
                 error       = 1'b0;
             end
             3'd5 : begin // vector-scalar operation
-                arth_data   = 1'b0;
+                arth_data   = 1'b1;
                 define      = 1'b0;
                 ld_st       = 1'b0;
                 scalar_op   = 1'b1;

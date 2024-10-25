@@ -208,7 +208,7 @@ begin
 end
 endtask
 
-task vectorial_operation;
+task vector_vector_operation;
   input register rr;
   input register r1;
   input register r2;
@@ -217,14 +217,14 @@ begin
   int bytes, i, j;
   bit pass;
 
-  $display("Vectorial operation ( rd: %d, r1: %d, r2: %d, operation: %s )", rr, r1, r2, o);
+  $display("Vector-Vector operation ( rd: %d, r1: %d, r2: %d, operation: %s )", rr, r1, r2, o);
 
   // check registers
   assert(i_dut.i_ccu.rft[rr].valid);
   assert(i_dut.i_ccu.rft[r1].valid);
   assert(i_dut.i_ccu.rft[r2].valid);
   assert(i_dut.i_ccu.rft[r1].in_mem);
-  assert(i_dut.i_ccu.rft[r1].in_mem);
+  assert(i_dut.i_ccu.rft[r2].in_mem);
   assert(i_dut.i_ccu.rft[r1].width == i_dut.i_ccu.rft[r2].width &
           i_dut.i_ccu.rft[r1].height == i_dut.i_ccu.rft[r2].height &
           i_dut.i_ccu.rft[r1].dtype == i_dut.i_ccu.rft[r2].dtype)
@@ -331,6 +331,69 @@ begin
 end
 endtask
 
+task vector_scalar_operation;
+  input register rr;
+  input register r1;
+  input int r2;
+  input operation o;
+begin
+  int bytes, i, j;
+  bit pass;
+
+  $display("Vector-Scalar operation ( rd: %d, r1: %d, r2: %d, operation: %s )", rr, r1, r2, o);
+
+  // check registers
+  assert(i_dut.i_ccu.rft[rr].valid);
+  assert(i_dut.i_ccu.rft[r1].valid);
+  assert(i_dut.i_ccu.rft[r1].in_mem);
+  assert(i_dut.i_ccu.rft[rr].width == i_dut.i_ccu.rft[r1].width &
+          i_dut.i_ccu.rft[rr].height == i_dut.i_ccu.rft[r1].height &
+          i_dut.i_ccu.rft[rr].dtype == i_dut.i_ccu.rft[r1].dtype)
+
+  // configure operation
+  funct3 <= VS;
+  rs1 <= r1;
+  rs2 <= r2;
+  rd <= rr;
+  op <= o;
+  scalar <= r2;
+
+  // send operation
+  @(posedge clk)
+  valid <= 1'b1;
+  @(posedge clk)
+  while (ready != 1'b1) @(posedge clk);
+  valid <= 1'b0;
+
+  // wait the controller to be available again
+  @(posedge clk)
+  while (ready != 1'b1) @(posedge clk);
+
+  // check result
+  bytes = i_dut.i_ccu.rft[rr].width * i_dut.i_ccu.rft[rr].height;
+
+  if ( i_dut.i_ccu.rft[rr].dtype == INT16 | i_dut.i_ccu.rft[rr].dtype == UINT16 )
+    bytes = bytes * 2;
+  else if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 )
+    bytes = bytes * 4;
+
+  pass = 1'b1;
+  for ( i = 0; i < bytes; i = i + DATA_BYTES ) begin
+    if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 ) 
+      for ( j = 0; j < DATA_BYTES / 4; j = j + 1 )
+        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 32  - 1 -: 32 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], r2, o));
+    else if ( i_dut.i_ccu.rft[rr].dtype == INT16 | i_dut.i_ccu.rft[rr].dtype == UINT16 ) 
+      for ( j = 0; j < DATA_BYTES / 2; j = j + 1 )
+        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], r2[15 : 0], o)[15 : 0]);
+    else if ( i_dut.i_ccu.rft[rr].dtype == INT8 | i_dut.i_ccu.rft[rr].dtype == UINT8 ) 
+      for ( j = 0; j < DATA_BYTES; j = j + 1 )
+        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], r2[7 : 0], o)[7 : 0]);
+  end
+  assert(pass);
+  assert(i_dut.i_ccu.rft[rr].in_mem);
+end
+endtask
+
 task load_register_test;
   input register r;
   input int w;
@@ -345,7 +408,7 @@ begin
 end
 endtask
 
-task vectorial_operation_test;
+task vector_vector_operation_test;
   input register rr;
   input register r1;
   input register r2;
@@ -357,13 +420,34 @@ task vectorial_operation_test;
   input int r1_addr;
   input int r2_addr;
 begin
-  $display("Vectorial operation test");
+  $display("Vector-Vector operation test");
   define_register(rr, w, h, dt);
   define_register(r1, w, h, dt);
   define_register(r2, w, h, dt);
   load_register(r1, r1_addr);
   load_register(r2, r2_addr);
-  vectorial_operation(rr, r1, r2, o);
+  vector_vector_operation(rr, r1, r2, o);
+  store_register(rr, rr_addr);
+  $display("------------------------------------------------------");
+end
+endtask
+
+task vector_scalar_operation_test;
+  input register rr;
+  input register r1;
+  input int r2;
+  input operation o;
+  input dtype dt;
+  input int w;
+  input int h;
+  input int rr_addr;
+  input int r1_addr;
+begin
+  $display("Vector-Scalar operation test");
+  define_register(rr, w, h, dt);
+  define_register(r1, w, h, dt);
+  load_register(r1, r1_addr);
+  vector_scalar_operation(rr, r1, r2, o);
   store_register(rr, rr_addr);
   $display("------------------------------------------------------");
 end
@@ -397,14 +481,18 @@ initial begin
   load_register_test('d0, 16, 16, UINT8, 'h0);
   load_register_test('d0, 8, 8, UINT16, 'h0);
 
-  vectorial_operation_test('d2, 'd0, 'd1, SUB, INT8, 8, 8, MEM_SIZE, 'h0, 'h0);
-  vectorial_operation_test('d2, 'd0, 'd1, ADD, INT8, 8, 8, MEM_SIZE, MEM_SIZE, 'h0);
+  vector_vector_operation_test('d2, 'd0, 'd1, SUB, INT8, 8, 8, MEM_SIZE, 'h0, 'h0);
+  vector_vector_operation_test('d2, 'd0, 'd1, ADD, INT8, 8, 8, MEM_SIZE, MEM_SIZE, 'h0);
 
-  vectorial_operation_test('d2, 'd0, 'd1, SUB, INT16, 4, 4, MEM_SIZE, 'h0, 'h0);
-  vectorial_operation_test('d2, 'd0, 'd1, ADD, INT16, 4, 4, MEM_SIZE, MEM_SIZE, 'h0);
+  vector_vector_operation_test('d2, 'd0, 'd1, SUB, INT16, 4, 4, MEM_SIZE, 'h0, 'h0);
+  vector_vector_operation_test('d2, 'd0, 'd1, ADD, INT16, 4, 4, MEM_SIZE, MEM_SIZE, 'h0);
 
-  vectorial_operation_test('d2, 'd0, 'd1, SUB, INT32, 4, 4, MEM_SIZE, 'h0, 'h0);
-  vectorial_operation_test('d2, 'd0, 'd1, ADD, INT32, 4, 4, MEM_SIZE, MEM_SIZE, 'h0);
+  vector_vector_operation_test('d2, 'd0, 'd1, SUB, INT32, 4, 4, MEM_SIZE, 'h0, 'h0);
+  vector_vector_operation_test('d2, 'd0, 'd1, ADD, INT32, 4, 4, MEM_SIZE, MEM_SIZE, 'h0);
+
+  vector_scalar_operation_test('d2, 'd0, 'd0, SUB, INT8, 8, 8, MEM_SIZE, 'h0);
+  vector_scalar_operation_test('d2, 'd0, 'd0, SUB, INT16, 8, 8, MEM_SIZE, 'h0);
+  vector_scalar_operation_test('d2, 'd0, 'd0, SUB, INT32, 8, 8, MEM_SIZE, 'h0);
 
   @(posedge clk);
   @(posedge clk);
