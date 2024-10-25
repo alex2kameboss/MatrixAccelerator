@@ -6,7 +6,8 @@ typedef enum logic [5:0] {
     CNV = 4,
     DIV = 8,
     MUL = 16,
-    SMUL = 48
+    SMUL = 48,
+    NOP = {6{1'b1}}
 } operation;
 
 typedef enum logic [6:0] {
@@ -15,7 +16,8 @@ typedef enum logic [6:0] {
     INT16 = 2,
     UINT16 = 3,
     INT32 = 4,
-    UINT32 = 5
+    UINT32 = 5,
+    NDT = {7{1'b1}}
 } dtype;
 
 typedef struct packed {
@@ -31,7 +33,8 @@ typedef enum logic [2:0] {
     LOAD = 3'd1,
     STORE = 3'd2,
     VV = 3'd4,
-    VS = 3'd5
+    VS = 3'd5,
+    NF3 = {3{1'b1}}
 } funct3_op;
 
 endpackage

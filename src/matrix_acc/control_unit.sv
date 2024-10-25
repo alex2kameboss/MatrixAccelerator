@@ -205,8 +205,8 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
-        dtype_cfg   <= 'd0;
-        op_cfg      <= 'd0;
+        dtype_cfg   <= ma_pkg::NDT;
+        op_cfg      <= ma_pkg::NOP;
         rs1_cfg     <= 'd0;
         rs2_cfg     <= 'd0;
     end else if ( valid & ready & arth_data ) begin
@@ -214,6 +214,11 @@ always_ff @( posedge clk, negedge rst_n )
         op_cfg      <= op;
         rs1_cfg     <= rs1;
         rs2_cfg     <= rs2;
+    end else if ( operation_done ) begin
+        dtype_cfg   <= ma_pkg::NDT;
+        op_cfg      <= ma_pkg::NOP;
+        rs1_cfg     <= 'd0;
+        rs2_cfg     <= 'd0;
     end
 
 endmodule

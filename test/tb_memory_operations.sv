@@ -141,7 +141,7 @@ begin
   width <= w;
   height <= h;
   dType <= dt;
-  funct3 <= 3'd0;
+  funct3 <= DEFINE;
 
   @(posedge clk)
   valid <= 1'b1;
@@ -175,7 +175,7 @@ begin
 
   // load data
   rd <= r;
-  funct3 <= 3'd1;
+  funct3 <= LOAD;
   dut_addr <= addr;
 
   @(posedge clk)
@@ -233,7 +233,7 @@ begin
           i_dut.i_ccu.rft[rr].dtype == i_dut.i_ccu.rft[r2].dtype)
 
   // configure operation
-  funct3 <= 3'd4;
+  funct3 <= VV;
   rs1 <= r1;
   rs2 <= r2;
   rd <= rr;
@@ -299,7 +299,7 @@ begin
 
   // load data
   rd <= r;
-  funct3 <= 3'd2;
+  funct3 <= STORE;
   dut_addr <= addr;
 
   @(posedge clk)
@@ -373,14 +373,15 @@ initial begin
   // ccu
   valid       <= 'd0;
   dut_addr    <= 'd0;
-  op          <= ADD;
+  op          <= NOP;
   scalar      <= 'd0;
   rd          <= 'd0;
   rs1         <= 'd0;
   rs2         <= 'd0;
   width       <= 'd0;
   height      <= 'd0;
-  dType       <= INT8;
+  dType       <= NDT;
+  funct3      <= NF3;
 
   @(negedge rst_n);
 
