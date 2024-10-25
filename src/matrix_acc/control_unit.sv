@@ -95,15 +95,13 @@ always_ff @( posedge clk, negedge rst_n )
             rft[rft_i].valid    <= 1'b0;
             rft[rft_i].in_mem   <= 1'b0;
         end
-    end else
-    if ( valid & ready & ~arth_data & define ) begin
+    end else if ( valid & ready & ~arth_data & define ) begin
         rft[rd].width   <= width[31 : 0];
         rft[rd].height  <= height[31 : 0];
         rft[rd].dtype   <= dtype;
         rft[rd].valid   <= 1'b1;
         rft[rd].in_mem  <= 1'b0;
-    end else
-    if ( valid & ready & (~arth_data & ~define & ld_st | arth_data) ) begin
+    end else if ( valid & ready & (~arth_data & ~define & ld_st | arth_data) ) begin
         rft[rd].in_mem  <= 1'b1;
     end
 
@@ -125,13 +123,11 @@ always_ff @( posedge clk, negedge rst_n )
         dma_write_valid <= 'd0;
         dma_write_addr  <= 'd0;
         dma_write_len   <= 'd0;
-    end else
-    if ( valid & ready & ~arth_data & ~define & ~ld_st & rft[rd].in_mem) begin
+    end else if ( valid & ready & ~arth_data & ~define & ~ld_st & rft[rd].in_mem) begin
         dma_write_valid <= 'd1;
         dma_write_addr  <= addr;
         dma_write_len   <= rft[rd].width * rft[rd].height * bytes_len; // TODO: update this code
-    end else
-    if ( dma_write_valid & dma_write_ready ) begin
+    end else if ( dma_write_valid & dma_write_ready ) begin
         dma_write_valid <= 'd0;
         dma_write_addr  <= 'd0;
         dma_write_len   <= 'd0;
@@ -142,36 +138,34 @@ always_ff @( posedge clk, negedge rst_n )
         dma_read_valid <= 'd0;
         dma_read_addr  <= 'd0;
         dma_read_len   <= 'd0;
-    end else
-    if ( valid & ready & ~arth_data & ~define & ld_st ) begin
+    end else if ( valid & ready & ~arth_data & ~define & ld_st ) begin
         dma_read_valid <= 'd1;
         dma_read_addr  <= addr;
         dma_read_len   <= rft[rd].width * rft[rd].height * bytes_len; // TODO: update this code
-    end else
-    if ( dma_read_valid & dma_read_ready ) begin
+    end else if ( dma_read_valid & dma_read_ready ) begin
         dma_read_valid <= 'd0;
         dma_read_addr  <= 'd0;
         dma_read_len   <= 'd0;
     end
 
 posedge_detector i_write_done (
-    .clk    ( clk                   ) ,
-    .rst_n  ( rst_n                 ) ,
-    .signal ( dma_write_done        ) ,
+    .clk    ( clk                   ),
+    .rst_n  ( rst_n                 ),
+    .signal ( dma_write_done        ),
     .flag   ( dma_write_done_edge   ) 
 );
 
 posedge_detector i_read_done (
-    .clk    ( clk                   ) ,
-    .rst_n  ( rst_n                 ) ,
-    .signal ( dma_read_done         ) ,
+    .clk    ( clk                   ),
+    .rst_n  ( rst_n                 ),
+    .signal ( dma_read_done         ),
     .flag   ( dma_read_done_edge    ) 
 );
 
 posedge_detector i_arth_done (
-    .clk    ( clk                   ) ,
-    .rst_n  ( rst_n                 ) ,
-    .signal ( arth_done             ) ,
+    .clk    ( clk                   ),
+    .rst_n  ( rst_n                 ),
+    .signal ( arth_done             ),
     .flag   ( arth_done_edge        ) 
 );
 

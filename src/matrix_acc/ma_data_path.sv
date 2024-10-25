@@ -49,12 +49,12 @@ logic                                                   arith           ;
 logic                                                   arith_done      ;
 logic                                                   load, store     ;
 
-logic   [DMA_DATA_WIDTH - 1 : 0]    dma_read_data       ;          
-logic                           dma_read_data_valid ;          
-logic                           dma_read_data_ready ;       
-logic   [DMA_DATA_WIDTH - 1 : 0]    dma_write_data       ;          
-logic                           dma_write_data_valid ;          
-logic                           dma_write_data_ready ;    
+logic               [DMA_DATA_WIDTH - 1 : 0]            dma_read_data       ;          
+logic                                                   dma_read_data_valid ;          
+logic                                                   dma_read_data_ready ;       
+logic               [DMA_DATA_WIDTH - 1 : 0]            dma_write_data       ;          
+logic                                                   dma_write_data_valid ;          
+logic                                                   dma_write_data_ready ;    
 logic               [ADDR_WIDTH - 1 : 0]                arith_len       ;
 
 logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd_cfg          ;
@@ -66,83 +66,83 @@ logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1_cfg         ;
 logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2_cfg         ;
 
 control_unit #(
-    .ADDR_WIDTH        ( ADDR_WIDTH       ) ,
+    .ADDR_WIDTH        ( ADDR_WIDTH       ),
     .REGISTER_NUMBERS  ( REGISTER_NUMBERS )
 ) i_ccu (
-    .clk             ( clk              ) ,
-    .rst_n           ( rst_n            ) ,
-    .valid           ( valid            ) ,
-    .ready           ( ready            ) ,
-    .arth_data       ( arth_data        ) ,
-    .define          ( define           ) ,
-    .ld_st           ( ld_st            ) ,
-    .addr            ( addr             ) ,
-    .op              ( op               ) ,
-    .scalar_op       ( scalar_op        ) ,
-    .scalar          ( scalar           ) ,
-    .rd              ( rd               ) ,
-    .rs1             ( rs1              ) ,
-    .rs2             ( rs2              ) ,
-    .width           ( width            ) ,
-    .height          ( height           ) ,
-    .dtype           ( dtype            ) ,
-    .dma_write_valid ( dma_write_valid  ) ,
-    .dma_write_ready ( dma_write_ready  ) ,
-    .dma_write_addr  ( dma_write_addr   ) ,
-    .dma_write_len   ( dma_write_len    ) ,
-    .dma_write_done  ( dma_write_done   ) ,
-    .dma_read_valid  ( dma_read_valid   ) ,
-    .dma_read_ready  ( dma_read_ready   ) ,
-    .dma_read_addr   ( dma_read_addr    ) ,
-    .dma_read_len    ( dma_read_len     ) ,
-    .dma_read_done   ( dma_read_done    ) ,
-    .arth_done       ( arith_done       ) ,
-    .rd_cfg          ( rd_cfg           ) ,
-    .start_addr_gen  ( start_addr_gen   ) ,
-    .load            ( load             ) ,
-    .store           ( store            ) ,
-    .arith           ( arith            ) ,
-    .arith_len       ( arith_len        ) ,
-    .dtype_cfg       ( dtype_cfg        ) ,
-    .op_cfg          ( op_cfg           ) ,
-    .rs1_cfg         ( rs1_cfg          ) ,
+    .clk             ( clk              ),
+    .rst_n           ( rst_n            ),
+    .valid           ( valid            ),
+    .ready           ( ready            ),
+    .arth_data       ( arth_data        ),
+    .define          ( define           ),
+    .ld_st           ( ld_st            ),
+    .addr            ( addr             ),
+    .op              ( op               ),
+    .scalar_op       ( scalar_op        ),
+    .scalar          ( scalar           ),
+    .rd              ( rd               ),
+    .rs1             ( rs1              ),
+    .rs2             ( rs2              ),
+    .width           ( width            ),
+    .height          ( height           ),
+    .dtype           ( dtype            ),
+    .dma_write_valid ( dma_write_valid  ),
+    .dma_write_ready ( dma_write_ready  ),
+    .dma_write_addr  ( dma_write_addr   ),
+    .dma_write_len   ( dma_write_len    ),
+    .dma_write_done  ( dma_write_done   ),
+    .dma_read_valid  ( dma_read_valid   ),
+    .dma_read_ready  ( dma_read_ready   ),
+    .dma_read_addr   ( dma_read_addr    ),
+    .dma_read_len    ( dma_read_len     ),
+    .dma_read_done   ( dma_read_done    ),
+    .arth_done       ( arith_done       ),
+    .rd_cfg          ( rd_cfg           ),
+    .start_addr_gen  ( start_addr_gen   ),
+    .load            ( load             ),
+    .store           ( store            ),
+    .arith           ( arith            ),
+    .arith_len       ( arith_len        ),
+    .dtype_cfg       ( dtype_cfg        ),
+    .op_cfg          ( op_cfg           ),
+    .rs1_cfg         ( rs1_cfg          ),
     .rs2_cfg         ( rs2_cfg          ) 
 );
 
 assign dma_read_data_ready = load;
 
 dma #(
-    .ADDR_WIDTH ( ADDR_WIDTH    ) ,
+    .ADDR_WIDTH ( ADDR_WIDTH    ),
     .DATA_WIDTH ( DMA_DATA_WIDTH) 
 ) i_dma (
     // generic signals
-    .clk                ( clk               ) ,
-    .rst_n              ( rst_n             ) ,
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
     // write chanel
-    .write_valid_i      ( dma_write_valid   ) ,
-    .write_ready_o      ( dma_write_ready   ) ,
-    .write_addr_i       ( dma_write_addr    ) ,
-    .write_len_i        ( dma_write_len     ) ,
-    .write_done_o       ( dma_write_done    ) ,
+    .write_valid_i      ( dma_write_valid       ),
+    .write_ready_o      ( dma_write_ready       ),
+    .write_addr_i       ( dma_write_addr        ),
+    .write_len_i        ( dma_write_len         ),
+    .write_done_o       ( dma_write_done        ),
     // read chanel
-    .read_valid_i       ( dma_read_valid    ) ,
-    .read_ready_o       ( dma_read_ready    ) ,
-    .read_addr_i        ( dma_read_addr     ) ,
-    .read_len_i         ( dma_read_len      ) ,
-    .read_done_o        ( dma_read_done     ) ,
+    .read_valid_i       ( dma_read_valid        ),
+    .read_ready_o       ( dma_read_ready        ),
+    .read_addr_i        ( dma_read_addr         ),
+    .read_len_i         ( dma_read_len          ),
+    .read_done_o        ( dma_read_done         ),
     // data fifos
     // write fifo
-    .write_data_i       ( dma_write_data       ) ,
-    .write_data_valid_i ( dma_write_data_valid ) ,
-    .write_data_ready_o ( dma_write_data_ready ) ,
+    .write_data_i       ( dma_write_data        ),
+    .write_data_valid_i ( dma_write_data_valid  ),
+    .write_data_ready_o ( dma_write_data_ready  ),
     // read fifo
-    .read_data_o        ( dma_read_data       ) ,
-    .read_data_valid_o  ( dma_read_data_valid ) ,
-    .read_data_ready_i  ( dma_read_data_ready ) ,
+    .read_data_o        ( dma_read_data         ),
+    .read_data_valid_o  ( dma_read_data_valid   ),
+    .read_data_ready_i  ( dma_read_data_ready   ),
     // axi interface
-    .aclk               ( aclk              ) ,
-    .arst_n             ( arst_n            ) ,
-    .axi                ( axi               ) 
+    .aclk               ( aclk                  ),
+    .arst_n             ( arst_n                ),
+    .axi                ( axi                   ) 
 );
 
 // memory banks
@@ -150,6 +150,8 @@ dma #(
 localparam MEMORY_SIZE      = 1024 * 1024 * 8; // 1MB
 localparam MEMORY_DEPTH     = MEMORY_SIZE / DMA_DATA_WIDTH;
 localparam MEM_ADDR_WIDTH   = $clog2(MEMORY_DEPTH);
+localparam ALU_WIDTH        = 32;
+localparam NUMBER_OF_ALU    = DMA_DATA_WIDTH / ALU_WIDTH;
 
 logic                               mem_w_en [REGISTER_NUMBERS - 1 : 0], mem_write, mem_w_res, mem_w_incr;
 logic   [MEM_ADDR_WIDTH - 1 : 0]    mem_w_addr;
@@ -159,8 +161,6 @@ logic                               mem_next_addr, mem_next_addr_splitter, mem_n
 
 logic   [MEM_ADDR_WIDTH - 1 : 0]    mem_r_addr;
 
-localparam ALU_WIDTH        = 32;
-localparam NUMBER_OF_ALU    = DMA_DATA_WIDTH / ALU_WIDTH;
 
 logic   [DMA_DATA_WIDTH - 1 : 0]    mem_r       [REGISTER_NUMBERS - 1 : 0];
 
@@ -250,16 +250,16 @@ vectorial_splitter #(
     .IN_DATA_WIDTH  ( DMA_DATA_WIDTH ),
     .OUT_DATA_WIDTH ( ALU_WIDTH      )
 ) i_data_splitter (
-    .clk        ( clk               ),
-    .rst_n      ( rst_n             ),
-    .reset      ( w_adr_len_reset   ),
-    .en         ( arith             ),
-    .dtype      ( dtype_cfg         ),
-    .op1_in     ( mem_r_op1         ),
-    .op2_in     ( mem_r_op2         ),
-    .op1_out    ( op1_alu           ),
-    .op2_out    ( op2_alu           ),
-    .next       ( mem_next_addr_splitter     )
+    .clk        ( clk                   ),
+    .rst_n      ( rst_n                 ),
+    .reset      ( w_adr_len_reset       ),
+    .en         ( arith                 ),
+    .dtype      ( dtype_cfg             ),
+    .op1_in     ( mem_r_op1             ),
+    .op2_in     ( mem_r_op2             ),
+    .op1_out    ( op1_alu               ),
+    .op2_out    ( op2_alu               ),
+    .next       ( mem_next_addr_splitter)
 );
 
 //assign arith_done = mem_w_addr == arith_len[MEM_ADDR_WIDTH + $clog2(DMA_DATA_WIDTH / 8) - 1 : $clog2(DMA_DATA_WIDTH / 8)];
@@ -286,9 +286,9 @@ always_ff @( posedge clk, negedge rst_n )
 
 logic store_edge;
 posedge_detector i_arth_done (
-    .clk    ( clk           ) ,
-    .rst_n  ( rst_n         ) ,
-    .signal ( store         ) ,
+    .clk    ( clk           ),
+    .rst_n  ( rst_n         ),
+    .signal ( store         ),
     .flag   ( store_edge    ) 
 );
 
