@@ -1,13 +1,13 @@
 package ma_pkg;
 
-typedef enum logic [5:0] {
+typedef enum logic [6:0] {
     ADD = 1,
     SUB = 2,
     CNV = 4,
     DIV = 8,
     MUL = 16,
     SMUL = 48,
-    NOP = {6{1'b1}}
+    NOP = {7{1'b1}}
 } operation;
 
 typedef enum logic [6:0] {
