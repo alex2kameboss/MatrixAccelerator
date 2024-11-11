@@ -6,4 +6,4 @@
 	url = https://github.com/pulp-platform/common_cells.git
 [submodule "external/cv-x-if"]
 	path = external/cv-x-if
-	url = https://github.com/openhwgroup/core-v-xif.git
+	url = https://github.com/alex2kameboss/core-v-xif-fix.git
