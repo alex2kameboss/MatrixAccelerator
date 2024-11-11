@@ -4,3 +4,7 @@
 [submodule "external/common_cells"]
 	path = external/common_cells
 	url = https://github.com/pulp-platform/common_cells.git
+[submodule "external/cv-x-if"]
+	path = external/cv-x-if
+	url = https://github.com/alex2kameboss/core-v-xif-fix.git
+	branch = master
