@@ -40,7 +40,7 @@ logic accept_issue, valid_instr, taken_instr, response_issuer;
 assign instr.bits = instr_if.issue_req.instr;
 assign taken_instr = valid & ready;
 assign accept_issue = instr_if.issue_ready & instr_if.issue_valid;
-assign response_issuer = valid_instr & ready;
+assign response_issuer = instr_if.issue_valid & ready;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )               instr_if.issue_ready <= 'd0;        else
@@ -58,7 +58,7 @@ always_ff @ ( posedge clk, negedge rst_n )
         instr_if.issue_resp.register_read   <= 'd0;
         instr_if.issue_resp.loadstore       <= 'd0;
     end else if ( response_issuer ) begin
-        instr_if.issue_resp.accept          <= 'd1;
+        instr_if.issue_resp.accept          <= valid_instr;
         instr_if.issue_resp.writeback       <= 'd0;
         instr_if.issue_resp.register_read[0]<= instr.decode.funct3 == ma_pkg::DEFINE   | 
                                         instr.decode.funct3 == ma_pkg::LOAD     |
@@ -113,13 +113,16 @@ instr_decoder i_decoder (
     .error       ( error_wire           )
 );
 
+logic load_data;
+assign load_data = response_issuer & valid_instr;
+
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
         arth_data   <=  1'b0;
         define      <=  1'b0;
         ld_st       <=  1'b0;
         scalar_op   <=  1'b0;
-    end else if ( response_issuer ) begin
+    end else if ( load_data) begin
         arth_data   <=  arth_data_wire;
         define      <=  define_wire   ;
         ld_st       <=  ld_st_wire    ;
@@ -136,7 +139,7 @@ always_ff @ ( posedge clk, negedge rst_n )
         rd  <= 'd0;
         rs1 <= 'd0;
         rs2 <= 'd0;
-    end else if ( response_issuer ) begin
+    end else if ( load_data) begin
         rd  <= instr.r_type.rd ;
         rs1 <= instr.r_type.rs1;
         rs2 <= instr.r_type.rs2;
@@ -148,12 +151,12 @@ always_ff @ ( posedge clk, negedge rst_n )
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           dtype <= ma_pkg::NDT;                       else
-    if ( response_issuer )  dtype <= ma_pkg::dtype'(instr.r_type.func7);else
+    if ( load_data )        dtype <= ma_pkg::dtype'(instr.r_type.func7);else
     if ( valid & ready )    dtype <= ma_pkg::NDT;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           op <= ma_pkg::NOP;                          else
-    if ( response_issuer )  op <= ma_pkg::operation'(instr.r_type.func7);else
+    if ( load_data )        op <= ma_pkg::operation'(instr.r_type.func7);else
     if ( valid & ready )    op <= ma_pkg::NOP;
 
 logic accept_registers;
@@ -163,7 +166,7 @@ assign scalar = height;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           addr <= 'd0;                              else
-    if ( response_issuer )  addr <= {{20{instr.i_type.imm[11]}}, instr.i_type.imm}; else
+    if ( load_data )        addr <= {{20{instr.i_type.imm[11]}}, instr.i_type.imm}; else
     if ( accept_registers &  
     registers_if.register.rs_valid[0] ) addr <= addr + registers_if.register.rs[0]; else
     if ( valid & ready )    addr <= 'd0;

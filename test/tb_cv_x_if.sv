@@ -90,7 +90,7 @@ begin
         @(posedge clk);
         xif.commit_valid <= 1'b0;
 
-        wait( valid & ready );
+        wait( valid & ready | ~commit );
     end
 end
 endtask //automatic
@@ -299,6 +299,87 @@ begin
 end
 endtask //automatic
 
+task automatic failing;
+begin
+    riscv_r_t inst;
+    
+    // wrong opcode
+    inst.opcode   = 7'h3B;
+    inst.rd       = 'd0;
+    inst.funct3   = NF3;
+    inst.rs1      = 'd0;
+    inst.rs2      = 'd0;
+    inst.func7    = NOP;
+
+    do_xif(
+        .instr    ( inst ),
+        .shallPass( 1'd0 ),
+        .noRegs   ( 1    ),
+        .commit   ( 1'd1 )
+    );
+
+    // wrong funct3
+    inst.opcode   = 7'h2B;
+    inst.rd       = 'd0;
+    inst.funct3   = NF3;
+    inst.rs1      = 'd0;
+    inst.rs2      = 'd0;
+    inst.func7    = NOP;
+
+    do_xif(
+        .instr    ( inst ),
+        .shallPass( 1'd0 ),
+        .noRegs   ( 1    ),
+        .commit   ( 1'd1 )
+    );
+
+    // wrong dtype
+    inst.opcode   = 7'h2B;
+    inst.rd       = 'd0;
+    inst.funct3   = DEFINE;
+    inst.rs1      = 'd0;
+    inst.rs2      = 'd0;
+    inst.func7    = NDT;
+
+    do_xif(
+        .instr    ( inst ),
+        .shallPass( 1'd0 ),
+        .noRegs   ( 1    ),
+        .commit   ( 1'd1 )
+    );
+
+    // wrong operation
+    inst.opcode   = 7'h2B;
+    inst.rd       = 'd0;
+    inst.funct3   = VV;
+    inst.rs1      = 'd0;
+    inst.rs2      = 'd0;
+    inst.func7    = NOP;
+
+    do_xif(
+        .instr    ( inst ),
+        .shallPass( 1'd0 ),
+        .noRegs   ( 1    ),
+        .commit   ( 1'd1 )
+    );
+
+    // kill
+    inst.opcode   = 7'h2B;
+    inst.rd       = 'd0;
+    inst.funct3   = DEFINE;
+    inst.rs1      = 'd0;
+    inst.rs2      = 'd0;
+    inst.func7    = UINT8;
+
+    do_xif(
+        .instr    ( inst ),
+        .shallPass( 1'd1 ),
+        .noRegs   ( 2    ),
+        .commit   ( 1'd0 )
+    );
+end    
+endtask //automatic
+
 initial begin
     rf[0] <= 'd8;
     hartId <= 'd0; 
@@ -352,6 +433,8 @@ initial begin
         .op_i    ( ADD ),
         .rs2_v   ( 'd10 )
     );
+
+    failing();
 
     @(posedge clk);
     $stop();
