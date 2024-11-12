@@ -168,7 +168,7 @@ always_ff @ ( posedge clk, negedge rst_n )
     if ( valid & ready )    height <= 'd0;
 
 logic commited, rs1_valid, rs2_valid;
-assign registers_if.register_ready = ~rs1_valid & ~rs2_valid;
+assign registers_if.register_ready = ~rs1_valid | ~rs2_valid | registers_if.register_valid;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           valid <= 'd0;                               else
@@ -184,8 +184,8 @@ always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           rs1_valid <= 'd0;                           else
     if ( commit_if.commit_valid & commit_if.commit.commit_kill )rs1_valid <= 'd0;        else
     if ( valid & ready )    rs1_valid <= 'd0;                           else
-    if ( instr.decode.funct3 == ma_pkg::VV 
-    | instr.decode.funct3 == ma_pkg::VS ) rs1_valid <= 'd1;             else
+    if ( (instr.decode.funct3 == ma_pkg::VV 
+    | instr.decode.funct3 == ma_pkg::VS) & accept_issue ) rs1_valid <= 'd1;             else
     if ( accept_registers &  
     registers_if.register.rs_valid[0] ) rs1_valid <= 'd1;
 
@@ -193,7 +193,7 @@ always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           rs2_valid <= 'd0;                           else
     if ( commit_if.commit_valid & commit_if.commit.commit_kill )rs2_valid <= 'd0;        else
     if ( valid & ready )    rs2_valid <= 'd0;                           else
-    if ( ~instr.decode.funct3 == ma_pkg::DEFINE ) rs2_valid <= 'd1;     else
+    if ( instr.decode.funct3 != ma_pkg::DEFINE & accept_issue ) rs2_valid <= 'd1;     else
     if ( accept_registers &  
     registers_if.register.rs_valid[1] ) rs2_valid <= 'd1;
 
