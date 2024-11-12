@@ -68,8 +68,10 @@ begin
 
     if ( shallPass ) begin
         // register interface
+        assert( int'(xif.issue_resp.register_read[0]) +  
+                int'(xif.issue_resp.register_read[1])== noRegs );
         xif.register.rs_valid = 'd0;
-        for ( i = 0; i < noRegs; i = i + 1 ) begin
+        for ( i = 0; i < 2; i = i + 1 ) begin
             if ( xif.issue_resp.register_read[i] ) begin
                 xif.register.rs[i] = rf[rs[i]];
                 xif.register.rs_valid[i] = 1'b1;
@@ -163,7 +165,7 @@ begin
     inst.opcode   = 7'h2B;
     inst.rd       = rd_i;
     inst.funct3   = LOAD;
-    inst.rs1      = addr_i;
+    inst.rs1      = addr_r;
     inst.imm      = imm;
 
     do_xif(
@@ -199,7 +201,7 @@ begin
     inst.opcode   = 7'h2B;
     inst.rd       = rd_i;
     inst.funct3   = STORE;
-    inst.rs1      = addr_i;
+    inst.rs1      = addr_r;
     inst.imm      = imm;
 
     do_xif(
@@ -217,6 +219,81 @@ begin
     // check data
     assert( dut_addr == addr_i + imm);
     assert( rd == rd_i );
+
+    xif_response();
+end
+endtask //automatic
+
+task automatic vv_operation;
+input reg_t     rd_i    ;
+input reg_t     rs1_i   ;
+input reg_t     rs2_i   ;
+input operation op_i    ;
+begin
+    riscv_r_t inst;
+    
+    inst.opcode   = 7'h2B;
+    inst.rd       = rd_i;
+    inst.funct3   = VV;
+    inst.rs1      = rs1_i;
+    inst.rs2      = rs2_i;
+    inst.func7    = op_i;
+
+    do_xif(
+        .instr    ( inst ),
+        .shallPass( 1'd1 ),
+        .noRegs   ( 0    ),
+        .commit   ( 1'd1 )
+    );
+
+    // assertions
+    // check operation configuration
+    assert( arth_data == 1'b1 );
+    assert( scalar_op == 1'b0 );
+    // check data
+    assert( rd == rd_i );
+    assert( rs1 == rs1_i );
+    assert( rs2 == rs2_i );
+    assert( op == op_i );
+
+    xif_response();
+end
+endtask //automatic
+
+task automatic vs_operation;
+input reg_t     rd_i    ;
+input reg_t     rs1_i   ;
+input reg_t     rs2_i   ;
+input operation op_i    ;
+input int       rs2_v   ;
+begin
+    riscv_r_t inst;
+    
+    rf[rs2_i] = rs2_v;
+
+    inst.opcode   = 7'h2B;
+    inst.rd       = rd_i;
+    inst.funct3   = VS;
+    inst.rs1      = rs1_i;
+    inst.rs2      = rs2_i;
+    inst.func7    = op_i;
+
+    do_xif(
+        .instr    ( inst ),
+        .shallPass( 1'd1 ),
+        .noRegs   ( 1    ),
+        .commit   ( 1'd1 )
+    );
+
+    // assertions
+    // check operation configuration
+    assert( arth_data == 1'b1 );
+    assert( scalar_op == 1'b1 );
+    // check data
+    assert( rd == rd_i );
+    assert( rs1 == rs1_i );
+    assert( scalar == rs2_v );
+    assert( op == op_i );
 
     xif_response();
 end
@@ -259,6 +336,21 @@ initial begin
         .addr_i  ( 'd0  ),
         .imm     ( 'd16 ),
         .addr_r  ( 'd12 )
+    );
+
+    vv_operation(
+        .rd_i    ( 'd0 ),
+        .rs1_i   ( 'd1 ),
+        .rs2_i   ( 'd2 ),
+        .op_i    ( ADD )
+    );
+
+    vs_operation(
+        .rd_i    ( 'd0 ),
+        .rs1_i   ( 'd1 ),
+        .rs2_i   ( 'd2 ),
+        .op_i    ( ADD ),
+        .rs2_v   ( 'd10 )
     );
 
     @(posedge clk);

@@ -63,7 +63,8 @@ always_ff @ ( posedge clk, negedge rst_n )
         instr_if.issue_resp.register_read[0]<= instr.decode.funct3 == ma_pkg::DEFINE   | 
                                         instr.decode.funct3 == ma_pkg::LOAD     |
                                         instr.decode.funct3 == ma_pkg::STORE    ;
-        instr_if.issue_resp.register_read[1]<= instr.decode.funct3 == ma_pkg::DEFINE;
+        instr_if.issue_resp.register_read[1]<= instr.decode.funct3 == ma_pkg::DEFINE | 
+                                        instr.decode.funct3 == ma_pkg::VS;
         instr_if.issue_resp.loadstore       <= 'd0;
     end else if ( taken_instr ) begin
         instr_if.issue_resp.accept          <= 'd0;
@@ -150,10 +151,22 @@ always_ff @ ( posedge clk, negedge rst_n )
     if ( response_issuer )  dtype <= ma_pkg::dtype'(instr.r_type.func7);else
     if ( valid & ready )    dtype <= ma_pkg::NDT;
 
+always_ff @ ( posedge clk, negedge rst_n )
+    if ( ~rst_n )           op <= ma_pkg::NOP;                          else
+    if ( response_issuer )  op <= ma_pkg::operation'(instr.r_type.func7);else
+    if ( valid & ready )    op <= ma_pkg::NOP;
+
 logic accept_registers;
 assign accept_registers = ready & registers_if.register_valid & registers_if.register_ready;
 
-assign scalar = width;
+assign scalar = height;
+
+always_ff @ ( posedge clk, negedge rst_n )
+    if ( ~rst_n )           addr <= 'd0;                              else
+    if ( response_issuer )  addr <= {{20{instr.i_type.imm[11]}}, instr.i_type.imm}; else
+    if ( accept_registers &  
+    registers_if.register.rs_valid[0] ) addr <= addr + registers_if.register.rs[0]; else
+    if ( valid & ready )    addr <= 'd0;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           width <= 'd0;                               else
@@ -164,7 +177,7 @@ always_ff @ ( posedge clk, negedge rst_n )
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           height <= 'd0;                              else
     if ( accept_registers &  
-    registers_if.register.rs_valid[1])  height <= registers_if.register.rs[0];   else
+    registers_if.register.rs_valid[1])  height <= registers_if.register.rs[1];   else
     if ( valid & ready )    height <= 'd0;
 
 logic commited, rs1_valid, rs2_valid;
