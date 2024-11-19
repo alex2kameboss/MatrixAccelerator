@@ -411,7 +411,7 @@ begin
     inst.rd       = rr;
     inst.funct3   = VS;
     inst.rs1      = r1;
-    inst.rs2      = r2;
+    inst.rs2      = rs2_i;
     inst.func7    = o;
 
     do_xif(
