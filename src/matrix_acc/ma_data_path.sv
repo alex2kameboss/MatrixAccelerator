@@ -173,11 +173,10 @@ localparam MEM_ADDR_WIDTH   = $clog2(MEMORY_DEPTH);
 localparam ALU_WIDTH        = 32;
 localparam NUMBER_OF_ALU    = DMA_DATA_WIDTH / ALU_WIDTH;
 
-logic                               mem_w_en [REGISTER_NUMBERS - 1 : 0], dma_read_incr, mem_w_res, mem_w_incr;
+logic                               dma_read_incr, dma_write_incr;
+logic                               mem_w_en [REGISTER_NUMBERS - 1 : 0], mem_w_res, mem_w_incr;
 logic   [MEM_ADDR_WIDTH - 1 : 0]    mem_w_addr;
 logic   [DMA_DATA_WIDTH - 1 : 0]    mem_w_data, mem_w_alu;
-
-logic                               mem_next_addr, mem_next_addr_splitter, dma_write_incr;
 
 logic   [MEM_ADDR_WIDTH - 1 : 0]    mem_r_addr;
 
@@ -193,12 +192,11 @@ logic   [ALU_WIDTH - 1 : 0]    res_alu [NUMBER_OF_ALU - 1 : 0];
 logic                          data_cnt_up;
 
 assign mem_w_data = arith ? mem_w_alu : dma_read_data;
-assign dma_read_incr = dma_read_data_valid & dma_read_data_ready;
 assign mem_w_incr = dma_read_incr | arith & mem_w_res;
 assign data_cnt_up = mem_w_incr | dma_write_incr;
 
+assign dma_read_incr = dma_read_data_valid & dma_read_data_ready;
 assign dma_write_incr = dma_write_data_valid & dma_write_data_ready;
-assign mem_next_addr = mem_next_addr_splitter | dma_write_incr;
 
 genvar i;
 generate
