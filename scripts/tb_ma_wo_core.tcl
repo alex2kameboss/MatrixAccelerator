@@ -1,9 +1,6 @@
 source ../scripts/ma.tcl
 vlog ../test/clk_rstn.sv
-vlog ../src/riscv_pkg.sv
-vlog ../src/matrix_accelerator.sv
 vlog ../external/cv-x-if/src/core_v_xif.sv
-vlog ../src/cv_x_if/extension_driver.sv
 
 if {![info exists dependecies]} {
     set dependecies 1
@@ -22,6 +19,4 @@ if {![info exists dependecies]} {
     vlog ../external/axi/src/axi_sim_mem.sv +incdir+../external/axi/include
 }
 
-vlog ../src/matrix_acc/*.sv
-vlog ../src/posedge_detector.sv
 vlog ../test/tb_ma_wo_core.sv +incdir+../external/axi/include

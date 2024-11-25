@@ -18,6 +18,4 @@ if {![info exists dependecies]} {
     vlog ../external/axi/src/axi_sim_mem.sv +incdir+../external/axi/include
 }
 
-vlog ../src/matrix_acc/*.sv
-vlog ../src/posedge_detector.sv
 vlog ../test/tb_memory_operations.sv +incdir+../external/axi/include

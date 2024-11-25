@@ -80,8 +80,7 @@ axi_sim_mem_intf #(
   .mon_r_last_o      (        )
 );
 
-opcode_decoder i_op_decoder (
-  .opcode     ( 7'h2b     ),
+instr_decoder i_op_decoder (
   .funct3     ( funct3    ),
   .arth_data  ( arth_data ),
   .define     ( define    ),

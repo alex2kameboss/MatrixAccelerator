@@ -61,7 +61,7 @@ begin
     xif.issue_valid <= 1'b1;
     while (xif.issue_ready != 1'b1) @(posedge clk);
     xif.issue_valid <= 1'b0;
-    xif.issue_req <= 'd0;
+    xif.issue_req.instr <= 'd0;
 
     // check if accepted
     assert(xif.issue_resp.accept == shallPass);
@@ -388,9 +388,8 @@ initial begin
     xif.issue_valid <= 'd0;
     xif.register_valid <= 'd0;
     xif.commit_valid <= 'd0;
-    xif.result_valid <= 'd1;
     xif.result_ready <= 'd0;
-    xif.issue_req <= 'd0;
+    xif.issue_req.instr <= 'd0;
     ready <='d1;
 
     @(posedge rst_n);
