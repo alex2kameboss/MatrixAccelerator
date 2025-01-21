@@ -6,7 +6,7 @@ module vectorial_splitter #(
     input   logic                               rst_n                                               ,
     input   logic                               reset                                               ,
     input   logic                               en                                                  ,
-    input   ma_pkg::dtype                       dtype                                               ,
+    input   ma_pkg::dtype_t                     dtype                                               ,
     input   logic   [IN_DATA_WIDTH - 1 : 0]     op1_in                                              ,
     input   logic   [IN_DATA_WIDTH - 1 : 0]     op2_in                                              ,
     output  logic   [OUT_DATA_WIDTH - 1 : 0]    op1_out [IN_DATA_WIDTH / OUT_DATA_WIDTH - 1 : 0]    ,

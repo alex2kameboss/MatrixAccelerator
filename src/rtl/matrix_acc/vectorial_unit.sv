@@ -12,8 +12,8 @@ module vectorial_unit #(
     input                                                   en          ,
     input                                                   soft_rst    ,
 // config signals
-    input   ma_pkg::operation                               op          ,
-    input   ma_pkg::dtype                                   dtype       ,
+    input   ma_pkg::operation_t                             op          ,
+    input   ma_pkg::dtype_t                                 dtype       ,
 // data signals
     input                       [DMA_DATA_WIDTH - 1 : 0]    rs1_alu     ,
     input                       [DMA_DATA_WIDTH - 1 : 0]    rs2_alu     ,

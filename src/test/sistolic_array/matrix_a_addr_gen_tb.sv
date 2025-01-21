@@ -14,7 +14,7 @@ logic               [ADDR_WIDTH - 1 : 0]        n       ;
 logic               [ADDR_WIDTH - 1 : 0]        p       ;
 logic               [MEM_ADDR_WIDTH - 1 : 0]    addr_a  ;
 logic                                           done    ;
-ma_pkg::dtype                                   dtype   ;
+ma_pkg::dtype_t                                 dtype   ;
 logic                                           en      ;
 
 matrix_a_addr_gen #(
@@ -42,9 +42,9 @@ initial begin
 end
 
 task test(
-    input int           x_size  ,
-    input int           y_size  ,
-    input ma_pkg::dtype dt      
+    input int               x_size  ,
+    input int               y_size  ,
+    input ma_pkg::dtype_t   dt      
 ); 
 begin
     m      = x_size;

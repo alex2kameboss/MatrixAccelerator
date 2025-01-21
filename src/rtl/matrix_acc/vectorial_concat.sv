@@ -6,7 +6,7 @@ module vectorial_concat #(
     input   logic                               rst_n                                               ,
     input   logic                               reset                                               ,
     input   logic                               en                                                  ,
-    input   ma_pkg::dtype                       dtype                                               ,
+    input   ma_pkg::dtype_t                     dtype                                               ,
     input   logic   [IN_DATA_WIDTH - 1 : 0]     rez_in  [OUT_DATA_WIDTH / IN_DATA_WIDTH - 1 : 0]    ,
     output  logic   [OUT_DATA_WIDTH - 1 : 0]    rez_out                                             ,
     output  logic                               valid                                               

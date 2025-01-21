@@ -25,7 +25,7 @@ logic                                       arth_data;
 logic                                       define   ;
 logic                                       ld_st    ;
 logic               [ADDR_WIDTH - 1 : 0]    dut_addr ;
-operation                                   op       ;
+operation_t                                 op       ;
 logic                                       scalar_op;
 logic               [ADDR_WIDTH - 1 : 0]    scalar   ;
 logic               [4 : 0]                 rd       ;
@@ -33,7 +33,7 @@ logic               [4 : 0]                 rs1      ;
 logic               [4 : 0]                 rs2      ;
 logic               [ADDR_WIDTH - 1 : 0]    width    ;
 logic               [ADDR_WIDTH - 1 : 0]    height   ;
-dtype                                       dType    ;
+dtype_t                                     dType    ;
 logic                                       error    ;
 logic [2 : 0]                               funct3   ;
 
@@ -133,7 +133,7 @@ task define_register;
   input register r;
   input int w;
   input int h;
-  input dtype dt;
+  input dtype_t dt;
 begin
   $display("Define new register ( width: %d, height: %d, dtype: %s, registerId: %d )", w, h, dt, r);
   rd <= r;
@@ -208,10 +208,10 @@ end
 endtask
 
 task vector_vector_operation;
-  input register rr;
-  input register r1;
-  input register r2;
-  input operation o;
+  input register    rr;
+  input register    r1;
+  input register    r2;
+  input operation_t o ;
 begin
   int bytes, i, j;
   bit pass;
@@ -274,7 +274,7 @@ begin
 end
 endtask
 
-function int alu (int x, y, operation o);
+function int alu (int x, y, operation_t o);
   case (o)
     ADD     : alu = x + y;
     SUB     : alu = x - y;
@@ -334,7 +334,7 @@ task vector_scalar_operation;
   input register rr;
   input register r1;
   input int r2;
-  input operation o;
+  input operation_t o;
 begin
   int bytes, i, j;
   bit pass;
@@ -397,7 +397,7 @@ task load_register_test;
   input register r;
   input int w;
   input int h;
-  input dtype dt;
+  input dtype_t dt;
   input int addr;
 begin
   $display("Load register test");
@@ -411,8 +411,8 @@ task vector_vector_operation_test;
   input register rr;
   input register r1;
   input register r2;
-  input operation o;
-  input dtype dt;
+  input operation_t o;
+  input dtype_t dt;
   input int w;
   input int h;
   input int rr_addr;
@@ -435,8 +435,8 @@ task vector_scalar_operation_test;
   input register rr;
   input register r1;
   input int r2;
-  input operation o;
-  input dtype dt;
+  input operation_t o;
+  input dtype_t dt;
   input int w;
   input int h;
   input int rr_addr;

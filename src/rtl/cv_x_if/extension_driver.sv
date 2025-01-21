@@ -22,7 +22,7 @@ module extension_driver #(
     output  logic                                                   ld_st           ,   // 1 load, 0 store
     output  logic               [ADDR_WIDTH - 1 : 0]                addr            ,
 // arithmetics data 
-    output  ma_pkg::operation                                       op              ,
+    output  ma_pkg::operation_t                                     op              ,
     output  logic                                                   scalar_op       ,
     output  logic               [ADDR_WIDTH - 1 : 0]                scalar          ,
     output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd              ,
@@ -31,7 +31,7 @@ module extension_driver #(
 // define registers 
     output  logic               [ADDR_WIDTH - 1 : 0]                width           ,
     output  logic               [ADDR_WIDTH - 1 : 0]                height          ,
-    output  ma_pkg::dtype                                           dtype             
+    output  ma_pkg::dtype_t                                         dtype             
 );
     
 riscv_pkg::ma_riscv_inst_t instr;
@@ -151,12 +151,12 @@ always_ff @ ( posedge clk, negedge rst_n )
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           dtype <= ma_pkg::NDT;                       else
-    if ( load_data )        dtype <= ma_pkg::dtype'(instr.r_type.func7);else
+    if ( load_data )        dtype <= ma_pkg::dtype_t'(instr.r_type.func7);else
     if ( valid & ready )    dtype <= ma_pkg::NDT;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           op <= ma_pkg::NOP;                          else
-    if ( load_data )        op <= ma_pkg::operation'(instr.r_type.func7);else
+    if ( load_data )        op <= ma_pkg::operation_t'(instr.r_type.func7);else
     if ( valid & ready )    op <= ma_pkg::NOP;
 
 logic accept_registers;

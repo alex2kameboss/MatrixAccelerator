@@ -16,7 +16,7 @@ module control_unit #(
     input   logic                                                   ld_st           ,   // 1 load, 0 store
     input   logic               [ADDR_WIDTH - 1 : 0]                addr            ,
 // arithmetics data 
-    input   ma_pkg::operation                                       op              ,
+    input   ma_pkg::operation_t                                     op              ,
     input   logic                                                   scalar_op       ,   // 1 vector-scalar operation, 0 vector-vector operation 
     input   logic               [ADDR_WIDTH - 1 : 0]                scalar          ,
     input   logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd              ,
@@ -25,7 +25,7 @@ module control_unit #(
 // define registers 
     input   logic               [ADDR_WIDTH - 1 : 0]                width           ,
     input   logic               [ADDR_WIDTH - 1 : 0]                height          ,
-    input   ma_pkg::dtype                                           dtype           ,
+    input   ma_pkg::dtype_t                                         dtype           ,
     // dma
 // write chanel
     output  logic                                                   dma_write_valid ,
@@ -48,15 +48,15 @@ module control_unit #(
     output  logic                                                   store           ,
     output  logic                                                   arith           ,
     output  logic               [ADDR_WIDTH - 1 : 0]                arith_len       ,
-    output  ma_pkg::dtype                                           dtype_cfg       ,
-    output  ma_pkg::operation                                       op_cfg          ,
+    output  ma_pkg::dtype_t                                         dtype_cfg       ,
+    output  ma_pkg::operation_t                                     op_cfg          ,
     output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1_cfg         ,
     output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2_cfg         ,
     output  logic                                                   scalar_op_cfg   ,
     output  logic               [ADDR_WIDTH - 1 : 0]                scalar_cfg              
 );
 
-ma_pkg::register_file_line  rft [REGISTER_NUMBERS - 1 : 0];
+ma_pkg::register_file_line_t  rft [REGISTER_NUMBERS - 1 : 0];
 
 logic dma_write_done_edge, dma_read_done_edge, arth_done_edge;
 logic operation_done;

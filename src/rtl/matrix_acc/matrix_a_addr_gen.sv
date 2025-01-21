@@ -16,7 +16,7 @@ module matrix_a_addr_gen #(
     output  logic               [MEM_ADDR_WIDTH - 1 : 0]    addr_a  ,
     output  logic                                           done    ,
     // control signals
-    input   ma_pkg::dtype                                   dtype   ,
+    input   ma_pkg::dtype_t                                 dtype   ,
     input   logic                                           en       
 );
 

@@ -7,9 +7,9 @@ module instr_decoder (
     output  logic               error       
 );
 
-ma_pkg::funct3_op funct3_enum;
+ma_pkg::funct3_op_t funct3_enum;
 
-assign funct3_enum = ma_pkg::funct3_op'(funct3);
+assign funct3_enum = ma_pkg::funct3_op_t'(funct3);
 
 always_comb begin
     case (funct3_enum)

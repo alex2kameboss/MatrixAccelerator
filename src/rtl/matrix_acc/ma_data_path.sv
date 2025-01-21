@@ -21,7 +21,7 @@ module ma_data_path #(
     input   logic                                                   ld_st           ,   // 1 load, 0 store
     input   logic               [ADDR_WIDTH - 1 : 0]                addr            ,
 // arithmetics data 
-    input   ma_pkg::operation                                       op              ,
+    input   ma_pkg::operation_t                                     op              ,
     input   logic                                                   scalar_op       ,
     input   logic               [ADDR_WIDTH - 1 : 0]                scalar          ,
     input   logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd              ,
@@ -30,7 +30,7 @@ module ma_data_path #(
 // define registers 
     input   logic               [ADDR_WIDTH - 1 : 0]                width           ,
     input   logic               [ADDR_WIDTH - 1 : 0]                height          ,
-    input   ma_pkg::dtype                                           dtype                          
+    input   ma_pkg::dtype_t                                         dtype                          
 );
     
 // write chanel
@@ -60,8 +60,8 @@ logic               [ADDR_WIDTH - 1 : 0]                arith_len       ;
 logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd_cfg          ;
 logic                                                   start_addr_gen  ;
 
-ma_pkg::dtype                                           dtype_cfg       ;
-ma_pkg::operation                                       op_cfg          ;
+ma_pkg::dtype_t                                         dtype_cfg       ;
+ma_pkg::operation_t                                     op_cfg          ;
 logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1_cfg         ;
 logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2_cfg         ;
 

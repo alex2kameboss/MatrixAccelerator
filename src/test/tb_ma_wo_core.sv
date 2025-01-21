@@ -179,7 +179,7 @@ task define_register;
     input register  r   ;
     input int       w   ;
     input int       h   ;
-    input dtype     dt  ;
+    input dtype_t   dt  ;
 begin
     riscv_r_t inst;
     int width_r, height_r;
@@ -263,10 +263,10 @@ begin
     endtask
 
 task vector_vector_operation;
-    input register  rr  ;
-    input register  r1  ;
-    input register  r2  ;
-    input operation o   ;
+    input register      rr  ;
+    input register      r1  ;
+    input register      r2  ;
+    input operation_t   o   ;
 begin
     int bytes, i, j;
     bit pass;
@@ -325,7 +325,7 @@ begin
 end
 endtask
 
-function int alu (int x, y, operation o);
+function int alu (int x, y, operation_t o);
   case (o)
     ADD     : alu = x + y;
     SUB     : alu = x - y;
@@ -387,7 +387,7 @@ task vector_scalar_operation;
     input register    rr  ;
     input register    r1  ;
     input int         r2  ;
-    input operation   o   ;
+    input operation_t o   ;
 begin
     int bytes, i, j;
     bit pass;
@@ -449,7 +449,7 @@ task load_register_test;
     input register    r   ;
     input int         w   ;
     input int         h   ;
-    input dtype       dt  ;
+    input dtype_t     dt  ;
     input int         addr;
 begin
     $display("Load register test");
@@ -468,16 +468,16 @@ end
 endtask
 
 task vector_vector_operation_test;
-    input register  rr      ;
-    input register  r1      ;
-    input register  r2      ;
-    input operation o       ;
-    input dtype     dt      ;
-    input int       w       ;
-    input int       h       ;
-    input int       rr_addr ;
-    input int       r1_addr ;
-    input int       r2_addr ;
+    input register      rr      ;
+    input register      r1      ;
+    input register      r2      ;
+    input operation_t   o       ;
+    input dtype_t       dt      ;
+    input int           w       ;
+    input int           h       ;
+    input int           rr_addr ;
+    input int           r1_addr ;
+    input int           r2_addr ;
 begin
     $display("Vector-Vector operation test");
     define_register(
@@ -524,15 +524,15 @@ end
 endtask
 
 task vector_scalar_operation_test;
-    input register  rr      ;
-    input register  r1      ;
-    input int       r2      ;
-    input operation o       ;
-    input dtype     dt      ;
-    input int       w       ;
-    input int       h       ;
-    input int       rr_addr ;
-    input int       r1_addr ;
+    input register      rr      ;
+    input register      r1      ;
+    input int           r2      ;
+    input operation_t   o       ;
+    input dtype_t       dt      ;
+    input int           w       ;
+    input int           h       ;
+    input int           rr_addr ;
+    input int           r1_addr ;
 begin
     $display("Vector-Scalar operation test");
     define_register(

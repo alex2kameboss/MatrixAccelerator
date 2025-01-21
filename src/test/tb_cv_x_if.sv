@@ -24,7 +24,7 @@ logic                                       arth_data;
 logic                                       define   ;
 logic                                       ld_st    ;
 logic               [ADDR_WIDTH - 1 : 0]    dut_addr ;
-operation                                   op       ;
+operation_t                                 op       ;
 logic                                       scalar_op;
 logic               [ADDR_WIDTH - 1 : 0]    scalar   ;
 logic               [4 : 0]                 rd       ;
@@ -32,7 +32,7 @@ logic               [4 : 0]                 rs1      ;
 logic               [4 : 0]                 rs2      ;
 logic               [ADDR_WIDTH - 1 : 0]    width    ;
 logic               [ADDR_WIDTH - 1 : 0]    height   ;
-dtype                                       dType    ;
+dtype_t                                     dType    ;
 
 logic clk, rst_n;
 int hartId, opId;
@@ -112,12 +112,12 @@ end
 endtask //automatic
 
 task automatic define_rgeister;
-input reg_t rd_i    ;
-input int   width_i ;
-input int   height_i;
-input dtype dt      ;
-input reg_t width_r ;
-input reg_t height_r;
+input reg_t     rd_i    ;
+input int       width_i ;
+input int       height_i;
+input dtype_t   dt      ;
+input reg_t     width_r ;
+input reg_t     height_r;
 begin
     riscv_r_t inst;
     
@@ -225,10 +225,10 @@ end
 endtask //automatic
 
 task automatic vv_operation;
-input reg_t     rd_i    ;
-input reg_t     rs1_i   ;
-input reg_t     rs2_i   ;
-input operation op_i    ;
+input reg_t         rd_i    ;
+input reg_t         rs1_i   ;
+input reg_t         rs2_i   ;
+input operation_t   op_i    ;
 begin
     riscv_r_t inst;
     
@@ -261,11 +261,11 @@ end
 endtask //automatic
 
 task automatic vs_operation;
-input reg_t     rd_i    ;
-input reg_t     rs1_i   ;
-input reg_t     rs2_i   ;
-input operation op_i    ;
-input int       rs2_v   ;
+input reg_t         rd_i    ;
+input reg_t         rs1_i   ;
+input reg_t         rs2_i   ;
+input operation_t   op_i    ;
+input int           rs2_v   ;
 begin
     riscv_r_t inst;
     

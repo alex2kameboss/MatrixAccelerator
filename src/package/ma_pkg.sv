@@ -8,7 +8,7 @@ typedef enum logic [6:0] {
     MUL = 16,
     SMUL = 48,
     NOP = {7{1'b1}}
-} operation;
+} operation_t;
 
 typedef enum logic [6:0] {
     INT8 = 0,
@@ -18,15 +18,15 @@ typedef enum logic [6:0] {
     INT32 = 4,
     UINT32 = 5,
     NDT = {7{1'b1}}
-} dtype;
+} dtype_t;
 
 typedef struct packed {
     logic   [31 : 0]    width;
     logic   [31 : 0]    height;
-    dtype               dtype;
+    dtype_t             dtype;
     logic               valid;
     logic               in_mem;
-} register_file_line;
+} register_file_line_t;
 
 typedef enum logic [2:0] {
     DEFINE = 3'd0,
@@ -35,6 +35,6 @@ typedef enum logic [2:0] {
     VV = 3'd4,
     VS = 3'd5,
     NF3 = {3{1'b1}}
-} funct3_op;
+} funct3_op_t;
 
 endpackage
