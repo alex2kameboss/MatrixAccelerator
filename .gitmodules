@@ -1,10 +1,10 @@
-[submodule "external/axi"]
+[submodule "ips/axi"]
 	path = src/ips/axi
 	url = https://github.com/pulp-platform/axi.git
-[submodule "external/common_cells"]
+[submodule "ips/common_cells"]
 	path = src/ips/common_cells
 	url = https://github.com/pulp-platform/common_cells.git
-[submodule "external/cv-x-if"]
+[submodule "ips/cv-x-if"]
 	path = src/ips/cv-x-if
 	url = https://github.com/alex2kameboss/core-v-xif-fix.git
 	branch = master
