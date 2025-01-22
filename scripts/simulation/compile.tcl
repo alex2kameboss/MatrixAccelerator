@@ -8,18 +8,14 @@ source ${PROJECT_ROOT}/scripts/common/common.tcl
 
 vlib work
 
-set include "+incdir+${PROJECT_ROOT}/src/include"
+set include "+incdir+${PROJECT_ROOT}/src/includes"
 
 # compile packages
-foreach file [findFiles ${PROJECT_ROOT}/src/package/ *.sv] {
-    vlog $include $file
-}
-# compile interfaces
-foreach file [findFiles ${PROJECT_ROOT}/src/interface/ *.sv] {
+foreach file [findFiles ${PROJECT_ROOT}/src/packages/ *.sv] {
     vlog $include $file
 }
 # compile ips
-source ${PROJECT_ROOT}/scripts/simulation/ip.tcl
+source ${PROJECT_ROOT}/scripts/simulation/ips.tcl
 # compile rtl
 foreach file [findFiles ${PROJECT_ROOT}/src/rtl/ *.sv] {
     vlog $include $file
@@ -31,9 +27,9 @@ foreach file [findFiles ${PROJECT_ROOT}/src/rtl/ *.vhd] {
     vlog $file
 }
 # compile tests
-foreach file [findFiles ${PROJECT_ROOT}/src/test/ *.sv] {
-    vlog +incdir+${PROJECT_ROOT}/src/ip/axi/include/ $include $file
+foreach file [findFiles ${PROJECT_ROOT}/src/tests/ *.sv] {
+    vlog +incdir+${PROJECT_ROOT}/src/ips/axi/include/ $include $file
 }
-foreach file [findFiles ${PROJECT_ROOT}/src/test/ *.v] {
+foreach file [findFiles ${PROJECT_ROOT}/src/tests/ *.v] {
     vlog $include $file
 }
