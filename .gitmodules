@@ -7,3 +7,7 @@
 [submodule "src/ips/cv-x-if"]
 	path = src/ips/cv-x-if
 	url = https://github.com/alex2kameboss/core-v-xif-fix.git
+[submodule "src/ips/poly_mem"]
+	path = src/ips/poly_mem
+	url = https://gitlab.com/catalin.ciobanu/PolyMem_System_Verilog
+	branch = refactoring
