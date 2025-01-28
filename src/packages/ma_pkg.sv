@@ -20,20 +20,37 @@ typedef enum logic [6:0] {
     NDT = {7{1'b1}}
 } dtype_t;
 
+typedef enum logic [6:0] {
+    RECT, 
+    ROW, 
+    COL, 
+    MD, 
+    SD, 
+    TRECT
+} organization_t;
+ 
 typedef struct packed {
-    logic   [31 : 0]    width;
-    logic   [31 : 0]    height;
-    dtype_t             dtype;
-    logic               valid;
-    logic               in_mem;
+    // matrix information
+    logic           [31 : 0]    width;
+    logic           [31 : 0]    height;
+    dtype_t                     dtype;
+    // prf information
+    logic           [31 : 0]    prf_x;
+    logic           [31 : 0]    prf_y;
+    organization_t              prf_org;
+    // flags
+    logic                       valid;  // if set dtype and w&h
+    logic                       prf_valid; // if prf data devided
+    logic                       in_mem; // if data loaded in memory
 } register_file_line_t;
 
 typedef enum logic [2:0] {
-    DEFINE = 3'd0,
-    LOAD = 3'd1,
-    STORE = 3'd2,
-    VV = 3'd4,
-    VS = 3'd5,
+    DEFINE,
+    DEFINE_POLY,
+    LOAD,
+    STORE,
+    VV,
+    VS,
     NF3 = {3{1'b1}}
 } funct3_op_t;
 

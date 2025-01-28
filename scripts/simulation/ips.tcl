@@ -21,4 +21,11 @@ if {![info exists IPS]} {
     vlog ${PROJECT_ROOT}/src/ips/axi/src/axi_xbar_unmuxed.sv +incdir+${PROJECT_ROOT}/src/ips/axi/include
     vlog ${PROJECT_ROOT}/src/ips/axi/src/axi_xbar.sv +incdir+${PROJECT_ROOT}/src/ips/axi/include
     vlog ${PROJECT_ROOT}/src/ips/axi/src/axi_sim_mem.sv +incdir+${PROJECT_ROOT}/src/ips/axi/include
+
+    # poly mem
+    set INCLUDE_POLY_MEM +incdir+${PROJECT_ROOT}/src/ips/poly_mem/2dprf_sv/src/includes
+
+    vlog ${INCLUDE_POLY_MEM} ${PROJECT_ROOT}/src/ips/poly_mem/2dprf_sv/src/packages/*.sv ; # packages
+    vlog ${INCLUDE_POLY_MEM} ${PROJECT_ROOT}/src/ips/poly_mem/2dprf_sv/src/rtl/*.sv ; # rtl
+    vlog ${INCLUDE_POLY_MEM} ${PROJECT_ROOT}/src/ips/poly_mem/2dprf_sv/src/tests/*.sv ; # tests
 }

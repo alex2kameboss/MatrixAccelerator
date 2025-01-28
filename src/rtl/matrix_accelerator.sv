@@ -2,7 +2,10 @@ module matrix_acclerator #(
     parameter OPCODE            =   7'h2B   ,
     parameter ADDR_WIDTH        =   32      ,
     parameter REGISTER_NUMBERS  =   32      ,
-    parameter DMA_DATA_WIDTH    =   128     
+    parameter PRF_LOG_P         =   1       ,
+    parameter PRF_LOG_Q         =   2       ,
+    parameter PRF_LOG_N         =   10      ,
+    parameter PRF_LOG_M         =   10      
 ) (
     // generic signals
     input                                       clk             ,
@@ -65,7 +68,10 @@ extension_driver #(
 ma_data_path #(
     .ADDR_WIDTH        ( ADDR_WIDTH         ),
     .REGISTER_NUMBERS  ( REGISTER_NUMBERS   ),
-    .DMA_DATA_WIDTH    ( DMA_DATA_WIDTH     )  
+    .PRF_LOG_P         ( PRF_LOG_P          ),
+    .PRF_LOG_Q         ( PRF_LOG_Q          ),
+    .PRF_LOG_N         ( PRF_LOG_N          ), 
+    .PRF_LOG_M         ( PRF_LOG_M          ) 
 ) i_data_path (
     .aclk       ( aclk      ),
     .arst_n     ( arst_n    ),

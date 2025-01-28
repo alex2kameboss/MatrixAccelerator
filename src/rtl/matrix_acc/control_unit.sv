@@ -3,57 +3,56 @@ module control_unit #(
     parameter REGISTER_NUMBERS  =   32  
 ) (
     // general signals
-    input   logic                                                   clk             ,
-    input   logic                                                   rst_n           ,
+    input   logic                                                               clk             ,
+    input   logic                                                               rst_n           ,
     // signals from CPU interface                               
 // communication signals                            
-    input   logic                                                   valid           ,
-    output  logic                                                   ready           ,
+    input   logic                                                               valid           ,
+    output  logic                                                               ready           ,
 // control signal                           
-    input   logic                                                   arth_data       ,   // 1 arithmetic operation, 0 data operation
-    input   logic                                                   define          ,   // 1 define register, 0 memory operation
+    input   logic                                                               arth_data       ,   // 1 arithmetic operation, 0 data operation
+    input   logic                                                               define          ,   // 1 define register, 0 memory operation
+    input   logic                                                               prf_define      ,   // 1 define for prf, 0 define for matrix
 // memori data                          
-    input   logic                                                   ld_st           ,   // 1 load, 0 store
-    input   logic               [ADDR_WIDTH - 1 : 0]                addr            ,
+    input   logic                                                               ld_st           ,   // 1 load, 0 store
+    input   logic                           [ADDR_WIDTH - 1 : 0]                addr            ,
 // arithmetics data 
-    input   ma_pkg::operation_t                                     op              ,
-    input   logic                                                   scalar_op       ,   // 1 vector-scalar operation, 0 vector-vector operation 
-    input   logic               [ADDR_WIDTH - 1 : 0]                scalar          ,
-    input   logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd              ,
-    input   logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1             ,
-    input   logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2             ,
+    input   ma_pkg::operation_t                                                 op              ,
+    input   logic                                                               scalar_op       ,   // 1 vector-scalar operation, 0 vector-vector operation 
+    input   logic                           [ADDR_WIDTH - 1 : 0]                scalar          ,
+    input   logic                           [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd              ,
+    input   logic                           [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1             ,
+    input   logic                           [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2             ,
 // define registers 
-    input   logic               [ADDR_WIDTH - 1 : 0]                width           ,
-    input   logic               [ADDR_WIDTH - 1 : 0]                height          ,
-    input   ma_pkg::dtype_t                                         dtype           ,
+    input   logic                           [ADDR_WIDTH - 1 : 0]                width           ,
+    input   logic                           [ADDR_WIDTH - 1 : 0]                height          ,
+    input   logic                           [6 : 0]                             dtype           ,
     // dma
 // write chanel
-    output  logic                                                   dma_write_valid ,
-    input   logic                                                   dma_write_ready ,
-    output  logic               [ADDR_WIDTH - 1 : 0]                dma_write_addr  ,
-    output  logic               [ADDR_WIDTH - 1 : 0]                dma_write_len   ,
-    input   logic                                                   dma_write_done  ,
+    output  logic                                                               dma_write_valid ,
+    input   logic                                                               dma_write_ready ,
+    output  logic                           [ADDR_WIDTH - 1 : 0]                dma_write_addr  ,
+    output  logic                           [ADDR_WIDTH - 1 : 0]                dma_write_len   ,
+    input   logic                                                               dma_write_done  ,
 // read chanel          
-    output  logic                                                   dma_read_valid  ,
-    input   logic                                                   dma_read_ready  ,
-    output  logic               [ADDR_WIDTH - 1 : 0]                dma_read_addr   ,
-    output  logic               [ADDR_WIDTH - 1 : 0]                dma_read_len    ,
-    input   logic                                                   dma_read_done   ,
+    output  logic                                                               dma_read_valid  ,
+    input   logic                                                               dma_read_ready  ,
+    output  logic                           [ADDR_WIDTH - 1 : 0]                dma_read_addr   ,
+    output  logic                           [ADDR_WIDTH - 1 : 0]                dma_read_len    ,
+    input   logic                                                               dma_read_done   ,
     // control signals
-    input   logic                                                   arth_done       ,
+    input   logic                                                               arth_done       ,
 // for memory
-    output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd_cfg          ,
-    output  logic                                                   start_addr_gen  ,
-    output  logic                                                   load            ,
-    output  logic                                                   store           ,
-    output  logic                                                   arith           ,
-    output  logic               [ADDR_WIDTH - 1 : 0]                arith_len       ,
-    output  ma_pkg::dtype_t                                         dtype_cfg       ,
-    output  ma_pkg::operation_t                                     op_cfg          ,
-    output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1_cfg         ,
-    output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2_cfg         ,
-    output  logic                                                   scalar_op_cfg   ,
-    output  logic               [ADDR_WIDTH - 1 : 0]                scalar_cfg              
+    output  ma_pkg::register_file_line_t                                        rd_cfg          ,
+    output  logic                                                               start_addr_gen  ,
+    output  logic                                                               load            ,
+    output  logic                                                               store           ,
+    output  logic                                                               arith           ,
+    output  ma_pkg::operation_t                                                 op_cfg          ,
+    output  ma_pkg::register_file_line_t                                        rs1_cfg         ,
+    output  ma_pkg::register_file_line_t                                        rs2_cfg         ,
+    output  logic                                                               scalar_op_cfg   ,
+    output  logic                           [ADDR_WIDTH - 1 : 0]                scalar_cfg              
 );
 
 ma_pkg::register_file_line_t  rft [REGISTER_NUMBERS - 1 : 0];
@@ -97,12 +96,19 @@ always_ff @( posedge clk, negedge rst_n )
             rft[rft_i].valid    <= 1'b0;
             rft[rft_i].in_mem   <= 1'b0;
         end
-    end else if ( valid & ready & ~arth_data & define ) begin
-        rft[rd].width   <= width[31 : 0];
-        rft[rd].height  <= height[31 : 0];
-        rft[rd].dtype   <= dtype;
-        rft[rd].valid   <= 1'b1;
-        rft[rd].in_mem  <= 1'b0;
+    end else if ( valid & ready & ~arth_data & define & ~prf_define ) begin
+        rft[rd].width       <= width[31 : 0];
+        rft[rd].height      <= height[31 : 0];
+        rft[rd].dtype       <= ma_pkg::dtype_t'(dtype);
+        rft[rd].valid       <= 1'b1;
+        rft[rd].prf_valid   <= 1'b0;
+        rft[rd].in_mem      <= 1'b0;
+    end else if ( valid & ready & ~arth_data & define & prf_define ) begin
+        rft[rd].prf_x       <= width[31 : 0];
+        rft[rd].prf_y       <= height[31 : 0];
+        rft[rd].prf_org     <= ma_pkg::organization_t'(dtype);
+        rft[rd].prf_valid   <= 1'b1;
+        rft[rd].in_mem      <= 1'b0;
     end else if ( valid & ready & (~arth_data & ~define & ld_st | arth_data) ) begin
         rft[rd].in_mem  <= 1'b1;
     end
@@ -111,7 +117,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 logic [2 : 0] bytes_len;
 always_comb begin
-    case (rft[rd].dtype)
+    case (ma_pkg::dtype_t'(rft[rd].dtype))
         ma_pkg::INT16   :   bytes_len = 'd2;
         ma_pkg::UINT16  :   bytes_len = 'd2;
         ma_pkg::INT32   :   bytes_len = 'd4;
@@ -175,7 +181,7 @@ posedge_detector i_arth_done (
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                               rd_cfg <= 'd0;      else
-    if ( valid & ready )                        rd_cfg <= rd;       
+    if ( valid & ready )                        rd_cfg <= rft[rd];       
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                               load <= 'd0;        else
@@ -195,29 +201,21 @@ always_ff @( posedge clk, negedge rst_n )
     if ( arth_done )                            arith <= 'd0;
 
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                               arith_len <= 'd0;       else
-    if ( valid & ready & arth_data )            arith_len <= rft[rd].width * rft[rd].height * bytes_len;       else  // TODO: update this code
-    if ( arth_done )                            arith_len <= 'd0;
-
-always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                               start_addr_gen <= 'd0;  else
     if ( valid & ready & 
-        ~(~arth_data & define))                 start_addr_gen <= 'd1;  else 
+        ~define)                                start_addr_gen <= 'd1;  else 
     if ( start_addr_gen )                       start_addr_gen <= 'd0;       
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
-        dtype_cfg   <= ma_pkg::NDT;
         op_cfg      <= ma_pkg::NOP;
         rs1_cfg     <= 'd0;
         rs2_cfg     <= 'd0;
     end else if ( valid & ready & arth_data ) begin
-        dtype_cfg   <= dtype;
         op_cfg      <= op;
-        rs1_cfg     <= rs1;
-        rs2_cfg     <= rs2;
+        rs1_cfg     <= rft[rs1];
+        rs2_cfg     <= rft[rs2];
     end else if ( operation_done ) begin
-        dtype_cfg   <= ma_pkg::NDT;
         op_cfg      <= ma_pkg::NOP;
         rs1_cfg     <= 'd0;
         rs2_cfg     <= 'd0;

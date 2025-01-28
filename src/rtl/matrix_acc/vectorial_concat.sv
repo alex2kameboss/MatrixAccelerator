@@ -42,7 +42,7 @@ logic [7 : 0] rez_in_byte [NUMBER_OF_ALU - 1 : 0][0 : IN_BYTES - 1];
 genvar j;
 generate
     for ( j = 0 ; j < OUT_DATA_WIDTH / 8; j = j + 1 ) begin : splitter
-assign rez_in_byte[j / NUMBER_OF_ALU][j % IN_BYTES] = rez_in[j / NUMBER_OF_ALU][(j % IN_BYTES + 1) * 8 - 1 -: 8];
+assign rez_in_byte[j / IN_BYTES][j % IN_BYTES] = rez_in[j / IN_BYTES][(j % IN_BYTES + 1) * 8 - 1 -: 8];
     end
 endgenerate
 

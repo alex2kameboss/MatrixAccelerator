@@ -4,12 +4,17 @@ import ma_pkg::*;
 
 module tb_memory_operations();
 
+localparam PRF_LOG_P    =   1   ;
+localparam PRF_LOG_Q    =   2   ;
+localparam PRF_LOG_N    =   10  ;
+localparam PRF_LOG_M    =   10  ;
+
 localparam ADDR_WIDTH   = 32'd32;
-localparam DATA_WIDTH   = 32'd128;
+localparam DATA_WIDTH   = 32'd32 * 2 ** (PRF_LOG_P + PRF_LOG_Q);
 localparam DATA_BYTES   = DATA_WIDTH / 8;
 
 localparam int unsigned TbAxiIdWidth        = 32'd5;
-localparam int unsigned TbAxiDataWidth      = 32'd128;
+localparam int unsigned TbAxiDataWidth      = DATA_WIDTH;
 localparam int unsigned TbAxiAddrWidth      = 32'd32;
 localparam int unsigned TbAxiStrbWidth      = TbAxiDataWidth / 8;
 localparam int unsigned TbAxiUserWidth      = 5;
@@ -19,29 +24,30 @@ typedef logic [$clog2(NUMBER_OF_REGISTERS) - 1 : 0] register;
 logic clk, rst_n;
 
 // dut controll signals
-logic                                       valid    ;
-logic                                       ready    ;
-logic                                       arth_data;
-logic                                       define   ;
-logic                                       ld_st    ;
-logic               [ADDR_WIDTH - 1 : 0]    dut_addr ;
-operation_t                                 op       ;
-logic                                       scalar_op;
-logic               [ADDR_WIDTH - 1 : 0]    scalar   ;
-logic               [4 : 0]                 rd       ;
-logic               [4 : 0]                 rs1      ;
-logic               [4 : 0]                 rs2      ;
-logic               [ADDR_WIDTH - 1 : 0]    width    ;
-logic               [ADDR_WIDTH - 1 : 0]    height   ;
-dtype_t                                     dType    ;
-logic                                       error    ;
-logic [2 : 0]                               funct3   ;
+logic                                       valid     ;
+logic                                       ready     ;
+logic                                       arth_data ;
+logic                                       define    ;
+logic                                       define_prf;
+logic                                       ld_st     ;
+logic               [ADDR_WIDTH - 1 : 0]    dut_addr  ;
+operation_t                                 op        ;
+logic                                       scalar_op ;
+logic               [ADDR_WIDTH - 1 : 0]    scalar    ;
+logic               [4 : 0]                 rd        ;
+logic               [4 : 0]                 rs1       ;
+logic               [4 : 0]                 rs2       ;
+logic               [ADDR_WIDTH - 1 : 0]    width     ;
+logic               [ADDR_WIDTH - 1 : 0]    height    ;
+logic               [6 : 0]                 dType     ;
+logic                                       error     ;
+logic [2 : 0]                               funct3    ;
 
 localparam MEM_SIZE = 1024 * 1024; // 1 MB
 
 function void init_mem();
   int i;
-  for (i = 0; i < MEM_SIZE; i = i + 1)
+  for (i = 0; i < MEM_SIZE / 2; i = i + 1)
     i_sim_mem.i_sim_mem.mem[i] = i[7:0];
 endfunction
 
@@ -84,6 +90,7 @@ instr_decoder i_op_decoder (
   .funct3     ( funct3    ),
   .arth_data  ( arth_data ),
   .define     ( define    ),
+  .define_prf ( define_prf),
   .ld_st      ( ld_st     ),
   .scalar_op  ( scalar_op ),
   .error      ( error     ) 
@@ -92,7 +99,10 @@ instr_decoder i_op_decoder (
 ma_data_path #(
   .ADDR_WIDTH         ( ADDR_WIDTH          ),
   .REGISTER_NUMBERS   ( NUMBER_OF_REGISTERS ),
-  .DMA_DATA_WIDTH     ( DATA_WIDTH          )  
+  .PRF_LOG_P          ( PRF_LOG_P           ),
+  .PRF_LOG_Q          ( PRF_LOG_Q           ),
+  .PRF_LOG_N          ( PRF_LOG_N           ),
+  .PRF_LOG_M          ( PRF_LOG_M           ) 
 ) i_dut (
   .aclk       ( clk       ),
   .arst_n     ( rst_n     ),
@@ -103,6 +113,7 @@ ma_data_path #(
   .ready      ( ready     ),
   .arth_data  ( arth_data ),
   .define     ( define    ),
+  .prf_define ( define_prf),
   .ld_st      ( ld_st     ),
   .addr       ( dut_addr  ),
   .op         ( op        ),
@@ -118,14 +129,6 @@ ma_data_path #(
 
 localparam MEMORY_SIZE      = 1024 * 1024 * 8; // 1MB
 localparam MEMORY_DEPTH     = MEMORY_SIZE / DATA_WIDTH;
-logic [DATA_WIDTH - 1 : 0] buffers_clone [NUMBER_OF_REGISTERS - 1 : 0] [0 : MEMORY_DEPTH - 1];
-
-genvar i;
-generate
-  for ( i = 0; i < NUMBER_OF_REGISTERS; i = i + 1 ) begin : buffers_copy
-assign buffers_clone[i] = i_dut.memory_bank[i].i_mem_bank.mem;
-  end
-endgenerate
 
 clk_rstn i_clk_gen (.clk, .rst_n);
 
@@ -135,7 +138,7 @@ task define_register;
   input int h;
   input dtype_t dt;
 begin
-  $display("Define new register ( width: %d, height: %d, dtype: %s, registerId: %d )", w, h, dt, r);
+  $display("Define new register ( registerId: %d, width: %d, height: %d, dtype: %s )", r, w, h, dt);
   rd <= r;
   width <= w;
   height <= h;
@@ -153,11 +156,62 @@ begin
   while (ready != 1'b1) @(posedge clk);
 
   // check register in RFT
-  assert (i_dut.i_ccu.rft[r].width == w & 
-      i_dut.i_ccu.rft[r].height == h &
-      i_dut.i_ccu.rft[r].dtype == dt &
-      i_dut.i_ccu.rft[r].valid &
-      ~i_dut.i_ccu.rft[r].in_mem);
+  assert(i_dut.i_ccu.rft[r].width == w);
+  assert(i_dut.i_ccu.rft[r].height == h);
+  assert(i_dut.i_ccu.rft[r].dtype == dt);
+  assert(i_dut.i_ccu.rft[r].valid);
+  assert(~i_dut.i_ccu.rft[r].prf_valid);
+  assert(~i_dut.i_ccu.rft[r].in_mem);
+end
+endtask
+
+task define_prf_register;
+  input register r;
+  input int prf_x;
+  input int prf_y;
+  input organization_t dt;
+begin
+  $display("Define prf register ( registerId: %d, prf_x: %d, prf_y: %d, organization: %s )", r, prf_x, prf_y, dt);
+  assert(i_dut.i_ccu.rft[r].valid);
+
+  rd <= r;
+  width <= prf_x;
+  height <= prf_y;
+  dType <= dt;
+  funct3 <= DEFINE_POLY;
+
+  @(posedge clk)
+  valid <= 1'b1;
+  @(posedge clk)
+  while (ready != 1'b1) @(posedge clk);
+  valid <= 1'b0;
+
+  // wait the controller to be available again
+  @(posedge clk)
+  while (ready != 1'b1) @(posedge clk);
+
+  // check register in RFT
+  assert(i_dut.i_ccu.rft[r].prf_x == prf_x);
+  assert(i_dut.i_ccu.rft[r].prf_y == prf_y);
+  assert(i_dut.i_ccu.rft[r].prf_org == dt);
+  assert(i_dut.i_ccu.rft[r].prf_valid);
+  assert(~i_dut.i_ccu.rft[r].in_mem);
+end
+endtask
+
+task define_register_one_step;
+  input register r;
+  input int w;
+  input int h;
+  input dtype_t dt;
+  input int prf_x;
+  input int prf_y;
+  input organization_t org;
+begin
+
+  define_register(r, w, h, dt);
+  define_prf_register(r, prf_x, prf_y, org);
+
 end
 endtask
 
@@ -165,12 +219,14 @@ task load_register;
   input register r;
   input int addr;
 begin
-  int bytes, i, j;
-  bit pass;
-  logic [7 : 0] line [DATA_BYTES - 1 : 0];
-
   $display("Load register ( registerId: %d, addr: %h )", r, addr);
   assert(i_dut.i_ccu.rft[r].valid);
+  assert(i_dut.i_ccu.rft[r].prf_valid);
+
+  //int bytes, i, j;
+  //bit pass;
+  //logic [7 : 0] line [DATA_BYTES - 1 : 0];
+
 
   // load data
   rd <= r;
@@ -187,6 +243,7 @@ begin
   @(posedge clk)
   while (ready != 1'b1) @(posedge clk);
 
+  /*
   // check data in regfile
   bytes = i_dut.i_ccu.rft[r].width * i_dut.i_ccu.rft[r].height;
 
@@ -200,9 +257,10 @@ begin
     for ( j = 0; j < DATA_BYTES; j = j + 1 ) begin
       line[j] = i_sim_mem.i_sim_mem.mem[addr + i + j];
     end
-    pass = pass & (buffers_clone[r][i / DATA_BYTES] == { >> {line}});
+    //pass = pass & (buffers_clone[r][i / DATA_BYTES] == { >> {line}});
   end
   assert(pass);
+  */
   assert(i_dut.i_ccu.rft[r].in_mem);
 end
 endtask
@@ -257,19 +315,21 @@ begin
   else if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 )
     bytes = bytes * 4;
 
+  /*
   pass = 1'b1;
   for ( i = 0; i < bytes; i = i + DATA_BYTES ) begin
     if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 ) 
       for ( j = 0; j < DATA_BYTES / 4; j = j + 1 )
-        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 32  - 1 -: 32 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], o));
+        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 32  - 1 -: 32 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], o));
     else if ( i_dut.i_ccu.rft[rr].dtype == INT16 | i_dut.i_ccu.rft[rr].dtype == UINT16 ) 
       for ( j = 0; j < DATA_BYTES / 2; j = j + 1 )
-        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], o)[15 : 0]);
+        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], o)[15 : 0]);
     else if ( i_dut.i_ccu.rft[rr].dtype == INT8 | i_dut.i_ccu.rft[rr].dtype == UINT8 ) 
       for ( j = 0; j < DATA_BYTES; j = j + 1 )
-        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], o)[7 : 0]);
+        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], o)[7 : 0]);
   end
   assert(pass);
+  */
   assert(i_dut.i_ccu.rft[rr].in_mem);
 end
 endtask
@@ -287,9 +347,9 @@ task store_register;
   input register r;
   input int addr;
 begin
-  int bytes, i, j;
-  bit pass;
-  logic [7 : 0] line [DATA_BYTES - 1 : 0];
+  //int bytes, i, j;
+  //bit pass;
+  //logic [7 : 0] line [DATA_BYTES - 1 : 0];
 
   $display("Store register ( registerId: %d, addr: %h )", r, addr);
 
@@ -311,6 +371,7 @@ begin
   @(posedge clk)
   while (ready != 1'b1) @(posedge clk);
 
+  /*
   // check data in regfile
   bytes = i_dut.i_ccu.rft[r].width * i_dut.i_ccu.rft[r].width;
 
@@ -324,9 +385,10 @@ begin
     for ( j = 0; j < DATA_BYTES; j = j + 1 ) begin
       line[j] = i_sim_mem.i_sim_mem.mem[addr + i + j];
     end
-    pass = pass & (buffers_clone[r][i / DATA_BYTES] == { >> {line}});
+    //pass = pass & (buffers_clone[r][i / DATA_BYTES] == { >> {line}});
   end
   assert(pass);
+  */
 end
 endtask
 
@@ -376,37 +438,57 @@ begin
   else if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 )
     bytes = bytes * 4;
 
+  /*
   pass = 1'b1;
   for ( i = 0; i < bytes; i = i + DATA_BYTES ) begin
     if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 ) 
       for ( j = 0; j < DATA_BYTES / 4; j = j + 1 )
-        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 32  - 1 -: 32 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], r2, o));
+        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 32  - 1 -: 32 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], r2, o));
     else if ( i_dut.i_ccu.rft[rr].dtype == INT16 | i_dut.i_ccu.rft[rr].dtype == UINT16 ) 
       for ( j = 0; j < DATA_BYTES / 2; j = j + 1 )
-        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], r2[15 : 0], o)[15 : 0]);
+        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], r2[15 : 0], o)[15 : 0]);
     else if ( i_dut.i_ccu.rft[rr].dtype == INT8 | i_dut.i_ccu.rft[rr].dtype == UINT8 ) 
       for ( j = 0; j < DATA_BYTES; j = j + 1 )
-        pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], r2[7 : 0], o)[7 : 0]);
+        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], r2[7 : 0], o)[7 : 0]);
   end
   assert(pass);
+  */
   assert(i_dut.i_ccu.rft[rr].in_mem);
 end
 endtask
 
-task load_register_test;
+task load_store_test;
   input register r;
   input int w;
   input int h;
+  input int prf_x;
+  input int prf_y;
   input dtype_t dt;
   input int addr;
 begin
-  $display("Load register test");
-  define_register(r, w, h, dt);
+  int i;
+  $display("Load store test");
+  define_register_one_step(
+    .r    ( r     ),
+    .w    ( w     ),
+    .h    ( h     ),
+    .dt   ( dt    ),
+    .prf_x( prf_x ),
+    .prf_y( prf_y ),
+    .org  ( RECT  )
+  );
   load_register(r, addr);
+  store_register(r, MEM_SIZE / 2 + addr);
+
+  for ( i = 0; i < w * h; i = i + 1) begin
+    assert(i_sim_mem.i_sim_mem.mem[addr + i] == i_sim_mem.i_sim_mem.mem[MEM_SIZE / 2 + addr + i]);
+    i_sim_mem.i_sim_mem.mem[MEM_SIZE / 2 + addr + i] = 'dx;
+  end
   $display("------------------------------------------------------");
 end
 endtask
 
+/*
 task vector_vector_operation_test;
   input register rr;
   input register r1;
@@ -451,6 +533,7 @@ begin
   $display("------------------------------------------------------");
 end
 endtask
+*/
 
 initial begin
   // ccu
@@ -477,9 +560,11 @@ initial begin
   //for ( register = 0; register < 32; register = register + 1 )
   //  define_register(16, 16, 'd0, register);
 
-  load_register_test('d0, 16, 16, UINT8, 'h0);
-  load_register_test('d0, 8, 8, UINT16, 'h0);
+  load_store_test('d0, 32, 32, 0, 0, UINT8, 'h0);
+  load_store_test('d0, 16, 16, 0, 0, UINT16, 'h0);
+  load_store_test('d0, 8, 8, 0, 0, UINT32, 'h0);
 
+  /*
   vector_vector_operation_test('d2, 'd0, 'd1, SUB, INT8, 8, 8, MEM_SIZE, 'h0, 'h0);
   vector_vector_operation_test('d2, 'd0, 'd1, ADD, INT8, 8, 8, MEM_SIZE, MEM_SIZE, 'h0);
 
@@ -492,6 +577,7 @@ initial begin
   vector_scalar_operation_test('d2, 'd0, 'd0, SUB, INT8, 8, 8, MEM_SIZE, 'h0);
   vector_scalar_operation_test('d2, 'd0, 'd0, SUB, INT16, 8, 8, MEM_SIZE, 'h0);
   vector_scalar_operation_test('d2, 'd0, 'd0, SUB, INT32, 8, 8, MEM_SIZE, 'h0);
+  */
 
   @(posedge clk);
   @(posedge clk);

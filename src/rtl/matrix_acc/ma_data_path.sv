@@ -1,7 +1,10 @@
 module ma_data_path #(
-    parameter ADDR_WIDTH        =   32  ,
-    parameter REGISTER_NUMBERS  =   32  ,
-    parameter DMA_DATA_WIDTH    =   128   
+    parameter   ADDR_WIDTH          =   32  ,
+    parameter   REGISTER_NUMBERS    =   32  ,
+    parameter   PRF_LOG_P           =   1   ,
+    parameter   PRF_LOG_Q           =   2   ,
+    parameter   PRF_LOG_N           =   10  ,
+    parameter   PRF_LOG_M           =   10  
 ) (
     // axi interface
     input   logic                                                   aclk            ,
@@ -17,6 +20,7 @@ module ma_data_path #(
 // control signal                           
     input   logic                                                   arth_data       ,   // 1 arithmetic operation, 0 data operation
     input   logic                                                   define          ,   // 1 define register, 0 memory operation
+    input   logic                                                   prf_define      ,   // 1 define for prf, 0 define for matrix
 // memori data                          
     input   logic                                                   ld_st           ,   // 1 load, 0 store
     input   logic               [ADDR_WIDTH - 1 : 0]                addr            ,
@@ -30,43 +34,46 @@ module ma_data_path #(
 // define registers 
     input   logic               [ADDR_WIDTH - 1 : 0]                width           ,
     input   logic               [ADDR_WIDTH - 1 : 0]                height          ,
-    input   ma_pkg::dtype_t                                         dtype                          
+    input   logic               [6 : 0]                             dtype                          
 );
-    
+
+localparam SRAM_WIDTH       = 32;
+localparam PRF_N_LANES      = 2 ** (PRF_LOG_P + PRF_LOG_Q);
+localparam DMA_DATA_WIDTH   = SRAM_WIDTH * PRF_N_LANES;
+
 // write chanel
-logic                                                   dma_write_valid ;
-logic                                                   dma_write_ready ;
-logic               [ADDR_WIDTH - 1 : 0]                dma_write_addr  ;
-logic               [ADDR_WIDTH - 1 : 0]                dma_write_len   ;
-logic                                                   dma_write_done  ;
+logic                                                               dma_write_valid ;
+logic                                                               dma_write_ready ;
+logic                           [ADDR_WIDTH - 1 : 0]                dma_write_addr  ;
+logic                           [ADDR_WIDTH - 1 : 0]                dma_write_len   ;
+logic                                                               dma_write_done  ;
+logic                                                               dma_write_done_o;
 // read chanel          
-logic                                                   dma_read_valid  ;
-logic                                                   dma_read_ready  ;
-logic               [ADDR_WIDTH - 1 : 0]                dma_read_addr   ;
-logic               [ADDR_WIDTH - 1 : 0]                dma_read_len    ;
-logic                                                   dma_read_done   ;
-logic                                                   arith           ;
-logic                                                   w_adr_len_reset ;
-logic                                                   load, store     ;
+logic                                                               dma_read_valid  ;
+logic                                                               dma_read_ready  ;
+logic                           [ADDR_WIDTH - 1 : 0]                dma_read_addr   ;
+logic                           [ADDR_WIDTH - 1 : 0]                dma_read_len    ;
+logic                                                               dma_read_done   ;
+logic                                                               arith           ;
+logic                                                               w_adr_len_reset ;
+logic                                                               load, store     ;
 
-logic               [DMA_DATA_WIDTH - 1 : 0]            dma_read_data       ;          
-logic                                                   dma_read_data_valid ;          
-logic                                                   dma_read_data_ready ;       
-logic               [DMA_DATA_WIDTH - 1 : 0]            dma_write_data       ;          
-logic                                                   dma_write_data_valid ;          
-logic                                                   dma_write_data_ready ;    
-logic               [ADDR_WIDTH - 1 : 0]                arith_len       ;
+logic                           [DMA_DATA_WIDTH - 1 : 0]            dma_read_data       ;          
+logic                                                               dma_read_data_valid ;          
+logic                                                               dma_read_data_ready ;       
+logic                           [DMA_DATA_WIDTH - 1 : 0]            dma_write_data      ;          
+logic                                                               dma_write_data_valid;          
+logic                                                               dma_write_data_ready;    
 
-logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd_cfg          ;
-logic                                                   start_addr_gen  ;
+ma_pkg::register_file_line_t                                        rd_cfg          ;
+logic                                                               start_addr_gen  ;
 
-ma_pkg::dtype_t                                         dtype_cfg       ;
-ma_pkg::operation_t                                     op_cfg          ;
-logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1_cfg         ;
-logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2_cfg         ;
+ma_pkg::operation_t                                                 op_cfg          ;
+ma_pkg::register_file_line_t                                        rs1_cfg         ;
+ma_pkg::register_file_line_t                                        rs2_cfg         ;
 
-logic                                                   scalar_op_cfg   ;
-logic               [ADDR_WIDTH - 1 : 0]                scalar_cfg      ;  
+logic                                                               scalar_op_cfg   ;
+logic                           [ADDR_WIDTH - 1 : 0]                scalar_cfg      ;  
 
 control_unit #(
     .ADDR_WIDTH        ( ADDR_WIDTH       ),
@@ -78,6 +85,7 @@ control_unit #(
     .ready           ( ready            ),
     .arth_data       ( arth_data        ),
     .define          ( define           ),
+    .prf_define      ( prf_define       ),
     .ld_st           ( ld_st            ),
     .addr            ( addr             ),
     .op              ( op               ),
@@ -93,7 +101,7 @@ control_unit #(
     .dma_write_ready ( dma_write_ready  ),
     .dma_write_addr  ( dma_write_addr   ),
     .dma_write_len   ( dma_write_len    ),
-    .dma_write_done  ( dma_write_done   ),
+    .dma_write_done  ( dma_write_done_o ),
     .dma_read_valid  ( dma_read_valid   ),
     .dma_read_ready  ( dma_read_ready   ),
     .dma_read_addr   ( dma_read_addr    ),
@@ -105,8 +113,6 @@ control_unit #(
     .load            ( load             ),
     .store           ( store            ),
     .arith           ( arith            ),
-    .arith_len       ( arith_len        ),
-    .dtype_cfg       ( dtype_cfg        ),
     .op_cfg          ( op_cfg           ),
     .rs1_cfg         ( rs1_cfg          ),
     .rs2_cfg         ( rs2_cfg          ),
@@ -128,13 +134,13 @@ dma #(
     .write_ready_o      ( dma_write_ready       ),
     .write_addr_i       ( dma_write_addr        ),
     .write_len_i        ( dma_write_len         ),
-    .write_done_o       ( dma_write_done        ),
+    .write_done_o       ( dma_write_done_o      ), // dma_write_done
     // read chanel
     .read_valid_i       ( dma_read_valid        ),
     .read_ready_o       ( dma_read_ready        ),
     .read_addr_i        ( dma_read_addr         ),
     .read_len_i         ( dma_read_len          ),
-    .read_done_o        ( dma_read_done         ),
+    .read_done_o        (                       ), // dma_read_done
     // data fifos
     // write fifo
     .write_data_i       ( dma_write_data        ),
@@ -160,10 +166,16 @@ posedge_detector i_arth_done (
     .flag   ( store_edge    ) 
 );
 
+logic dma_write_data_valid_fast;
+
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )               dma_write_data_valid <= 'd0;    else
-    if ( w_adr_len_reset )      dma_write_data_valid <= 'd0;    else
-    if ( store_edge )           dma_write_data_valid <= 'd1;
+    if ( ~rst_n )               dma_write_data_valid_fast <= 'd0;    else
+    if (start_addr_gen & store) dma_write_data_valid_fast <= 'd1;    else
+    if ( dma_write_done )       dma_write_data_valid_fast <= 'd0;    
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )               dma_write_data_valid <= 'd0;        else
+                                dma_write_data_valid <= dma_write_data_valid_fast;
 
 // memory banks
 
@@ -196,31 +208,119 @@ assign mem_w_incr = dma_read_incr | arith & mem_w_res;
 assign data_cnt_up = mem_w_incr | dma_write_incr;
 
 assign dma_read_incr = dma_read_data_valid & dma_read_data_ready;
-assign dma_write_incr = dma_write_data_valid & dma_write_data_ready;
+assign dma_write_incr = dma_write_data_valid_fast & dma_write_data_ready;
+
+// poly mem
+localparam PRF_N_RPORTS  = 2 ;
+localparam PRF_N_WPORTS  = 1 ;
+
+logic                   [SRAM_WIDTH - 1 : 0]    prf_data_in     [0 : PRF_N_WPORTS - 1][0 :PRF_N_LANES - 1] ;
+logic                                           prf_read        [0 : PRF_N_RPORTS - 1]                     ;
+logic                                           prf_write       [0 : PRF_N_RPORTS - 1]                     ;
+logic                   [PRF_LOG_N - 1 : 0]     read_i          [0 : PRF_N_RPORTS - 1]                     ;
+logic                   [PRF_LOG_M - 1 : 0]     read_j          [0 : PRF_N_RPORTS - 1]                     ;
+logic                   [PRF_LOG_N - 1 : 0]     write_i         [0 : PRF_N_WPORTS - 1]                     ;
+logic                   [PRF_LOG_M - 1 : 0]     write_j         [0 : PRF_N_WPORTS - 1]                     ;
+prf_dtypes::dscheme_t                           dscheme                                                    ;
+prf_dtypes::taccess_t   [PRF_N_RPORTS - 1 : 0]  taccess_read                                               ;
+prf_dtypes::taccess_t   [PRF_N_WPORTS - 1 : 0]  taccess_write                                              ;
+logic                   [SRAM_WIDTH - 1 : 0]    prf_data_out_r  [0 : PRF_N_RPORTS - 1][0 : PRF_N_LANES - 1];
+logic                   [SRAM_WIDTH - 1 : 0]    prf_data_out_w  [0 : PRF_N_RPORTS - 1][0 : PRF_N_LANES - 1];
+
+prf2d_wrapper #(
+    .prf_n_rports  ( PRF_N_RPORTS ), 
+    .prf_n_wports  ( PRF_N_WPORTS ), 
+    .sram_width    ( SRAM_WIDTH   ),
+    .prf_log_p     ( PRF_LOG_P    ),
+    .prf_log_q     ( PRF_LOG_Q    ),
+    .prf_log_n     ( PRF_LOG_N    ),
+    .prf_log_m     ( PRF_LOG_M    )
+) i_mem (
+    .clk            ( clk            ),  
+    .prf_data_in    ( prf_data_in    ),
+    .prf_read       ( prf_read       ),
+    .prf_write      ( prf_write      ),
+    .read_i         ( read_i         ),
+    .read_j         ( read_j         ),
+    .write_i        ( write_i        ),
+    .write_j        ( write_j        ),
+    .dscheme        ( dscheme        ),
+    .taccess_read   ( taccess_read   ),
+    .taccess_write  ( taccess_write  ),
+    .prf_data_out_r ( prf_data_out_r ),
+    .prf_data_out_w ( prf_data_out_w ) 
+);
+
+assign dscheme = prf_dtypes::ROW_COL;
+assign taccess_write[0] = prf_dtypes::ROW;
+assign taccess_read[0] = prf_dtypes::ROW;
+assign taccess_read[1] = prf_dtypes::ROW;
+assign prf_write[0] = ~(load & dma_read_incr | arith & mem_w_res);
+assign prf_write[1] = ~(load & dma_read_incr | arith & mem_w_res);
+assign prf_read[0] = ~store;
+assign prf_read[1] = ~store;
 
 genvar i;
 generate
-    for ( i = 0; i < REGISTER_NUMBERS; i = i + 1 ) begin : memory_bank
-memory #(
-    .DATA_SIZE  ( DMA_DATA_WIDTH ),
-    .DEPTH      ( MEMORY_DEPTH   )
-) i_mem_bank (
-    .w_clk      ( clk           ),
-    .w_addr_i   ( mem_w_addr    ),
-    .w_data_i   ( mem_w_data    ),
-    .w_en_i     ( mem_w_en[i]   ),
-    .r_addr_i   ( mem_r_addr    ),
-    .r_data_o   ( mem_r[i]      ) 
-);
-
-assign mem_w_en[i] = rd_cfg == i & (load & dma_read_incr | arith & mem_w_res);
-
+    for ( i = 0; i < PRF_N_LANES; i = i + 1 ) begin : data_assign
+        assign prf_data_in[0][i] = mem_w_data[(i + 1) * SRAM_WIDTH - 1 : i * SRAM_WIDTH];
+        assign mem_r_op1[(i + 1) * SRAM_WIDTH - 1 : i * SRAM_WIDTH] = prf_data_out_r[0][i];
+        assign mem_r_op2[(i + 1) * SRAM_WIDTH - 1 : i * SRAM_WIDTH] = scalar_op_cfg ? scalar_cfg : prf_data_out_r[1][i];
     end
 endgenerate
 
-assign mem_r_op1 = mem_r[rs1_cfg];
-assign mem_r_op2 = scalar_op_cfg ? {NUMBER_OF_ALU{scalar_cfg}} : mem_r[rs2_cfg];
-assign dma_write_data = mem_r[rd_cfg];
+logic                        [PRF_LOG_N - 1 : 0]    dma_i_out;
+logic                        [PRF_LOG_M - 1 : 0]    dma_j_out;
+logic                                               dma_done ;
+
+// for read or write
+prf_addr_gen_seq #(
+    .PRF_N_LANES    ( PRF_N_LANES ),
+    .PRF_LOG_N      ( PRF_LOG_N   ),
+    .PRF_LOG_M      ( PRF_LOG_M   )
+) i_dma_addr_gen (
+    .clk     ( clk ),
+    .rst_n   ( rst_n ),
+    .start   ( start_addr_gen ),
+    .en      ( load | dma_write_data_valid_fast ),
+    .incr    ( load & dma_read_incr | store & dma_write_incr ),
+    .r       ( rd_cfg ),
+    .i_out   ( dma_i_out ),
+    .j_out   ( dma_j_out ),
+    .done    ( dma_done )
+);
+
+assign dma_read_done = dma_done & load;
+assign dma_write_done = dma_done & store;
+assign write_i[0] = dma_i_out;
+assign write_j[0] = dma_j_out;
+assign read_i[0] = dma_i_out;
+assign read_j[0] = dma_j_out;
+assign read_i[1] = dma_i_out;
+assign read_j[1] = dma_j_out;
+
+//generate
+//    for ( i = 0; i < REGISTER_NUMBERS; i = i + 1 ) begin : memory_bank
+//memory #(
+//    .DATA_SIZE  ( DMA_DATA_WIDTH ),
+//    .DEPTH      ( MEMORY_DEPTH   )
+//) i_mem_bank (
+//    .w_clk      ( clk           ),
+//    .w_addr_i   ( mem_w_addr    ),
+//    .w_data_i   ( mem_w_data    ),
+//    .w_en_i     ( mem_w_en[i]   ),
+//    .r_addr_i   ( mem_r_addr    ),
+//    .r_data_o   ( mem_r[i]      ) 
+//);
+//
+//assign mem_w_en[i] = rd_cfg == i & (load & dma_read_incr | arith & mem_w_res);
+//
+//    end
+//endgenerate
+
+//assign mem_r_op1 = mem_r[rs1_cfg];
+//assign mem_r_op2 = scalar_op_cfg ? {NUMBER_OF_ALU{scalar_cfg}} : mem_r[rs2_cfg];
+assign dma_write_data = mem_r_op1;
 
 // data counter
 data_counter #(
@@ -252,7 +352,7 @@ vectorial_unit #(
     .en         ( arith             ),
     .soft_rst   ( w_adr_len_reset   ),
     .op         ( op_cfg            ),
-    .dtype      ( dtype_cfg         ),
+    .dtype      (         ),
     .rs1_alu    ( mem_r_op1         ),
     .rs2_alu    ( mem_r_op2         ),
     .rs1_addr   ( mem_r_addr        ),
