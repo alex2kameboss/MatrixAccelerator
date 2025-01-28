@@ -55,7 +55,6 @@ logic                           [ADDR_WIDTH - 1 : 0]                dma_read_add
 logic                           [ADDR_WIDTH - 1 : 0]                dma_read_len    ;
 logic                                                               dma_read_done   ;
 logic                                                               arith           ;
-logic                                                               w_adr_len_reset ;
 logic                                                               load, store     ;
 
 logic                           [DMA_DATA_WIDTH - 1 : 0]            dma_read_data       ;          
@@ -107,7 +106,7 @@ control_unit #(
     .dma_read_addr   ( dma_read_addr    ),
     .dma_read_len    ( dma_read_len     ),
     .dma_read_done   ( dma_read_done    ),
-    .arth_done       ( w_adr_len_reset  ),
+    .arth_done       (                  ), // TODO: connect
     .rd_cfg          ( rd_cfg           ),
     .start_addr_gen  ( start_addr_gen   ),
     .load            ( load             ),
@@ -272,6 +271,11 @@ endgenerate
 logic                        [PRF_LOG_N - 1 : 0]    dma_i_out;
 logic                        [PRF_LOG_M - 1 : 0]    dma_j_out;
 logic                                               dma_done ;
+logic                                               dma_addr_gen_en;
+logic                                               dma_addr_gen_incr;
+
+assign dma_addr_gen_en = load | dma_write_data_valid_fast;
+assign dma_addr_gen_incr = load & dma_read_incr | store & dma_write_incr;
 
 // for read or write
 prf_addr_gen_seq #(
@@ -279,15 +283,15 @@ prf_addr_gen_seq #(
     .PRF_LOG_N      ( PRF_LOG_N   ),
     .PRF_LOG_M      ( PRF_LOG_M   )
 ) i_dma_addr_gen (
-    .clk     ( clk ),
-    .rst_n   ( rst_n ),
-    .start   ( start_addr_gen ),
-    .en      ( load | dma_write_data_valid_fast ),
-    .incr    ( load & dma_read_incr | store & dma_write_incr ),
-    .r       ( rd_cfg ),
-    .i_out   ( dma_i_out ),
-    .j_out   ( dma_j_out ),
-    .done    ( dma_done )
+    .clk     ( clk                  ),
+    .rst_n   ( rst_n                ),
+    .start   ( start_addr_gen       ),
+    .en      ( dma_addr_gen_en      ),
+    .incr    ( dma_addr_gen_incr    ),
+    .r       ( rd_cfg               ),
+    .i_out   ( dma_i_out            ),
+    .j_out   ( dma_j_out            ),
+    .done    ( dma_done             )
 );
 
 assign dma_read_done = dma_done & load;
@@ -299,44 +303,7 @@ assign read_j[0] = dma_j_out;
 assign read_i[1] = dma_i_out;
 assign read_j[1] = dma_j_out;
 
-//generate
-//    for ( i = 0; i < REGISTER_NUMBERS; i = i + 1 ) begin : memory_bank
-//memory #(
-//    .DATA_SIZE  ( DMA_DATA_WIDTH ),
-//    .DEPTH      ( MEMORY_DEPTH   )
-//) i_mem_bank (
-//    .w_clk      ( clk           ),
-//    .w_addr_i   ( mem_w_addr    ),
-//    .w_data_i   ( mem_w_data    ),
-//    .w_en_i     ( mem_w_en[i]   ),
-//    .r_addr_i   ( mem_r_addr    ),
-//    .r_data_o   ( mem_r[i]      ) 
-//);
-//
-//assign mem_w_en[i] = rd_cfg == i & (load & dma_read_incr | arith & mem_w_res);
-//
-//    end
-//endgenerate
-
-//assign mem_r_op1 = mem_r[rs1_cfg];
-//assign mem_r_op2 = scalar_op_cfg ? {NUMBER_OF_ALU{scalar_cfg}} : mem_r[rs2_cfg];
 assign dma_write_data = mem_r_op1;
-
-// data counter
-data_counter #(
-    .DATA_WIDTH( ADDR_WIDTH )
-) i_data_counter (
-    .clk         ( clk              ),
-    .rst_n       ( rst_n            ),
-    .load_bytes  ( dma_read_len     ),
-    .load        ( load             ),
-    .store_bytes ( dma_write_len    ),
-    .store       ( store            ),
-    .arith_bytes ( arith_len        ),
-    .arith       ( arith            ),
-    .cnt_up      ( data_cnt_up      ),
-    .clear       ( w_adr_len_reset  )
-);
 
 // vectorial alu
 vectorial_unit #(
@@ -350,9 +317,9 @@ vectorial_unit #(
     .clk        ( clk               ),
     .rst_n      ( rst_n             ),
     .en         ( arith             ),
-    .soft_rst   ( w_adr_len_reset   ),
+    .soft_rst   (                   ),
     .op         ( op_cfg            ),
-    .dtype      (         ),
+    .dtype      (                   ),
     .rs1_alu    ( mem_r_op1         ),
     .rs2_alu    ( mem_r_op2         ),
     .rs1_addr   ( mem_r_addr        ),
