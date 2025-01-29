@@ -254,10 +254,8 @@ assign dscheme = prf_dtypes::ROW_COL;
 assign taccess_write[0] = prf_dtypes::ROW;
 assign taccess_read[0] = prf_dtypes::ROW;
 assign taccess_read[1] = prf_dtypes::ROW;
-assign prf_write[0] = ~(load & dma_read_incr | arith & mem_w_res);
 assign prf_write[1] = ~(load & dma_read_incr | arith & mem_w_res);
-assign prf_read[0] = ~store;
-assign prf_read[1] = ~store;
+assign prf_read[1] = ~store; // wtf, read 1 for port 0
 
 genvar i;
 generate
@@ -300,8 +298,6 @@ assign write_i[0] = dma_i_out;
 assign write_j[0] = dma_j_out;
 assign read_i[0] = dma_i_out;
 assign read_j[0] = dma_j_out;
-assign read_i[1] = dma_i_out;
-assign read_j[1] = dma_j_out;
 
 assign dma_write_data = mem_r_op1;
 
