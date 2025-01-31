@@ -591,28 +591,83 @@ begin
 end
 endtask
 
-/*
+
 task vector_scalar_operation_test;
-  input register rr;
-  input register r1;
-  input int r2;
-  input operation_t o;
-  input dtype_t dt;
-  input int w;
-  input int h;
-  input int rr_addr;
-  input int r1_addr;
+  input register    rr      ;
+  input int         rr_prf_x;
+  input int         rr_prf_y;
+  input register    r1      ;
+  input int         r1_prf_x;
+  input int         r1_prf_y;
+  input int         r2      ;
+  input operation_t o       ;
+  input dtype_t     dt      ;
+  input int         w       ;
+  input int         h       ;
+  input int         rr_addr ;
+  input int         r1_addr ;
 begin
+  int bytes;
+  int i;
   $display("Vector-Scalar operation test");
-  define_register(rr, w, h, dt);
-  define_register(r1, w, h, dt);
+  define_register_one_step(
+    .r    ( rr        ),
+    .w    ( w         ),
+    .h    ( h         ),
+    .dt   ( dt        ),
+    .prf_x( rr_prf_x  ),
+    .prf_y( rr_prf_y  ),
+    .org  ( RECT      )
+  );
+  define_register_one_step(
+    .r    ( r1        ),
+    .w    ( w         ),
+    .h    ( h         ),
+    .dt   ( dt        ),
+    .prf_x( r1_prf_x  ),
+    .prf_y( r1_prf_y  ),
+    .org  ( RECT      )
+  );
   load_register(r1, r1_addr);
   vector_scalar_operation(rr, r1, r2, o);
   store_register(rr, rr_addr);
+
+  // check result
+  bytes = 1;
+
+  if ( dt == INT16 | dt == UINT16 )
+    bytes = 2;
+  else if ( dt == INT32 | dt == UINT32 )
+    bytes = 4;
+
+  for ( i = 0; i < w * h * bytes; i = i + bytes ) begin
+    if ( dt == INT32 | dt == UINT32 ) begin
+      assert({i_sim_mem.i_sim_mem.mem[rr_addr + i + 3], i_sim_mem.i_sim_mem.mem[rr_addr + i + 2], i_sim_mem.i_sim_mem.mem[rr_addr + i + 1], i_sim_mem.i_sim_mem.mem[rr_addr + i + 0]} == 
+         alu({i_sim_mem.i_sim_mem.mem[r1_addr + i + 3], i_sim_mem.i_sim_mem.mem[r1_addr + i + 2], i_sim_mem.i_sim_mem.mem[r1_addr + i + 1], i_sim_mem.i_sim_mem.mem[r1_addr + i + 0]}, 
+             r2, o)[31:0]) else
+      $error("byte: %d, rd: %d, rs1: %d, rs2: %d", i,
+      {i_sim_mem.i_sim_mem.mem[rr_addr + i + 3], i_sim_mem.i_sim_mem.mem[rr_addr + i + 2], i_sim_mem.i_sim_mem.mem[rr_addr + i + 1], i_sim_mem.i_sim_mem.mem[rr_addr + i + 0]},
+      {i_sim_mem.i_sim_mem.mem[r1_addr + i + 3], i_sim_mem.i_sim_mem.mem[r1_addr + i + 2], i_sim_mem.i_sim_mem.mem[r1_addr + i + 1], i_sim_mem.i_sim_mem.mem[r1_addr + i + 0]},
+      r2);
+    end
+    else if ( dt == INT16 | dt == UINT16 ) begin
+      assert({i_sim_mem.i_sim_mem.mem[rr_addr + i + 1], i_sim_mem.i_sim_mem.mem[rr_addr + i + 0]} == 
+         alu({i_sim_mem.i_sim_mem.mem[r1_addr + i + 1], i_sim_mem.i_sim_mem.mem[r1_addr + i + 0]}, 
+             r2[15: 0], o)[15:0]) else
+      $error("byte: %d, rd: %d, rs1: %d, rs2: %d", i,
+      {i_sim_mem.i_sim_mem.mem[rr_addr + i + 1], i_sim_mem.i_sim_mem.mem[rr_addr + i + 0]},
+      {i_sim_mem.i_sim_mem.mem[r1_addr + i + 1], i_sim_mem.i_sim_mem.mem[r1_addr + i + 0]},
+      r2[15 : 0]);
+    end
+    else if ( dt == INT8 | dt == UINT8 ) begin
+      assert(i_sim_mem.i_sim_mem.mem[rr_addr + i] == alu(i_sim_mem.i_sim_mem.mem[r1_addr + i], r2[7 : 0], o)[7:0]) else 
+      $error("byte: %d, rd: %d, rs1: %d, rs2: %d", i, {i_sim_mem.i_sim_mem.mem[rr_addr + i]}, {i_sim_mem.i_sim_mem.mem[r1_addr + i]}, r2[7 : 0]);    
+    end
+  end
+
   $display("------------------------------------------------------");
 end
 endtask
-*/
 
 
 initial begin
@@ -767,16 +822,54 @@ initial begin
     .r2_addr ( 'd0      )
   );
 
-  /*vector_vector_operation_test('d2, 'd0, 'd1, SUB, INT16, 4, 4, MEM_SIZE, 'h0, 'h0);
-  vector_vector_operation_test('d2, 'd0, 'd1, ADD, INT16, 4, 4, MEM_SIZE, MEM_SIZE, 'h0);
 
-  vector_vector_operation_test('d2, 'd0, 'd1, SUB, INT32, 4, 4, MEM_SIZE, 'h0, 'h0);
-  vector_vector_operation_test('d2, 'd0, 'd1, ADD, INT32, 4, 4, MEM_SIZE, MEM_SIZE, 'h0);
+  vector_scalar_operation_test(
+    .rr      ( 'd2      ),
+    .rr_prf_x( 'd0      ),
+    .rr_prf_y( 'd64     ),
+    .r1      ( 'd0      ),
+    .r1_prf_x( 'd0      ),
+    .r1_prf_y( 'd0      ),
+    .r2      ( 'd1      ),
+    .o       ( ADD      ),
+    .dt      ( INT8     ),
+    .w       ( 'd32     ),
+    .h       ( 'd32     ),
+    .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
+    .r1_addr ( MEM_SIZE )
+  );
 
-  vector_scalar_operation_test('d2, 'd0, 'd0, SUB, INT8, 8, 8, MEM_SIZE, 'h0);
-  vector_scalar_operation_test('d2, 'd0, 'd0, SUB, INT16, 8, 8, MEM_SIZE, 'h0);
-  vector_scalar_operation_test('d2, 'd0, 'd0, SUB, INT32, 8, 8, MEM_SIZE, 'h0);
-  */
+  vector_scalar_operation_test(
+    .rr      ( 'd2      ),
+    .rr_prf_x( 'd0      ),
+    .rr_prf_y( 'd64     ),
+    .r1      ( 'd0      ),
+    .r1_prf_x( 'd0      ),
+    .r1_prf_y( 'd0      ),
+    .r2      ( 'd1      ),
+    .o       ( ADD      ),
+    .dt      ( INT16    ),
+    .w       ( 'd32     ),
+    .h       ( 'd32     ),
+    .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
+    .r1_addr ( MEM_SIZE )
+  );
+
+  vector_scalar_operation_test(
+    .rr      ( 'd2      ),
+    .rr_prf_x( 'd0      ),
+    .rr_prf_y( 'd64     ),
+    .r1      ( 'd0      ),
+    .r1_prf_x( 'd0      ),
+    .r1_prf_y( 'd0      ),
+    .r2      ( 'd1      ),
+    .o       ( ADD      ),
+    .dt      ( INT32    ),
+    .w       ( 'd32     ),
+    .h       ( 'd32     ),
+    .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
+    .r1_addr ( MEM_SIZE )
+  );
 
   @(posedge clk);
   @(posedge clk);

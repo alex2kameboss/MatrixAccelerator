@@ -10,6 +10,7 @@ module vectorial_unit #(
 // control signals
     input                                                               en          ,
     input                                                               start       ,
+    input                                                               scalar_op   ,
 // config signals
     input   ma_pkg::operation_t                                         op          ,
 // register signals
@@ -96,7 +97,7 @@ prf_addr_gen_seq #(
     .clk     ( clk                  ),
     .rst_n   ( rst_n                ),
     .start   ( start                ),
-    .en      ( rs_addr_en | start   ),
+    .en      ( rs_addr_en | start & ~scalar_op ),
     .incr    ( rs_incr | fast & start_delayed ),
     .r       ( rs2                  ),
     .i_out   ( rs2_i_out            ),

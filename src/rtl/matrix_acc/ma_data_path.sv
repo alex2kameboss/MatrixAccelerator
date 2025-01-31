@@ -199,6 +199,11 @@ logic   [DMA_DATA_WIDTH - 1 : 0]    mem_w_data;
 
 logic   [DMA_DATA_WIDTH - 1 : 0]    mem_r_op1;
 logic   [DMA_DATA_WIDTH - 1 : 0]    mem_r_op2;
+logic   [DMA_DATA_WIDTH - 1 : 0]    scalar_line;
+
+assign scalar_line = rd_cfg.dtype == ma_pkg::INT32 | rd_cfg.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {scalar_cfg}} :
+                     rd_cfg.dtype == ma_pkg::INT16 | rd_cfg.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {scalar_cfg[15 : 0]}} :
+                                                                                      {NUMBER_OF_ALU * 4 {scalar_cfg[7 : 0]}};
 
 assign mem_w_data = arith ? vu_rd_data : dma_read_data;
 
@@ -259,7 +264,7 @@ generate
     for ( i = 0; i < PRF_N_LANES; i = i + 1 ) begin : data_assign
         assign prf_data_in[0][i] = mem_w_data[(i + 1) * SRAM_WIDTH - 1 : i * SRAM_WIDTH];
         assign mem_r_op1[(i + 1) * SRAM_WIDTH - 1 : i * SRAM_WIDTH] = prf_data_out_r[0][i];
-        assign mem_r_op2[(i + 1) * SRAM_WIDTH - 1 : i * SRAM_WIDTH] = scalar_op_cfg ? scalar_cfg : prf_data_out_r[1][i];
+        assign mem_r_op2[(i + 1) * SRAM_WIDTH - 1 : i * SRAM_WIDTH] = scalar_op_cfg ? scalar_line : prf_data_out_r[1][i];
     end
 endgenerate
 
@@ -316,6 +321,7 @@ vectorial_unit #(
     .rst_n       ( rst_n            ),
     .en          ( vu_en            ),
     .start       ( start_addr_gen   ),
+    .scalar_op   ( scalar_op_cfg    ),
     .op          ( op_cfg           ),
     .rd          ( rd_cfg           ),
     .rs1         ( rs1_cfg          ),
