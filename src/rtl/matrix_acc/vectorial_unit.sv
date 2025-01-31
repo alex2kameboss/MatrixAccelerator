@@ -37,8 +37,10 @@ module vectorial_unit #(
     
 localparam NUMBER_OF_ALU = DMA_DATA_WIDTH / ALU_WIDTH;
 
+
 ma_pkg::dtype_t dtype;
 assign dtype = rd.dtype;
+wire fast = dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32;
 
 logic rs1_done, rs2_done;
 logic rs_incr;
@@ -56,7 +58,7 @@ always @( posedge clk, negedge rst_n )
     if ( ~rst_n )                       rs_incr_delayed <= 1'b0;      else
                                         rs_incr_delayed <= rs_incr;
 
-assign rs1_read = rs_incr_delayed | start_delayed;
+assign rs1_read = (~fast ? rs_incr_delayed : rs_incr) | start_delayed;
 assign rs2_read = rs1_read;
 
 logic rs_addr_en;
@@ -68,8 +70,7 @@ always @( posedge clk, negedge rst_n )
 logic splitter_en;
 always @( posedge clk, negedge rst_n )
     if ( ~rst_n )                       splitter_en <= 1'b0;         else
-    if ( start_delayed & en )           splitter_en <= 1'b1;         else
-    if ( ~rs_addr_en )                  splitter_en <= 1'b0;         
+                                        splitter_en <= rs_addr_en;
 
 prf_addr_gen_seq #(
     .PRF_N_LANES    ( PRF_N_LANES ),
@@ -80,7 +81,7 @@ prf_addr_gen_seq #(
     .rst_n   ( rst_n                ),
     .start   ( start                ),
     .en      ( rs_addr_en | start   ),
-    .incr    ( rs_incr             ),
+    .incr    ( rs_incr | fast & start_delayed ),
     .r       ( rs1                  ),
     .i_out   ( rs1_i_out            ),
     .j_out   ( rs1_j_out            ),
@@ -96,7 +97,7 @@ prf_addr_gen_seq #(
     .rst_n   ( rst_n                ),
     .start   ( start                ),
     .en      ( rs_addr_en | start   ),
-    .incr    ( rs_incr             ),
+    .incr    ( rs_incr | fast & start_delayed ),
     .r       ( rs2                  ),
     .i_out   ( rs2_i_out            ),
     .j_out   ( rs2_j_out            ),
@@ -138,8 +139,7 @@ endgenerate
 logic concat_en;
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )               concat_en <= 'd0;       else
-        if ( splitter_en )      concat_en <= 'd1;       else
-        if ( done )             concat_en <= 'd0;      
+                                concat_en <= splitter_en;
 
 vectorial_concat #(
     .OUT_DATA_WIDTH ( DMA_DATA_WIDTH ),

@@ -566,7 +566,7 @@ begin
     if ( dt == INT32 | dt == UINT32 ) begin
       assert({i_sim_mem.i_sim_mem.mem[rr_addr + i + 3], i_sim_mem.i_sim_mem.mem[rr_addr + i + 2], i_sim_mem.i_sim_mem.mem[rr_addr + i + 1], i_sim_mem.i_sim_mem.mem[rr_addr + i + 0]} == 
          alu({i_sim_mem.i_sim_mem.mem[r1_addr + i + 3], i_sim_mem.i_sim_mem.mem[r1_addr + i + 2], i_sim_mem.i_sim_mem.mem[r1_addr + i + 1], i_sim_mem.i_sim_mem.mem[r1_addr + i + 0]}, 
-             {i_sim_mem.i_sim_mem.mem[r2_addr + i + 3], i_sim_mem.i_sim_mem.mem[r2_addr + i + 2], i_sim_mem.i_sim_mem.mem[r2_addr + i + 1], i_sim_mem.i_sim_mem.mem[r2_addr + i + 0]}, o)) else
+             {i_sim_mem.i_sim_mem.mem[r2_addr + i + 3], i_sim_mem.i_sim_mem.mem[r2_addr + i + 2], i_sim_mem.i_sim_mem.mem[r2_addr + i + 1], i_sim_mem.i_sim_mem.mem[r2_addr + i + 0]}, o)[31:0]) else
       $error("byte: %d, rd: %d, rs1: %d, rs2: %d", i,
       {i_sim_mem.i_sim_mem.mem[rr_addr + i + 3], i_sim_mem.i_sim_mem.mem[rr_addr + i + 2], i_sim_mem.i_sim_mem.mem[rr_addr + i + 1], i_sim_mem.i_sim_mem.mem[rr_addr + i + 0]},
       {i_sim_mem.i_sim_mem.mem[r1_addr + i + 3], i_sim_mem.i_sim_mem.mem[r1_addr + i + 2], i_sim_mem.i_sim_mem.mem[r1_addr + i + 1], i_sim_mem.i_sim_mem.mem[r1_addr + i + 0]},
@@ -575,14 +575,14 @@ begin
     else if ( dt == INT16 | dt == UINT16 ) begin
       assert({i_sim_mem.i_sim_mem.mem[rr_addr + i + 1], i_sim_mem.i_sim_mem.mem[rr_addr + i + 0]} == 
          alu({i_sim_mem.i_sim_mem.mem[r1_addr + i + 1], i_sim_mem.i_sim_mem.mem[r1_addr + i + 0]}, 
-             {i_sim_mem.i_sim_mem.mem[r2_addr + i + 1], i_sim_mem.i_sim_mem.mem[r2_addr + i + 0]}, o)) else
+             {i_sim_mem.i_sim_mem.mem[r2_addr + i + 1], i_sim_mem.i_sim_mem.mem[r2_addr + i + 0]}, o)[15:0]) else
       $error("byte: %d, rd: %d, rs1: %d, rs2: %d", i,
       {i_sim_mem.i_sim_mem.mem[rr_addr + i + 1], i_sim_mem.i_sim_mem.mem[rr_addr + i + 0]},
       {i_sim_mem.i_sim_mem.mem[r1_addr + i + 1], i_sim_mem.i_sim_mem.mem[r1_addr + i + 0]},
       {i_sim_mem.i_sim_mem.mem[r2_addr + i + 1], i_sim_mem.i_sim_mem.mem[r2_addr + i + 0]});
     end
     else if ( dt == INT8 | dt == UINT8 ) begin
-      assert(i_sim_mem.i_sim_mem.mem[rr_addr + i] == alu(i_sim_mem.i_sim_mem.mem[r1_addr + i], i_sim_mem.i_sim_mem.mem[r2_addr + i], o)) else 
+      assert(i_sim_mem.i_sim_mem.mem[rr_addr + i] == alu(i_sim_mem.i_sim_mem.mem[r1_addr + i], i_sim_mem.i_sim_mem.mem[r2_addr + i], o)[7:0]) else 
       $error("byte: %d, rd: %d, rs1: %d, rs2: %d", i, {i_sim_mem.i_sim_mem.mem[rr_addr + i]}, {i_sim_mem.i_sim_mem.mem[r1_addr + i]}, {i_sim_mem.i_sim_mem.mem[r2_addr + i]});    
     end
   end
@@ -637,12 +637,23 @@ initial begin
 
   init_mem();
 
-  //for ( register = 0; register < 32; register = register + 1 )
-  //  define_register(16, 16, 'd0, register);
+  $display("Define register test");
+  for ( int ridx = 0; ridx < NUMBER_OF_REGISTERS; ridx = ridx + 1 ) begin
+    define_register_one_step(
+      .r    ( ridx  ),
+      .w    ( 'd1024),
+      .h    ( 'd1024),
+      .dt   ( INT32 ),
+      .prf_x( 'd0   ),
+      .prf_y( 'd0   ),
+      .org  ( RECT  )
+    );
+    $display("------------------------------------------------------");
+  end
 
-  /*load_store_test('d0, 32, 32, 0, 0, UINT8, 'h0);
+  load_store_test('d0, 32, 32, 0, 0, UINT8, 'h0);
   load_store_test('d0, 16, 16, 10, 10, UINT16, 'h0);
-  load_store_test('d0, 8, 8, 5, 100, UINT32, 'h0);*/
+  load_store_test('d0, 8, 8, 5, 100, UINT32, 'h0);
 
   
   vector_vector_operation_test(
@@ -675,6 +686,80 @@ initial begin
     .r2_prf_y( 'd32     ),
     .o       ( ADD      ),
     .dt      ( INT8     ),
+    .w       ( 'd32     ),
+    .h       ( 'd32     ),
+    .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
+    .r1_addr ( MEM_SIZE ),
+    .r2_addr ( 'd0      )
+  );
+
+  vector_vector_operation_test(
+    .rr      ( 'd2      ),
+    .rr_prf_x( 'd0      ),
+    .rr_prf_y( 'd64     ),
+    .r1      ( 'd0      ),
+    .r1_prf_x( 'd0      ),
+    .r1_prf_y( 'd0      ),
+    .r2      ( 'd1      ),
+    .r2_prf_x( 'd0      ),
+    .r2_prf_y( 'd32     ),
+    .o       ( SUB      ),
+    .dt      ( INT16    ),
+    .w       ( 'd32     ),
+    .h       ( 'd32     ),
+    .rr_addr ( MEM_SIZE ),
+    .r1_addr ( 'd0      ),
+    .r2_addr ( 'd0      )
+  );
+  vector_vector_operation_test(
+    .rr      ( 'd2      ),
+    .rr_prf_x( 'd0      ),
+    .rr_prf_y( 'd64     ),
+    .r1      ( 'd0      ),
+    .r1_prf_x( 'd0      ),
+    .r1_prf_y( 'd0      ),
+    .r2      ( 'd1      ),
+    .r2_prf_x( 'd0      ),
+    .r2_prf_y( 'd32     ),
+    .o       ( ADD      ),
+    .dt      ( INT16    ),
+    .w       ( 'd32     ),
+    .h       ( 'd32     ),
+    .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
+    .r1_addr ( MEM_SIZE ),
+    .r2_addr ( 'd0      )
+  );
+
+  vector_vector_operation_test(
+    .rr      ( 'd2      ),
+    .rr_prf_x( 'd0      ),
+    .rr_prf_y( 'd64     ),
+    .r1      ( 'd0      ),
+    .r1_prf_x( 'd0      ),
+    .r1_prf_y( 'd0      ),
+    .r2      ( 'd1      ),
+    .r2_prf_x( 'd0      ),
+    .r2_prf_y( 'd32     ),
+    .o       ( SUB      ),
+    .dt      ( INT32    ),
+    .w       ( 'd32     ),
+    .h       ( 'd32     ),
+    .rr_addr ( MEM_SIZE ),
+    .r1_addr ( 'd0      ),
+    .r2_addr ( 'd0      )
+  );
+  vector_vector_operation_test(
+    .rr      ( 'd2      ),
+    .rr_prf_x( 'd0      ),
+    .rr_prf_y( 'd64     ),
+    .r1      ( 'd0      ),
+    .r1_prf_x( 'd0      ),
+    .r1_prf_y( 'd0      ),
+    .r2      ( 'd1      ),
+    .r2_prf_x( 'd0      ),
+    .r2_prf_y( 'd32     ),
+    .o       ( ADD      ),
+    .dt      ( INT32    ),
     .w       ( 'd32     ),
     .h       ( 'd32     ),
     .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
