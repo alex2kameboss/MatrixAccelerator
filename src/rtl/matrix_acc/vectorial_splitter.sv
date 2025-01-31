@@ -15,18 +15,22 @@ module vectorial_splitter #(
 );
 
 localparam NUMBER_OF_ALU = IN_DATA_WIDTH / OUT_DATA_WIDTH;
+localparam ALU_BYTES = OUT_DATA_WIDTH / 8; 
 
-logic   [$clog2(NUMBER_OF_ALU) - 1 : 0]   cnt;
+logic   [$clog2(ALU_BYTES) - 1 : 0]   cnt;
 
-assign next = ((dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32) |
+assign limit = ((dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32) |
                 cnt == 'd1 & (dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) |
                 cnt == 'd3 & (dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8)) & en;
+assign next = ((dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32) |
+                cnt == 'd0 & (dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) |
+                cnt == 'd2 & (dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8)) & en; // need early by 1 clk
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                       cnt <= 'd0;         else
     if ( reset )                        cnt <= 'd0;         else
     if ( en )   begin
-        if ( next ) 
+        if ( limit ) 
             cnt <= 'd0; 
         else
             cnt <= cnt + 1'b1;
@@ -34,7 +38,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 logic is_signed;
 
-assign is_signed = dtype == ma_pkg::UINT32 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::UINT8;
+assign is_signed = dtype == ma_pkg::INT32 | dtype == ma_pkg::INT16 | dtype == ma_pkg::INT8;
 
 genvar i;
 
