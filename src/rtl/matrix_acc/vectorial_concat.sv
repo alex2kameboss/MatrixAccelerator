@@ -47,23 +47,7 @@ assign rez_in_byte[i_split][j_split] = rez_in[i_split][(j_split + 1) * 8 - 1 -: 
     end
 endgenerate
 
-//generate
-//    for ( i = 0; i < NUMBER_OF_ALU; i = i + 1 ) begin : dtype_selection
-//always_ff @(posedge clk, negedge rst_n)
-//    if (en) begin
-//        if ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 ) begin
-//            rez_out[(i + 1) * IN_DATA_WIDTH - 1 -: IN_DATA_WIDTH] <= rez_in[i];
-//        end else if ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 ) begin
-//            rez_out[(i + 1) * IN_DATA_WIDTH - cnt * IN_DATA_WIDTH / 2 - 1 -: IN_DATA_WIDTH / 2] <= rez_in[i][IN_DATA_WIDTH / 2 - 1 : 0];
-//        end else begin
-//            rez_out[(i + 1) * IN_DATA_WIDTH - cnt * IN_DATA_WIDTH / 4 - 1 -: IN_DATA_WIDTH / 4] <= rez_in[i][IN_DATA_WIDTH / 4 - 1 : 0];
-//        end
-//    end
-//end
-//endgenerate
-
 genvar i_reg, j_reg;
-
 generate
     for ( i_reg = NUMBER_OF_ALU - 1; i_reg >= 0 ; i_reg  = i_reg - 1 ) begin : dtype_selection_outer
         for ( j_reg = IN_BYTES - 1; j_reg >= 0; j_reg = j_reg - 1 ) begin : dtype_selection_inner

@@ -223,11 +223,6 @@ begin
   assert(i_dut.i_ccu.rft[r].valid);
   assert(i_dut.i_ccu.rft[r].prf_valid);
 
-  //int bytes, i, j;
-  //bit pass;
-  //logic [7 : 0] line [DATA_BYTES - 1 : 0];
-
-
   // load data
   rd <= r;
   funct3 <= LOAD;
@@ -243,24 +238,6 @@ begin
   @(posedge clk)
   while (ready != 1'b1) @(posedge clk);
 
-  /*
-  // check data in regfile
-  bytes = i_dut.i_ccu.rft[r].width * i_dut.i_ccu.rft[r].height;
-
-  if ( i_dut.i_ccu.rft[r].dtype == INT16 | i_dut.i_ccu.rft[r].dtype == UINT16 )
-    bytes = bytes * 2;
-  else if ( i_dut.i_ccu.rft[r].dtype == INT32 | i_dut.i_ccu.rft[r].dtype == UINT32 )
-    bytes = bytes * 4;
-
-  pass = 1'b1;
-  for ( i = 0; i < bytes; i = i + DATA_BYTES ) begin
-    for ( j = 0; j < DATA_BYTES; j = j + 1 ) begin
-      line[j] = i_sim_mem.i_sim_mem.mem[addr + i + j];
-    end
-    //pass = pass & (buffers_clone[r][i / DATA_BYTES] == { >> {line}});
-  end
-  assert(pass);
-  */
   assert(i_dut.i_ccu.rft[r].in_mem);
 end
 endtask
@@ -271,9 +248,6 @@ task vector_vector_operation;
   input register    r2;
   input operation_t o ;
 begin
-  int bytes, i, j;
-  bit pass;
-
   $display("Vector-Vector operation ( rd: %d, r1: %d, r2: %d, operation: %s )", rr, r1, r2, o);
 
   // check registers
@@ -310,29 +284,6 @@ begin
   @(posedge clk)
   while (ready != 1'b1) @(posedge clk);
 
-  // check result
-  bytes = i_dut.i_ccu.rft[rr].width * i_dut.i_ccu.rft[rr].height;
-
-  if ( i_dut.i_ccu.rft[rr].dtype == INT16 | i_dut.i_ccu.rft[rr].dtype == UINT16 )
-    bytes = bytes * 2;
-  else if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 )
-    bytes = bytes * 4;
-
-  /*
-  pass = 1'b1;
-  for ( i = 0; i < bytes; i = i + DATA_BYTES ) begin
-    if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 ) 
-      for ( j = 0; j < DATA_BYTES / 4; j = j + 1 )
-        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 32  - 1 -: 32 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], o));
-    else if ( i_dut.i_ccu.rft[rr].dtype == INT16 | i_dut.i_ccu.rft[rr].dtype == UINT16 ) 
-      for ( j = 0; j < DATA_BYTES / 2; j = j + 1 )
-        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], o)[15 : 0]);
-    else if ( i_dut.i_ccu.rft[rr].dtype == INT8 | i_dut.i_ccu.rft[rr].dtype == UINT8 ) 
-      for ( j = 0; j < DATA_BYTES; j = j + 1 )
-        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], buffers_clone[r2][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], o)[7 : 0]);
-  end
-  assert(pass);
-  */
   assert(i_dut.i_ccu.rft[rr].in_mem);
 end
 endtask
@@ -350,10 +301,6 @@ task store_register;
   input register r;
   input int addr;
 begin
-  //int bytes, i, j;
-  //bit pass;
-  //logic [7 : 0] line [DATA_BYTES - 1 : 0];
-
   $display("Store register ( registerId: %d, addr: %h )", r, addr);
 
   assert(i_dut.i_ccu.rft[r].valid);
@@ -373,25 +320,6 @@ begin
   // wait the controller to be available again
   @(posedge clk)
   while (ready != 1'b1) @(posedge clk);
-
-  /*
-  // check data in regfile
-  bytes = i_dut.i_ccu.rft[r].width * i_dut.i_ccu.rft[r].width;
-
-  if ( i_dut.i_ccu.rft[r].dtype == INT16 | i_dut.i_ccu.rft[r].dtype == UINT16 )
-    bytes = bytes * 2;
-  else if ( i_dut.i_ccu.rft[r].dtype == INT32 | i_dut.i_ccu.rft[r].dtype == UINT32 )
-    bytes = bytes * 4;
-
-  pass = 1'b1;
-  for ( i = 0; i < bytes; i = i + DATA_BYTES ) begin
-    for ( j = 0; j < DATA_BYTES; j = j + 1 ) begin
-      line[j] = i_sim_mem.i_sim_mem.mem[addr + i + j];
-    end
-    //pass = pass & (buffers_clone[r][i / DATA_BYTES] == { >> {line}});
-  end
-  assert(pass);
-  */
 end
 endtask
 
@@ -401,9 +329,6 @@ task vector_scalar_operation;
   input int r2;
   input operation_t o;
 begin
-  int bytes, i, j;
-  bit pass;
-
   $display("Vector-Scalar operation ( rd: %d, r1: %d, r2: %d, operation: %s )", rr, r1, r2, o);
 
   // check registers
@@ -433,41 +358,18 @@ begin
   @(posedge clk)
   while (ready != 1'b1) @(posedge clk);
 
-  // check result
-  bytes = i_dut.i_ccu.rft[rr].width * i_dut.i_ccu.rft[rr].height;
-
-  if ( i_dut.i_ccu.rft[rr].dtype == INT16 | i_dut.i_ccu.rft[rr].dtype == UINT16 )
-    bytes = bytes * 2;
-  else if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 )
-    bytes = bytes * 4;
-
-  /*
-  pass = 1'b1;
-  for ( i = 0; i < bytes; i = i + DATA_BYTES ) begin
-    if ( i_dut.i_ccu.rft[rr].dtype == INT32 | i_dut.i_ccu.rft[rr].dtype == UINT32 ) 
-      for ( j = 0; j < DATA_BYTES / 4; j = j + 1 )
-        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 32  - 1 -: 32 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 32 - 1 -: 32 ], r2, o));
-    else if ( i_dut.i_ccu.rft[rr].dtype == INT16 | i_dut.i_ccu.rft[rr].dtype == UINT16 ) 
-      for ( j = 0; j < DATA_BYTES / 2; j = j + 1 )
-        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 16 - 1 -: 16 ], r2[15 : 0], o)[15 : 0]);
-    else if ( i_dut.i_ccu.rft[rr].dtype == INT8 | i_dut.i_ccu.rft[rr].dtype == UINT8 ) 
-      for ( j = 0; j < DATA_BYTES; j = j + 1 )
-        //pass = pass & (buffers_clone[rr][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ] == alu(buffers_clone[r1][i / DATA_BYTES][ (j + 1) * 8 - 1 -: 8 ], r2[7 : 0], o)[7 : 0]);
-  end
-  assert(pass);
-  */
   assert(i_dut.i_ccu.rft[rr].in_mem);
 end
 endtask
 
 task load_store_test;
-  input register r;
-  input int w;
-  input int h;
-  input int prf_x;
-  input int prf_y;
-  input dtype_t dt;
-  input int addr;
+  input register  r     ;
+  input int       w     ;
+  input int       h     ;
+  input int       prf_x ;
+  input int       prf_y ;
+  input dtype_t   dt    ;
+  input int       addr  ;
 begin
   int bytes;
   int i;
@@ -692,6 +594,7 @@ initial begin
 
   init_mem();
 
+  // ------- test register definition -------
   $display("Define register test");
   for ( int ridx = 0; ridx < NUMBER_OF_REGISTERS; ridx = ridx + 1 ) begin
     define_register_one_step(
@@ -706,11 +609,38 @@ initial begin
     $display("------------------------------------------------------");
   end
 
-  load_store_test('d0, 32, 32, 0, 0, UINT8, 'h0);
-  load_store_test('d0, 16, 16, 10, 10, UINT16, 'h0);
-  load_store_test('d0, 8, 8, 5, 100, UINT32, 'h0);
+
+  // ------- test memory operaions -------
+  load_store_test(
+    .r     ( 'd0    ), 
+    .w     ( 32     ), 
+    .h     ( 32     ), 
+    .prf_x ( 0      ), 
+    .prf_y ( 0      ), 
+    .dt    ( UINT8  ), 
+    .addr  ( 'h0    )
+  );
+  load_store_test(
+    .r     ( 'd0    ), 
+    .w     ( 32     ), 
+    .h     ( 32     ), 
+    .prf_x ( 0      ), 
+    .prf_y ( 0      ), 
+    .dt    ( UINT16 ), 
+    .addr  ( 'h0    )
+  );
+  load_store_test(
+    .r     ( 'd0    ), 
+    .w     ( 32     ), 
+    .h     ( 32     ), 
+    .prf_x ( 0      ), 
+    .prf_y ( 0      ), 
+    .dt    ( UINT32 ), 
+    .addr  ( 'h0    )
+  );
 
   
+  // ------- test vector vector operations -------
   vector_vector_operation_test(
     .rr      ( 'd2      ),
     .rr_prf_x( 'd0      ),
@@ -823,6 +753,7 @@ initial begin
   );
 
 
+  // ------- test vector scalar operations -------
   vector_scalar_operation_test(
     .rr      ( 'd2      ),
     .rr_prf_x( 'd0      ),
@@ -838,7 +769,6 @@ initial begin
     .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
     .r1_addr ( MEM_SIZE )
   );
-
   vector_scalar_operation_test(
     .rr      ( 'd2      ),
     .rr_prf_x( 'd0      ),
@@ -854,7 +784,6 @@ initial begin
     .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
     .r1_addr ( MEM_SIZE )
   );
-
   vector_scalar_operation_test(
     .rr      ( 'd2      ),
     .rr_prf_x( 'd0      ),
