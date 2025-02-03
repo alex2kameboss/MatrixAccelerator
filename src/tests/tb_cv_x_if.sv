@@ -2,6 +2,8 @@ module tb_cv_x_if ();
 import ma_pkg::*;
 import riscv_pkg::*;
     
+localparam OPCODE = 7'h2B;
+
 core_v_xif #(
     .X_NUM_RS              ( 2  ),
     .X_ID_WIDTH            ( 4  ),
@@ -22,6 +24,7 @@ logic                                       valid    ;
 logic                                       ready    ;
 logic                                       arth_data;
 logic                                       define   ;
+logic                                       prf_define;
 logic                                       ld_st    ;
 logic               [ADDR_WIDTH - 1 : 0]    dut_addr ;
 operation_t                                 op       ;
@@ -32,7 +35,7 @@ logic               [4 : 0]                 rs1      ;
 logic               [4 : 0]                 rs2      ;
 logic               [ADDR_WIDTH - 1 : 0]    width    ;
 logic               [ADDR_WIDTH - 1 : 0]    height   ;
-dtype_t                                     dType    ;
+logic               [6 : 0]                 dType    ;
 
 logic clk, rst_n;
 int hartId, opId;
@@ -121,10 +124,12 @@ input reg_t     height_r;
 begin
     riscv_r_t inst;
     
+    $display("Define register");
+
     rf[width_r] = width_i;
     rf[height_r] = height_i;
 
-    inst.opcode   = 7'h2B;
+    inst.opcode   = OPCODE;
     inst.rd       = rd_i;
     inst.funct3   = DEFINE;
     inst.rs1      = width_r;
@@ -142,11 +147,58 @@ begin
     // check operation configuration
     assert( arth_data == 1'b0 );
     assert( define == 1'b1 );
+    assert( prf_define == 1'b0 );
+    assert( ld_st == 1'b0 );
     // check data
     assert( rd == rd_i );
     assert( width == width_i );
     assert( height == height_i );
-    assert( dType == dt );
+    assert( dtype_t'(dType) == dt );
+
+    xif_response();
+end
+endtask //automatic
+
+task automatic define_prf_rgeister;
+input reg_t             rd_i    ;
+input int               prf_x   ;
+input int               prf_y   ;
+input organization_t    dt      ;
+input reg_t             prf_x_r ;
+input reg_t             prf_y_r ;
+begin
+    riscv_r_t inst;
+    
+    $display("Define PRF register");
+
+    rf[prf_x_r] = prf_x;
+    rf[prf_y_r] = prf_y;
+
+    inst.opcode   = OPCODE;
+    inst.rd       = rd_i;
+    inst.funct3   = DEFINE_POLY;
+    inst.rs1      = prf_x_r;
+    inst.rs2      = prf_y_r;
+    inst.func7    = dt;
+
+    do_xif(
+        .instr    ( inst ),
+        .shallPass( 1'd1 ),
+        .noRegs   ( 2    ),
+        .commit   ( 1'd1 )
+    );
+
+    // assertions
+    // check operation configuration
+    assert( arth_data == 1'b0 );
+    assert( define == 1'b1 );
+    assert( prf_define == 1'b1 );
+    assert( ld_st == 1'b0 );
+    // check data
+    assert( rd == rd_i );
+    assert( width == prf_x );
+    assert( height == prf_y );
+    assert( organization_t'(dType) == dt );
 
     xif_response();
 end
@@ -160,9 +212,11 @@ input reg_t addr_r  ;
 begin
     riscv_i_t inst;
     
+    $display("Load register");
+
     rf[addr_r] = addr_i;
 
-    inst.opcode   = 7'h2B;
+    inst.opcode   = OPCODE;
     inst.rd       = rd_i;
     inst.funct3   = LOAD;
     inst.rs1      = addr_r;
@@ -179,6 +233,7 @@ begin
     // check operation configuration
     assert( arth_data == 1'b0 );
     assert( define == 1'b0 );
+    assert( prf_define == 1'b0 );
     assert( ld_st == 1'b1 );
     // check data
     assert( dut_addr == addr_i + imm);
@@ -196,9 +251,11 @@ input reg_t addr_r  ;
 begin
     riscv_i_t inst;
     
+    $display("Store register");
+
     rf[addr_r] = addr_i;
 
-    inst.opcode   = 7'h2B;
+    inst.opcode   = OPCODE;
     inst.rd       = rd_i;
     inst.funct3   = STORE;
     inst.rs1      = addr_r;
@@ -215,6 +272,7 @@ begin
     // check operation configuration
     assert( arth_data == 1'b0 );
     assert( define == 1'b0 );
+    assert( prf_define == 1'b0 );
     assert( ld_st == 1'b0 );
     // check data
     assert( dut_addr == addr_i + imm);
@@ -232,7 +290,9 @@ input operation_t   op_i    ;
 begin
     riscv_r_t inst;
     
-    inst.opcode   = 7'h2B;
+    $display("Vector-vector operation");
+
+    inst.opcode   = OPCODE;
     inst.rd       = rd_i;
     inst.funct3   = VV;
     inst.rs1      = rs1_i;
@@ -269,9 +329,11 @@ input int           rs2_v   ;
 begin
     riscv_r_t inst;
     
+    $display("Vector-scalr operation");
+
     rf[rs2_i] = rs2_v;
 
-    inst.opcode   = 7'h2B;
+    inst.opcode   = OPCODE;
     inst.rd       = rd_i;
     inst.funct3   = VS;
     inst.rs1      = rs1_i;
@@ -303,8 +365,10 @@ task automatic failing;
 begin
     riscv_r_t inst;
     
+    $display("Failing test");
+
     // wrong opcode
-    inst.opcode   = 7'h3B;
+    inst.opcode   = OPCODE + 1'h10;
     inst.rd       = 'd0;
     inst.funct3   = NF3;
     inst.rs1      = 'd0;
@@ -319,7 +383,7 @@ begin
     );
 
     // wrong funct3
-    inst.opcode   = 7'h2B;
+    inst.opcode   = OPCODE;
     inst.rd       = 'd0;
     inst.funct3   = NF3;
     inst.rs1      = 'd0;
@@ -334,7 +398,7 @@ begin
     );
 
     // wrong dtype
-    inst.opcode   = 7'h2B;
+    inst.opcode   = OPCODE;
     inst.rd       = 'd0;
     inst.funct3   = DEFINE;
     inst.rs1      = 'd0;
@@ -349,7 +413,7 @@ begin
     );
 
     // wrong operation
-    inst.opcode   = 7'h2B;
+    inst.opcode   = OPCODE;
     inst.rd       = 'd0;
     inst.funct3   = VV;
     inst.rs1      = 'd0;
@@ -404,6 +468,15 @@ initial begin
         .height_r( 'd1  )
     );
 
+    define_prf_rgeister(
+        .rd_i   ( 'd0  ),
+        .prf_x  ( 'd8  ),
+        .prf_y  ( 'd8  ),
+        .dt     ( RECT ),
+        .prf_x_r( 'd0  ),
+        .prf_y_r( 'd1  )
+    );
+
     load_rgeister(
         .rd_i    ( 'd0  ),
         .addr_i  ( 'd0  ),
@@ -442,9 +515,9 @@ end
 clk_rstn i_clk_gen (.clk, .rst_n);
 
 extension_driver #(
-    .OPCODE             ( 7'h2B ),
-    .ADDR_WIDTH         ( 32    ),
-    .REGISTER_NUMBERS   ( 32    )
+    .OPCODE             ( OPCODE    ),
+    .ADDR_WIDTH         ( 32        ),
+    .REGISTER_NUMBERS   ( 32        )
 ) i_xif_driver (
     .clk             ( clk          ),
     .rst_n           ( rst_n        ),
@@ -456,6 +529,7 @@ extension_driver #(
     .ready           ( ready        ),
     .arth_data       ( arth_data    ),   // 1 arithmetic operation, 0 data operation
     .define          ( define       ),   // 1 define register, 0 memory operation
+    .prf_define      ( prf_define   ),   // 1 define for prf, 0 define for matrix
     .ld_st           ( ld_st        ),   // 1 load, 0 store
     .addr            ( dut_addr     ),
     .op              ( op           ),

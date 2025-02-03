@@ -18,6 +18,7 @@ module extension_driver #(
 // control signal                           
     output  logic                                                   arth_data       ,   // 1 arithmetic operation, 0 data operation
     output  logic                                                   define          ,   // 1 define register, 0 memory operation
+    output  logic                                                   prf_define      ,   // 1 define for prf, 0 define for matrix
 // memori data                          
     output  logic                                                   ld_st           ,   // 1 load, 0 store
     output  logic               [ADDR_WIDTH - 1 : 0]                addr            ,
@@ -31,7 +32,7 @@ module extension_driver #(
 // define registers 
     output  logic               [ADDR_WIDTH - 1 : 0]                width           ,
     output  logic               [ADDR_WIDTH - 1 : 0]                height          ,
-    output  ma_pkg::dtype_t                                         dtype             
+    output  logic               [6 : 0]                             dtype            
 );
     
 riscv_pkg::ma_riscv_inst_t instr;
@@ -61,10 +62,12 @@ always_ff @ ( posedge clk, negedge rst_n )
         instr_if.issue_resp.accept          <= valid_instr;
         instr_if.issue_resp.writeback       <= 'd0;
         instr_if.issue_resp.register_read[0]<= instr.decode.funct3 == ma_pkg::DEFINE   | 
-                                        instr.decode.funct3 == ma_pkg::LOAD     |
-                                        instr.decode.funct3 == ma_pkg::STORE    ;
-        instr_if.issue_resp.register_read[1]<= instr.decode.funct3 == ma_pkg::DEFINE | 
-                                        instr.decode.funct3 == ma_pkg::VS;
+                                        instr.decode.funct3 == ma_pkg::DEFINE_POLY  |
+                                        instr.decode.funct3 == ma_pkg::LOAD         |
+                                        instr.decode.funct3 == ma_pkg::STORE        ;
+        instr_if.issue_resp.register_read[1]<= instr.decode.funct3 == ma_pkg::DEFINE    | 
+                                        instr.decode.funct3 == ma_pkg::DEFINE_POLY      |
+                                        instr.decode.funct3 == ma_pkg::VS               ;
         instr_if.issue_resp.loadstore       <= 'd0;
     end else if ( taken_instr ) begin
         instr_if.issue_resp.accept          <= 'd0;
@@ -76,11 +79,12 @@ always_ff @ ( posedge clk, negedge rst_n )
 always_comb begin : validate_instr // TODO: when add new instruction, update here
     valid_instr = instr.decode.opcode == OPCODE;
     valid_instr = valid_instr & (
-        instr.decode.funct3 == ma_pkg::DEFINE   | 
-        instr.decode.funct3 == ma_pkg::LOAD     |
-        instr.decode.funct3 == ma_pkg::STORE    |
-        instr.decode.funct3 == ma_pkg::VV       |
-        instr.decode.funct3 == ma_pkg::VS       );
+        instr.decode.funct3 == ma_pkg::DEFINE       | 
+        instr.decode.funct3 == ma_pkg::DEFINE_POLY  | 
+        instr.decode.funct3 == ma_pkg::LOAD         |
+        instr.decode.funct3 == ma_pkg::STORE        |
+        instr.decode.funct3 == ma_pkg::VV           |
+        instr.decode.funct3 == ma_pkg::VS           );
     if ( instr.decode.funct3 == ma_pkg::DEFINE )
         valid_instr = valid_instr & (
             'd0 <= instr.r_type.func7 &
@@ -99,7 +103,8 @@ end
 
 logic funct3_wire;    
 logic arth_data_wire; 
-logic define_wire;    
+logic define_wire;   
+logic prf_define_wire;
 logic ld_st_wire;     
 logic scalar_op_wire; 
 logic error_wire;     
@@ -108,6 +113,7 @@ instr_decoder i_decoder (
     .funct3      ( instr.decode.funct3  ),
     .arth_data   ( arth_data_wire       ),
     .define      ( define_wire          ),
+    .define_prf  ( prf_define_wire      ),
     .ld_st       ( ld_st_wire           ),
     .scalar_op   ( scalar_op_wire       ),
     .error       ( error_wire           )
@@ -120,16 +126,19 @@ always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
         arth_data   <=  1'b0;
         define      <=  1'b0;
+        prf_define  <=  1'b0;
         ld_st       <=  1'b0;
         scalar_op   <=  1'b0;
     end else if ( load_data) begin
         arth_data   <=  arth_data_wire;
         define      <=  define_wire   ;
+        prf_define  <=  prf_define_wire;
         ld_st       <=  ld_st_wire    ;
         scalar_op   <=  scalar_op_wire;
     end else if ( valid & ready ) begin
         arth_data   <=  1'b0;
         define      <=  1'b0;
+        prf_define  <=  1'b0;
         ld_st       <=  1'b0;
         scalar_op   <=  1'b0;
     end
@@ -151,7 +160,7 @@ always_ff @ ( posedge clk, negedge rst_n )
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           dtype <= ma_pkg::NDT;                       else
-    if ( load_data )        dtype <= ma_pkg::dtype_t'(instr.r_type.func7);else
+    if ( load_data )        dtype <= instr.r_type.func7;                else
     if ( valid & ready )    dtype <= ma_pkg::NDT;
 
 always_ff @ ( posedge clk, negedge rst_n )
