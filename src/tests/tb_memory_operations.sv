@@ -304,6 +304,7 @@ begin
   $display("Store register ( registerId: %d, addr: %h )", r, addr);
 
   assert(i_dut.i_ccu.rft[r].valid);
+  assert(i_dut.i_ccu.rft[r].prf_valid);
   assert(i_dut.i_ccu.rft[r].in_mem);
 
   // load data
@@ -334,6 +335,8 @@ begin
   // check registers
   assert(i_dut.i_ccu.rft[rr].valid);
   assert(i_dut.i_ccu.rft[r1].valid);
+  assert(i_dut.i_ccu.rft[rr].prf_valid);
+  assert(i_dut.i_ccu.rft[r1].prf_valid);
   assert(i_dut.i_ccu.rft[r1].in_mem);
   assert(i_dut.i_ccu.rft[rr].width == i_dut.i_ccu.rft[r1].width &
           i_dut.i_ccu.rft[rr].height == i_dut.i_ccu.rft[r1].height &

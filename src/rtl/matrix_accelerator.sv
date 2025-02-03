@@ -25,6 +25,7 @@ logic                                                   valid    ;
 logic                                                   ready    ;
 logic                                                   arth_data;   // 1 arithmetic operation, 0 data operation
 logic                                                   define   ;   // 1 define register, 0 memory operation
+logic                                                   prf_define;  // 1 define for prf, 0 define for matrix
 logic                                                   ld_st    ;   // 1 load, 0 store
 logic               [ADDR_WIDTH - 1 : 0]                addr     ;
 ma_pkg::operation_t                                     op       ;
@@ -35,7 +36,7 @@ logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1      ;
 logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2      ;
 logic               [ADDR_WIDTH - 1 : 0]                width    ;
 logic               [ADDR_WIDTH - 1 : 0]                height   ;
-ma_pkg::dtype_t                                         dtype    ; 
+logic               [6 : 0]                             dtype    ; 
 
 extension_driver #(
     .OPCODE            ( OPCODE             ),
@@ -52,6 +53,7 @@ extension_driver #(
     .ready          ( ready         ),
     .arth_data      ( arth_data     ),   // 1 arithmetic operation, 0 data operation
     .define         ( define        ),   // 1 define register, 0 memory operation
+    .prf_define     ( prf_define    ),
     .ld_st          ( ld_st         ),   // 1 load, 0 store
     .addr           ( addr          ),
     .op             ( op            ),
@@ -82,6 +84,7 @@ ma_data_path #(
     .ready      ( ready     ),
     .arth_data  ( arth_data ),   // 1 arithmetic operation, 0 data operation
     .define     ( define    ),   // 1 define register, 0 memory operation
+    .prf_define ( prf_define),
     .ld_st      ( ld_st     ),   // 1 load, 0 store
     .addr       ( addr      ),
     .op         ( op        ),
