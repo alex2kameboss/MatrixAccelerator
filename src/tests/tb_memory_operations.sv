@@ -2,7 +2,7 @@
 `include "axi/typedef.svh"
 import ma_pkg::*;
 
-module tb_memory_operations();
+module tb_ma_data_path();
 
 localparam PRF_LOG_P    =   1   ;
 localparam PRF_LOG_Q    =   2   ;

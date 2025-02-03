@@ -27,5 +27,4 @@ if {![info exists IPS]} {
 
     vlog ${INCLUDE_POLY_MEM} ${PROJECT_ROOT}/src/ips/poly_mem/2dprf_sv/src/packages/*.sv ; # packages
     vlog ${INCLUDE_POLY_MEM} ${PROJECT_ROOT}/src/ips/poly_mem/2dprf_sv/src/rtl/*.sv ; # rtl
-    vlog ${INCLUDE_POLY_MEM} ${PROJECT_ROOT}/src/ips/poly_mem/2dprf_sv/src/tests/*.sv ; # tests
 }
