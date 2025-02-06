@@ -194,6 +194,23 @@ logic                           [DMA_DATA_WIDTH - 1 : 0]    vu_rs2_data ;
 logic                           [DMA_DATA_WIDTH - 1 : 0]    vu_rd_data  ;
 logic                                                       vu_done     ;
 
+logic mu_en;
+assign mu_en = arith & (op_cfg == ma_pkg::MUL);
+
+logic                                                       mu_rs1_read ;
+logic                           [PRF_LOG_N - 1 : 0]         mu_rs1_i_out;
+logic                           [PRF_LOG_M - 1 : 0]         mu_rs1_j_out;
+logic                                                       mu_rs2_read ;
+logic                           [PRF_LOG_N - 1 : 0]         mu_rs2_i_out;
+logic                           [PRF_LOG_M - 1 : 0]         mu_rs2_j_out;
+logic                                                       mu_rd_write ;
+logic                           [PRF_LOG_N - 1 : 0]         mu_rd_i_out ;
+logic                           [PRF_LOG_M - 1 : 0]         mu_rd_j_out ;
+logic                           [DMA_DATA_WIDTH - 1 : 0]    mu_rs1_data ;
+logic                           [DMA_DATA_WIDTH - 1 : 0]    mu_rs2_data ;
+logic                           [DMA_DATA_WIDTH - 1 : 0]    mu_rd_data  ;
+logic                                                       mu_done     ;
+
 logic                               dma_read_incr, dma_write_incr;
 logic   [DMA_DATA_WIDTH - 1 : 0]    mem_w_data;
 
@@ -205,7 +222,7 @@ assign scalar_line = rd_cfg.dtype == ma_pkg::INT32 | rd_cfg.dtype == ma_pkg::UIN
                      rd_cfg.dtype == ma_pkg::INT16 | rd_cfg.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {scalar_cfg[15 : 0]}} :
                                                                                       {NUMBER_OF_ALU * 4 {scalar_cfg[7 : 0]}};
 
-assign mem_w_data = arith ? vu_rd_data : dma_read_data;
+assign mem_w_data = arith ? (vu_en ? vu_rd_data : (mu_en ? mu_rd_data : 'd0)) : dma_read_data;
 
 assign dma_read_incr = dma_read_data_valid & dma_read_data_ready;
 assign dma_write_incr = (dma_write_data_valid | start_addr_gen_delayed) & dma_write_data_ready;
@@ -252,12 +269,12 @@ prf2d_wrapper #(
 );
 
 assign dscheme = prf_dtypes::ROW_COL;
-assign taccess_write[0] = prf_dtypes::ROW;
-assign taccess_read[0] = prf_dtypes::ROW;
+assign taccess_write[0] = mu_en ? prf_dtypes::COL : prf_dtypes::ROW;
+assign taccess_read[0] = mu_en ? prf_dtypes::COL : prf_dtypes::ROW;
 assign taccess_read[1] = prf_dtypes::ROW;
-assign prf_write[1] = ~(load & dma_read_incr | vu_en & vu_rd_write);
-assign prf_read[1] = ~(store | vu_en & vu_rs1_read); // wtf, read 1 for port 0
-assign prf_read[0] = ~(vu_en & vu_rs2_read); // wtf, read 0 for port 1
+assign prf_write[1] = ~(load & dma_read_incr | vu_en & vu_rd_write | mu_en & mu_rd_write);
+assign prf_read[1] = ~(store | vu_en & vu_rs1_read | mu_en & mu_rs1_read); // wtf, read 1 for port 0
+assign prf_read[0] = ~(vu_en & vu_rs2_read | mu_en & mu_rs2_read ); // wtf, read 0 for port 1
 
 genvar i;
 generate
@@ -300,12 +317,12 @@ prf_addr_gen_seq #(
 
 assign dma_read_done = dma_done & load;
 assign dma_write_done = dma_done & store;
-assign write_i[0] = load ? dma_i_out : (vu_en ? vu_rd_i_out : 'd0);
-assign write_j[0] = load ? dma_j_out : (vu_en ? vu_rd_j_out : 'd0);
-assign read_i[0] = store ? dma_i_out : (vu_en ? vu_rs1_i_out : 'd0);
-assign read_j[0] = store ? dma_j_out : (vu_en ? vu_rs1_j_out : 'd0);
-assign read_i[1] = vu_en ? vu_rs2_i_out : 'd0;
-assign read_j[1] = vu_en ? vu_rs2_j_out : 'd0;
+assign write_i[0] = load ? dma_i_out : (vu_en ? vu_rd_i_out  : mu_en ? mu_rd_i_out  : 'd0);
+assign write_j[0] = load ? dma_j_out : (vu_en ? vu_rd_j_out  : mu_en ? mu_rd_j_out  : 'd0);
+assign read_i[0] = store ? dma_i_out : (vu_en ? vu_rs1_i_out : mu_en ? mu_rs1_i_out : 'd0);
+assign read_j[0] = store ? dma_j_out : (vu_en ? vu_rs1_j_out : mu_en ? mu_rs1_j_out : 'd0);
+assign read_i[1] = vu_en ? vu_rs2_i_out : mu_en ? mu_rs2_i_out : 'd0;
+assign read_j[1] = vu_en ? vu_rs2_j_out : mu_en ? mu_rs2_j_out : 'd0;
 
 assign dma_write_data = mem_r_op1;
 
@@ -341,6 +358,38 @@ vectorial_unit #(
     .done        ( vu_done          )
 );
 
-assign arith_done = vu_done;
+// matrix alu
+matrix_unit #(
+    .DMA_DATA_WIDTH ( DMA_DATA_WIDTH ),
+    .ALU_WIDTH      ( ALU_WIDTH      ),
+    .PRF_N_LANES    ( PRF_N_LANES    ),
+    .PRF_LOG_N      ( PRF_LOG_N      ),
+    .PRF_LOG_M      ( PRF_LOG_M      )
+) i_matrix_unit (
+    .clk         ( clk              ),
+    .rst_n       ( rst_n            ),
+    .en          ( mu_en            ),
+    .start       ( start_addr_gen   ),
+    .scalar_op   ( scalar_op_cfg    ),
+    .op          ( op_cfg           ),
+    .rd          ( rd_cfg           ),
+    .rs1         ( rs1_cfg          ),
+    .rs2         ( rs2_cfg          ),
+    .rs1_read    ( mu_rs1_read      ),
+    .rs1_i_out   ( mu_rs1_i_out     ),
+    .rs1_j_out   ( mu_rs1_j_out     ),
+    .rs2_read    ( mu_rs2_read      ),
+    .rs2_i_out   ( mu_rs2_i_out     ),
+    .rs2_j_out   ( mu_rs2_j_out     ),
+    .rd_write    ( mu_rd_write      ),
+    .rd_i_out    ( mu_rd_i_out      ),
+    .rd_j_out    ( mu_rd_j_out      ),
+    .rs1_data    ( mem_r_op1        ),
+    .rs2_data    ( mem_r_op2        ),
+    .rd_data     ( mu_rd_data       ),
+    .done        ( mu_done          )
+);
+
+assign arith_done = vu_en & vu_done | mu_en & mu_done;
 
 endmodule
