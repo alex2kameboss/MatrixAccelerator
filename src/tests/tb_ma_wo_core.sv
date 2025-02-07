@@ -55,7 +55,7 @@ function void init_mem();
   //for (i = 0; i < MEM_SIZE / 2; i = i + 1)
   for ( i = 0; i < 64; i = i + 1 )
     for ( j = 0; j < 64; j = j + 1 )
-        i_sim_mem.i_sim_mem.mem[i * 64 + j] = j;
+        {i_sim_mem.i_sim_mem.mem[(i * 64 + j) * 2 + 1], i_sim_mem.i_sim_mem.mem[(i * 64 + j) * 2]} = j;
 endfunction
 
 AXI_BUS #(
@@ -869,7 +869,7 @@ initial begin
         .dt    ( UINT32 ), 
         .addr  ( 'h0    )
     );
-    */
+    
     
     // ------- test vector vector operations -------
     vector_vector_operation_test(
@@ -908,6 +908,7 @@ initial begin
         .r1_addr ( MEM_SIZE ),
         .r2_addr ( 'd0      )
     );
+    */
 
     gemm_test(
         .rr      ( 'd2      ),
@@ -917,11 +918,11 @@ initial begin
         .r1      ( 'd0      ),
         .r1_prf_x( 'd0      ),
         .r1_prf_y( 'd0      ),
-        .r1_dt   ( INT8     ),
+        .r1_dt   ( INT16    ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
         .r2_prf_y( 'd64     ),
-        .r2_dt   ( INT8     ),
+        .r2_dt   ( INT16    ),
         .m       ( 'd64     ),
         .n       ( 'd64     ),
         .p       ( 'd64     ),
