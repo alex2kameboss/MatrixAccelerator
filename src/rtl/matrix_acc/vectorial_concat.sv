@@ -55,9 +55,9 @@ always_ff @( posedge clk, negedge rst_n )
     if ( en ) begin
         if (dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32)
             rez_out[(i_reg * IN_BYTES + j_reg + 1) * 8 - 1 -: 8] <= rez_in_byte[i_reg][j_reg];
-        else if ((dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) & ((IN_BYTES - 1 - j_reg) / 2) == cnt)
+        else if ((dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) & (j_reg / 2) == cnt)
             rez_out[(i_reg * IN_BYTES + j_reg + 1) * 8 - 1 -: 8] <= rez_in_byte[i_reg][j_reg % 2];
-        else if ((dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8) & (IN_BYTES - 1 - j_reg == cnt))
+        else if ((dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8) & (j_reg == cnt))
             rez_out[(i_reg * IN_BYTES + j_reg + 1) * 8 - 1 -: 8] <= rez_in_byte[i_reg][0];
     end
         end

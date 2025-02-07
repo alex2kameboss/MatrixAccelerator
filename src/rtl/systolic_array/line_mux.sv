@@ -4,17 +4,16 @@ module line_mux #(
 ) (
     input   logic                           clk                                     ,
     input   logic                           rst_n                                   ,
-    input   logic                           en                                      ,
+    input   logic                           en              [ ARRAY_WIDTH - 1 : 0 ] ,
     input   logic   [DATA_WIDTH - 1 : 0]    array_results   [ ARRAY_WIDTH - 1 : 0 ] ,
     output  logic   [DATA_WIDTH - 1 : 0]    result                                  
 );
     
-logic [$clog2(ARRAY_WIDTH) - 1 : 0] cnt;
-
-assign result = array_results[cnt];
-
-always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   cnt <= 'd0;             else
-    if ( en )                       cnt <= cnt + 1'b1;
+always_comb begin : blockName
+    result = 'd0;
+    for ( int i = 0; i < ARRAY_WIDTH; i = i + 1 )
+        if ( ~en[i] )
+            result = array_results[i];
+end
 
 endmodule

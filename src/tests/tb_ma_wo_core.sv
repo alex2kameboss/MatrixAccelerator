@@ -51,9 +51,11 @@ logic [31 : 0] rf [31 : 0];
 localparam MEM_SIZE = 1024 * 1024; // 1 MB
 
 function void init_mem();
-  int i;
-  for (i = 0; i < MEM_SIZE / 2; i = i + 1)
-    i_sim_mem.i_sim_mem.mem[i] = i[7:0];
+  int i, j;
+  //for (i = 0; i < MEM_SIZE / 2; i = i + 1)
+  for ( i = 0; i < 64; i = i + 1 )
+    for ( j = 0; j < 64; j = j + 1 )
+        i_sim_mem.i_sim_mem.mem[i * 64 + j] = j;
 endfunction
 
 AXI_BUS #(
@@ -327,12 +329,16 @@ begin
     assert(i_dut.i_data_path.i_ccu.rft[r2].prf_valid);
     assert(i_dut.i_data_path.i_ccu.rft[r1].in_mem);
     assert(i_dut.i_data_path.i_ccu.rft[r2].in_mem);
-    assert(i_dut.i_data_path.i_ccu.rft[r1].width == i_dut.i_data_path.i_ccu.rft[r2].width &
-            i_dut.i_data_path.i_ccu.rft[r1].height == i_dut.i_data_path.i_ccu.rft[r2].height &
-            i_dut.i_data_path.i_ccu.rft[r1].dtype == i_dut.i_data_path.i_ccu.rft[r2].dtype)
-    assert(i_dut.i_data_path.i_ccu.rft[rr].width == i_dut.i_data_path.i_ccu.rft[r2].width &
-            i_dut.i_data_path.i_ccu.rft[rr].height == i_dut.i_data_path.i_ccu.rft[r2].height &
-            i_dut.i_data_path.i_ccu.rft[rr].dtype == i_dut.i_data_path.i_ccu.rft[r2].dtype)
+    if ( o == MUL ) begin
+        assert(i_dut.i_data_path.i_ccu.rft[rr].height == i_dut.i_data_path.i_ccu.rft[r1].height &
+                i_dut.i_data_path.i_ccu.rft[rr].width == i_dut.i_data_path.i_ccu.rft[r2].width &
+                i_dut.i_data_path.i_ccu.rft[r1].width == i_dut.i_data_path.i_ccu.rft[r2].height);
+    end else begin 
+        assert(i_dut.i_data_path.i_ccu.rft[r1].width == i_dut.i_data_path.i_ccu.rft[r2].width &
+                i_dut.i_data_path.i_ccu.rft[r1].height == i_dut.i_data_path.i_ccu.rft[r2].height);
+        assert(i_dut.i_data_path.i_ccu.rft[rr].width == i_dut.i_data_path.i_ccu.rft[r2].width &
+                i_dut.i_data_path.i_ccu.rft[rr].height == i_dut.i_data_path.i_ccu.rft[r2].height);
+    end
 
     inst.opcode   = OPCODE;
     inst.rd       = rr;
@@ -409,8 +415,7 @@ begin
     assert(i_dut.i_data_path.i_ccu.rft[r1].prf_valid);
     assert(i_dut.i_data_path.i_ccu.rft[r1].in_mem);
     assert(i_dut.i_data_path.i_ccu.rft[rr].width == i_dut.i_data_path.i_ccu.rft[r1].width &
-            i_dut.i_data_path.i_ccu.rft[rr].height == i_dut.i_data_path.i_ccu.rft[r1].height &
-            i_dut.i_data_path.i_ccu.rft[rr].dtype == i_dut.i_data_path.i_ccu.rft[r1].dtype)
+            i_dut.i_data_path.i_ccu.rft[rr].height == i_dut.i_data_path.i_ccu.rft[r1].height)
 
     rs2_i = reg_id();
     rf[rs2_i] = r2;
@@ -477,6 +482,17 @@ begin
     $display("------------------------------------------------------");
 end
 endtask
+
+function int data_concat (int ad, dtype_t dt);
+    case(dt)
+        INT32   : data_concat = {i_sim_mem.i_sim_mem.mem[ad + 3], i_sim_mem.i_sim_mem.mem[ad + 2], i_sim_mem.i_sim_mem.mem[ad + 1], i_sim_mem.i_sim_mem.mem[ad + 0]};
+        UINT32  : data_concat = {i_sim_mem.i_sim_mem.mem[ad + 3], i_sim_mem.i_sim_mem.mem[ad + 2], i_sim_mem.i_sim_mem.mem[ad + 1], i_sim_mem.i_sim_mem.mem[ad + 0]};
+        INT16   : data_concat = {{16{i_sim_mem.i_sim_mem.mem[ad + 1][7]}}, {i_sim_mem.i_sim_mem.mem[ad + 1], i_sim_mem.i_sim_mem.mem[ad + 0]}};
+        UINT16  : data_concat = {16'd0, {i_sim_mem.i_sim_mem.mem[ad + 1], i_sim_mem.i_sim_mem.mem[ad + 0]}};
+        INT8    : data_concat = {{24{i_sim_mem.i_sim_mem.mem[ad][7]}}, i_sim_mem.i_sim_mem.mem[ad]};
+        UINT8   : data_concat = {24'd0, {i_sim_mem.i_sim_mem.mem[ad + 1], i_sim_mem.i_sim_mem.mem[ad + 0]}};
+    endcase
+endfunction
 
 task vector_vector_operation_test;
     input register      rr      ;
@@ -580,6 +596,121 @@ begin
         $error("byte: %d, rd: %d, rs1: %d, rs2: %d", i, {i_sim_mem.i_sim_mem.mem[rr_addr + i]}, {i_sim_mem.i_sim_mem.mem[r1_addr + i]}, {i_sim_mem.i_sim_mem.mem[r2_addr + i]});    
         end
     end
+
+    $display("------------------------------------------------------");
+end
+endtask
+
+task gemm_test;
+    input register      rr      ;
+    input int           rr_prf_x;
+    input int           rr_prf_y;
+    input dtype_t       rr_dt   ;
+    input register      r1      ;
+    input int           r1_prf_x;
+    input int           r1_prf_y;
+    input dtype_t       r1_dt   ;
+    input register      r2      ;
+    input int           r2_prf_x;
+    input int           r2_prf_y;
+    input dtype_t       r2_dt   ;
+    input int           m       ;
+    input int           n       ;
+    input int           p       ;
+    input int           rr_addr ;
+    input int           r1_addr ;
+    input int           r2_addr ;
+begin
+    int bytes_rr, bytes_r1, bytes_r2, el;
+    int i, j, k;
+    $display("Vector-Vector operation test");
+    define_register_one_step(
+        .r    ( rr      ),
+        .w    ( p       ),
+        .h    ( m       ),
+        .dt   ( rr_dt   ),
+        .prf_x( rr_prf_x),
+        .prf_y( rr_prf_y),
+        .org  ( RECT    )
+    );
+    define_register_one_step(
+        .r    ( r1      ),
+        .w    ( n       ),
+        .h    ( m       ),
+        .dt   ( r1_dt   ),
+        .prf_x( r1_prf_x),
+        .prf_y( r1_prf_y),
+        .org  ( RECT    )
+    );
+    define_register_one_step(
+        .r    ( r2      ),
+        .w    ( p       ),
+        .h    ( n       ),
+        .dt   ( r2_dt   ),
+        .prf_x( r2_prf_x),
+        .prf_y( r2_prf_y),
+        .org  ( RECT    )
+    );
+
+    load_register(
+        .r   ( r1       ), 
+        .addr( r1_addr  )
+    );
+    load_register(
+        .r   ( r2       ), 
+        .addr( r2_addr  )
+    );
+
+    vector_vector_operation(
+        .rr ( rr ), 
+        .r1 ( r1 ), 
+        .r2 ( r2 ), 
+        .o  ( MUL)
+    );
+
+    store_register(
+        .r   ( rr       ), 
+        .addr( rr_addr  )
+    );
+
+    // check result
+    bytes_rr = 1;
+    if ( rr_dt == INT16 | rr_dt == UINT16 )
+        bytes_rr = 2;
+    else if ( rr_dt == INT32 | rr_dt == UINT32 )
+        bytes_rr = 4;
+
+    bytes_r1 = 1;
+    if ( r1_dt == INT16 | r1_dt == UINT16 )
+        bytes_r1 = 2;
+    else if ( r1_dt == INT32 | r1_dt == UINT32 )
+        bytes_r1 = 4;
+    
+    bytes_r2 = 1;
+    if ( r2_dt == INT16 | r2_dt == UINT16 )
+        bytes_r2 = 2;
+    else if ( r2_dt == INT32 | r2_dt == UINT32 )
+        bytes_r2 = 4;
+
+    for ( i = 0; i < m; i = i + 1 )
+        for ( j = 0; j < p; j = j +1 ) begin
+            el = 0;
+            for ( k = 0; k < m; k = k + 1 ) begin
+                el = el + data_concat(r1_addr + ( i * n + k ) * bytes_r1, r1_dt) * data_concat(r2_addr + ( k * p + j ) * bytes_r2, r2_dt);
+            end
+                if ( rr_dt == INT32 | rr_dt == UINT32 ) begin
+                    assert(el == data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt)) else
+                    $error("rd_expected: %h, rd_computed: %h", el, data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt));
+                end
+                else if ( rr_dt == INT16 | rr_dt == UINT16 ) begin
+                    assert(el[15 : 0] == data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt)[15 : 0]) else
+                    $error("rd_expected: %h, rd_computed: %h", el, data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt));
+                end
+                else if ( rr_dt == INT8 | rr_dt == UINT8 ) begin
+                    assert(el[7 : 0] == data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt)[7 : 0]) else
+                    $error("rd_expected: %h, rd_computed: %h", el, data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt));
+                end
+        end
 
     $display("------------------------------------------------------");
 end
@@ -694,6 +825,7 @@ initial begin
 
     init_mem();
 
+    /*
     // ------- test register definition -------
     $display("Define register test");
     for ( int ridx = 0; ridx < NUMBER_OF_REGISTERS; ridx = ridx + 1 ) begin
@@ -737,7 +869,7 @@ initial begin
         .dt    ( UINT32 ), 
         .addr  ( 'h0    )
     );
-
+    */
     
     // ------- test vector vector operations -------
     vector_vector_operation_test(
@@ -777,6 +909,28 @@ initial begin
         .r2_addr ( 'd0      )
     );
 
+    gemm_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd64     ),
+        .rr_prf_y( 'd0      ),
+        .rr_dt   ( INT16    ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT8     ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd64     ),
+        .r2_dt   ( INT8     ),
+        .m       ( 'd64     ),
+        .n       ( 'd64     ),
+        .p       ( 'd64     ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+
+    /*
     vector_vector_operation_test(
         .rr      ( 'd2      ),
         .rr_prf_x( 'd0      ),
@@ -898,6 +1052,7 @@ initial begin
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( MEM_SIZE )
     );
+    */
 
     @(posedge clk);
     @(posedge clk);

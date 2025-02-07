@@ -35,26 +35,27 @@ module matrix_unit #(
 // control data
     output  logic                                                       done        
 );
-    
+
+localparam SA_HEIGHT = PRF_N_LANES;
+localparam SA_WIDTH = PRF_N_LANES * 4;
+
 localparam NUMBER_OF_ALU = DMA_DATA_WIDTH / ALU_WIDTH;
 
-logic array_reset_n   [PRF_N_LANES - 1 : 0][PRF_N_LANES - 1 : 0];
+logic array_reset_n   [SA_HEIGHT - 1 : 0][SA_WIDTH - 1 : 0];
 logic concat_en;
-ma_pkg::dtype_t dtype;
-assign dtype = rd.dtype;
-wire fast = dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32;
+wire fast = rd.dtype == ma_pkg::INT32 | rd.dtype == ma_pkg::UINT32;
 
 logic rs1_done, rs2_done;
 logic rs_incr;
 
-logic   [ALU_WIDTH - 1 : 0]    op1_alu [PRF_N_LANES - 1 : 0];
-logic   [ALU_WIDTH - 1 : 0]    op2_alu [PRF_N_LANES - 1 : 0];
+logic   [ALU_WIDTH - 1 : 0]    op1_alu [SA_HEIGHT - 1 : 0];
+logic   [ALU_WIDTH - 1 : 0]    op2_alu [SA_WIDTH - 1 : 0];
 logic   [ALU_WIDTH - 1 : 0]    res_alu [PRF_N_LANES - 1 : 0];
 logic sa_valid;
 
-logic   [ALU_WIDTH - 1 : 0]    op1_sa [PRF_N_LANES - 1 : 0];
-logic   [ALU_WIDTH - 1 : 0]    op2_sa [PRF_N_LANES - 1 : 0];
-logic   [ALU_WIDTH - 1 : 0]    res_sa [PRF_N_LANES - 1 : 0][PRF_N_LANES - 1 : 0];
+logic   [ALU_WIDTH - 1 : 0]    op1_sa [SA_HEIGHT - 1 : 0];
+logic   [ALU_WIDTH - 1 : 0]    op2_sa [SA_WIDTH - 1 : 0];
+logic   [ALU_WIDTH - 1 : 0]    res_sa [SA_HEIGHT - 1 : 0][SA_WIDTH - 1 : 0];
 
 logic start_delayed, rs_incr_delayed;
 always @( posedge clk, negedge rst_n )
@@ -65,10 +66,10 @@ always @( posedge clk, negedge rst_n )
     if ( ~rst_n )                       rs_incr_delayed <= 1'b0;      else
                                         rs_incr_delayed <= rs_incr;
 
-assign rs1_read = (~fast ? rs_incr_delayed : rs_incr) | start_delayed;
-assign rs2_read = rs1_read;
-
 logic rs_addr_en;
+assign rs1_read = (~fast ? rs_incr_delayed : rs_incr) | start_delayed;
+assign rs2_read = rs_addr_en;
+
 always @( posedge clk, negedge rst_n )
     if ( ~rst_n )                       rs_addr_en <= 1'b0;         else
     if ( start & en )                   rs_addr_en <= 1'b1;         else
@@ -105,7 +106,7 @@ col_addr_gen_seq #(
     .rst_n   ( rst_n                ),
     .start   ( start                ),
     .en      ( rs_addr_en | start & ~scalar_op ),
-    .incr    ( rs_incr | fast & start_delayed ),
+    .incr    ( rs_addr_en           ),
     .r       ( rs2                  ),
     .repeater( rs1.height           ),
     .i_out   ( rs2_i_out            ),
@@ -116,23 +117,36 @@ col_addr_gen_seq #(
 vectorial_splitter #(
     .IN_DATA_WIDTH  ( DMA_DATA_WIDTH ),
     .OUT_DATA_WIDTH ( ALU_WIDTH      )
-) i_data_splitter (
+) i_row_splitter (
     .clk        ( clk       ),
     .rst_n      ( rst_n     ),
     .reset      ( start     ),
     .en         (splitter_en),
-    .dtype      ( dtype     ),
+    .dtype      ( rs1.dtype ),
     .op1_in     ( rs1_data  ),
     .op2_in     ( rs2_data  ),
     .op1_out    ( op1_alu   ),
-    .op2_out    ( op2_alu   ),
+    .op2_out    (    ),
     .next       ( rs_incr   )
+);
+
+sa_col_splitter #(
+    .IN_DATA_WIDTH  ( DMA_DATA_WIDTH ),
+    .OUT_DATA_WIDTH ( ALU_WIDTH      )
+) i_col_splitter (
+    .clk        ( clk       ),
+    .rst_n      ( rst_n     ),
+    .reset      ( start     ),
+    .en         (splitter_en),
+    .dtype      ( rs2.dtype ),
+    .op_in      ( rs2_data  ),
+    .op_out     ( op2_alu   )
 );
 
 // systolic array
 crossbar #(
     .DATA_WIDTH     ( ALU_WIDTH     ),
-    .ARRAY_ELLEMENTS( PRF_N_LANES   )
+    .ARRAY_ELLEMENTS( SA_HEIGHT     )
 ) row_crossbar (
     .clk            ( clk           ),
     .reset_n        ( rst_n         ),
@@ -144,7 +158,7 @@ crossbar #(
 
 crossbar #(
     .DATA_WIDTH     ( ALU_WIDTH     ),
-    .ARRAY_ELLEMENTS( PRF_N_LANES   )
+    .ARRAY_ELLEMENTS( SA_WIDTH      )
 ) col_crossbar (
     .clk            ( clk           ),
     .reset_n        ( rst_n         ),
@@ -155,27 +169,29 @@ crossbar #(
 );
 
 systolic_array #(
-    .ARRAY_WIDTH ( PRF_N_LANES  ),
-    .ARRAY_HEIGHT( PRF_N_LANES  ),
+    .ARRAY_WIDTH ( SA_WIDTH     ),
+    .ARRAY_HEIGHT( SA_HEIGHT    ),
     .DATA_WIDTH  ( ALU_WIDTH    )
 ) array (
     .clk            ( clk           ),
     .reset_n        ( rst_n         ),
     .array_reset_n  ( array_reset_n ),
     .en             ( concat_en     ),
+    .dtype          ( rs2.dtype     ),
     .a_array_input  ( op1_sa        ),
     .b_array_input  ( op2_sa        ),
     .c_array_output ( res_sa        )
 );
 
 array_results_controller #(
-    .ARRAY_HEIGHT    ( PRF_N_LANES   ),
-    .ARRAY_WIDTH     ( PRF_N_LANES   ),
+    .ARRAY_HEIGHT    ( SA_HEIGHT     ),
+    .ARRAY_WIDTH     ( SA_WIDTH      ),
     .DATA_WIDTH      ( ALU_WIDTH     )
 ) i_result_controller (
     .clk            ( clk           ),
     .reset_n        ( rst_n         ),
     .en             ( concat_en     ),
+    .dtype          ( rs2.dtype     ),
     .start          ( start         ),
     .rd             ( rd            ),
     .rs1            ( rs1           ),
@@ -183,8 +199,7 @@ array_results_controller #(
     .array_results  ( res_sa        ),
     .array_reset_n  ( array_reset_n ),
     .data_o         ( res_alu       ),
-    .valid_o        ( sa_valid      ),
-    .done           (               )                                              
+    .valid_o        ( sa_valid      )
 );
 
 always_ff @( posedge clk, negedge rst_n )
@@ -200,7 +215,7 @@ vectorial_concat #(
     .rst_n      ( rst_n     ),
     .reset      ( start     ),
     .en         ( sa_valid  ),
-    .dtype      ( dtype     ),
+    .dtype      ( rd.dtype  ),
     .rez_in     ( res_alu   ),
     .rez_out    ( rd_data   ),
     .valid      ( rd_write  )
