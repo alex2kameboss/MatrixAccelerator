@@ -43,7 +43,7 @@ localparam NUMBER_OF_ALU = DMA_DATA_WIDTH / ALU_WIDTH;
 
 logic array_reset_n   [SA_HEIGHT - 1 : 0][SA_WIDTH - 1 : 0];
 logic concat_en;
-wire fast = rd.dtype == ma_pkg::INT32 | rd.dtype == ma_pkg::UINT32;
+wire fast = rs1.dtype == ma_pkg::INT32 | rs1.dtype == ma_pkg::UINT32;
 
 logic rs1_done, rs2_done;
 logic rs_incr;
@@ -81,6 +81,7 @@ always @( posedge clk, negedge rst_n )
                                         splitter_en <= rs_addr_en;
 
 row_addr_gen_seq #(
+    .ARRAY_WIDTH    ( SA_WIDTH    ),
     .PRF_N_LANES    ( PRF_N_LANES ),
     .PRF_LOG_N      ( PRF_LOG_N   ),
     .PRF_LOG_M      ( PRF_LOG_M   )
@@ -91,6 +92,7 @@ row_addr_gen_seq #(
     .en      ( rs_addr_en | start   ),
     .incr    ( rs_incr | fast & start_delayed ),
     .r       ( rs1                  ),
+    .r2      ( rs2                  ),
     .repeater( rs2.width            ),
     .i_out   ( rs1_i_out            ),
     .j_out   ( rs1_j_out            ),
@@ -98,6 +100,7 @@ row_addr_gen_seq #(
 );
 
 col_addr_gen_seq #(
+    .ARRAY_HEIGHT   ( SA_HEIGHT   ),
     .PRF_N_LANES    ( PRF_N_LANES ),
     .PRF_LOG_N      ( PRF_LOG_N   ),
     .PRF_LOG_M      ( PRF_LOG_M   )
@@ -124,7 +127,7 @@ vectorial_splitter #(
     .en         (splitter_en),
     .dtype      ( rs1.dtype ),
     .op1_in     ( rs1_data  ),
-    .op2_in     ( rs2_data  ),
+    .op2_in     (   ),
     .op1_out    ( op1_alu   ),
     .op2_out    (    ),
     .next       ( rs_incr   )
@@ -205,7 +208,7 @@ array_results_controller #(
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )               concat_en <= 'd0;       else
     if ( splitter_en )          concat_en <= 'd1;       else
-    if ( done )                 concat_en <= 'd0;
+    if ( done )                 concat_en <= 'd0;       
 
 vectorial_concat #(
     .OUT_DATA_WIDTH ( DMA_DATA_WIDTH ),

@@ -52,10 +52,10 @@ localparam MEM_SIZE = 1024 * 1024; // 1 MB
 
 function void init_mem();
   int i, j;
-  //for (i = 0; i < MEM_SIZE / 2; i = i + 1)
-  for ( i = 0; i < 64; i = i + 1 )
-    for ( j = 0; j < 64; j = j + 1 )
-        {i_sim_mem.i_sim_mem.mem[(i * 64 + j) * 2 + 1], i_sim_mem.i_sim_mem.mem[(i * 64 + j) * 2]} = j;
+  const int len = 64;
+  for ( i = 0; i < len; i = i + 1 )
+    for ( j = 0; j < len; j = j + 1 )
+        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = j;
 endfunction
 
 AXI_BUS #(
@@ -700,15 +700,15 @@ begin
             end
                 if ( rr_dt == INT32 | rr_dt == UINT32 ) begin
                     assert(el == data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt)) else
-                    $error("rd_expected: %h, rd_computed: %h", el, data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt));
+                    $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt));
                 end
                 else if ( rr_dt == INT16 | rr_dt == UINT16 ) begin
                     assert(el[15 : 0] == data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt)[15 : 0]) else
-                    $error("rd_expected: %h, rd_computed: %h", el, data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt));
+                    $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt));
                 end
                 else if ( rr_dt == INT8 | rr_dt == UINT8 ) begin
                     assert(el[7 : 0] == data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt)[7 : 0]) else
-                    $error("rd_expected: %h, rd_computed: %h", el, data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt));
+                    $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * p + j ) * bytes_rr, rr_dt));
                 end
         end
 
@@ -825,7 +825,7 @@ initial begin
 
     init_mem();
 
-    /*
+    
     // ------- test register definition -------
     $display("Define register test");
     for ( int ridx = 0; ridx < NUMBER_OF_REGISTERS; ridx = ridx + 1 ) begin
@@ -908,30 +908,8 @@ initial begin
         .r1_addr ( MEM_SIZE ),
         .r2_addr ( 'd0      )
     );
-    */
+    
 
-    gemm_test(
-        .rr      ( 'd2      ),
-        .rr_prf_x( 'd64     ),
-        .rr_prf_y( 'd0      ),
-        .rr_dt   ( INT16    ),
-        .r1      ( 'd0      ),
-        .r1_prf_x( 'd0      ),
-        .r1_prf_y( 'd0      ),
-        .r1_dt   ( INT16    ),
-        .r2      ( 'd1      ),
-        .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd64     ),
-        .r2_dt   ( INT16    ),
-        .m       ( 'd64     ),
-        .n       ( 'd64     ),
-        .p       ( 'd64     ),
-        .rr_addr ( MEM_SIZE ),
-        .r1_addr ( 'd0      ),
-        .r2_addr ( 'd0      )
-    );
-
-    /*
     vector_vector_operation_test(
         .rr      ( 'd2      ),
         .rr_prf_x( 'd0      ),
@@ -1053,7 +1031,69 @@ initial begin
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( MEM_SIZE )
     );
-    */
+    
+
+    // gemm tests
+    gemm_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd64     ),
+        .rr_prf_y( 'd0      ),
+        .rr_dt   ( INT16    ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT8     ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd64     ),
+        .r2_dt   ( INT8     ),
+        .m       ( 'd64     ),
+        .n       ( 'd64     ),
+        .p       ( 'd64     ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+    gemm_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd64     ),
+        .rr_prf_y( 'd0      ),
+        .rr_dt   ( INT32    ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT16    ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd64     ),
+        .r2_dt   ( INT16    ),
+        .m       ( 'd64     ),
+        .n       ( 'd64     ),
+        .p       ( 'd64     ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+    gemm_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd64     ),
+        .rr_prf_y( 'd0      ),
+        .rr_dt   ( INT32    ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT32    ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd64     ),
+        .r2_dt   ( INT32    ),
+        .m       ( 'd64     ),
+        .n       ( 'd64     ),
+        .p       ( 'd64     ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
 
     @(posedge clk);
     @(posedge clk);

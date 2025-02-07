@@ -1,7 +1,8 @@
 module row_addr_gen_seq #(
-    parameter                           PRF_N_LANES =   8           ,
-    parameter                           PRF_LOG_N   =   10          ,
-    parameter                           PRF_LOG_M   =   10          
+    parameter   ARRAY_WIDTH =   32  ,
+    parameter   PRF_N_LANES =   8   ,
+    parameter   PRF_LOG_N   =   10  ,
+    parameter   PRF_LOG_M   =   10  
 ) (
     input   logic                                               clk     ,
     input   logic                                               rst_n   ,
@@ -9,6 +10,7 @@ module row_addr_gen_seq #(
     input   logic                                               start   ,
     input   logic                                               incr    ,
     input   ma_pkg::register_file_line_t                        r       ,
+    input   ma_pkg::register_file_line_t                        r2      ,
     input   logic                        [31 : 0]               repeater,
     output  logic                        [PRF_LOG_N - 1 : 0]    i_out   ,
     output  logic                        [PRF_LOG_M - 1 : 0]    j_out   ,
@@ -26,7 +28,15 @@ assign j_done = j_out_next - r.prf_y[PRF_LOG_M - 1 : 0] >= j_limit;
 assign repeater_done = repeater_cnt_next >= repeater_limit;
 assign done = en & incr & i_done & j_done & repeater_done;
 
-assign repeater_cnt_next = repeater_cnt + PRF_N_LANES;
+always_comb begin
+    if ( r2.dtype == ma_pkg::UINT32 || r2.dtype == ma_pkg::INT32 ) begin
+        repeater_cnt_next = repeater_cnt + ARRAY_WIDTH / 4;
+    end else if ( r2.dtype == ma_pkg::UINT16 || r2.dtype == ma_pkg::INT16 ) begin
+        repeater_cnt_next = repeater_cnt + ARRAY_WIDTH / 2;
+    end else begin
+        repeater_cnt_next = repeater_cnt + ARRAY_WIDTH;
+    end
+end
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin

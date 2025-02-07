@@ -1,6 +1,7 @@
 module col_addr_gen_seq #(
-    parameter                           PRF_N_LANES =   8           ,
-    parameter                           PRF_LOG_N   =   10          ,
+    parameter                           ARRAY_HEIGHT=   32  ,
+    parameter                           PRF_N_LANES =   8   ,
+    parameter                           PRF_LOG_N   =   10  ,
     parameter                           PRF_LOG_M   =   10          
 ) (
     input   logic                                               clk     ,
@@ -21,13 +22,13 @@ logic   [31 : 0]           repeater_cnt, repeater_cnt_next, repeater_limit;
 logic i_done, j_done, repeater_done, matrix_done;
 
 
-assign i_done = i_out_next - r.prf_x[PRF_LOG_N - 1 : 0] >= i_limit;
-assign j_done = j_out_next - r.prf_y[PRF_LOG_M - 1 : 0] >= j_limit;
+assign i_done = i_out_next - r.prf_x[PRF_LOG_N : 0] >= i_limit;
+assign j_done = j_out_next - r.prf_y[PRF_LOG_M : 0] >= j_limit;
 assign repeater_done = repeater_cnt_next >= repeater_limit;
 assign done = en & incr & i_done & j_done & repeater_done;
 assign matrix_done = en & incr & i_done & j_done;
 
-assign repeater_cnt_next = repeater_cnt + PRF_N_LANES;
+assign repeater_cnt_next = repeater_cnt + ARRAY_HEIGHT;
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
