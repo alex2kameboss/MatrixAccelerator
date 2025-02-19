@@ -61,7 +61,10 @@ genvar i;
 generate
     for ( i = 0; i < NUMBER_OF_ALU; i = i + 1 ) begin : dtype_selection
 always_ff @(posedge clk, negedge rst_n)
-    if (en) begin
+    if ( ~rst_n ) begin
+        op1_out[i] <= 'd0;
+        op2_out[i] <= 'd0;
+    end else if (en) begin
         if ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 ) begin
             op1_out[i] <= op1_in[(i + 1) * OUT_DATA_WIDTH - 1 -: OUT_DATA_WIDTH];
             op2_out[i] <= op2_in[(i + 1) * OUT_DATA_WIDTH - 1 -: OUT_DATA_WIDTH];

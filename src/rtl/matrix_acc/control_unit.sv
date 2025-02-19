@@ -93,8 +93,7 @@ int rft_i;
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
         for ( rft_i = 0; rft_i < REGISTER_NUMBERS; rft_i = rft_i + 1 ) begin
-            rft[rft_i].valid    <= 1'b0;
-            rft[rft_i].in_mem   <= 1'b0;
+            rft[rft_i]  <= 'd0;
         end
     end else if ( valid & ready & ~arth_data & define & ~prf_define ) begin
         rft[rd].width       <= width[31 : 0];
