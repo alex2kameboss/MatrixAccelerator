@@ -126,10 +126,8 @@ vectorial_splitter #(
     .reset      ( start     ),
     .en         (splitter_en),
     .dtype      ( rs1.dtype ),
-    .op1_in     ( rs1_data  ),
-    .op2_in     (   ),
-    .op1_out    ( op1_alu   ),
-    .op2_out    (    ),
+    .op_in      ( rs1_data  ),
+    .op_out     ( op1_alu   ),
     .next       ( rs_incr   )
 );
 
