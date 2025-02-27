@@ -869,8 +869,7 @@ initial begin
         .dt    ( UINT32 ), 
         .addr  ( 'h0    )
     );
-    
-    
+        
     // ------- test vector vector operations -------
     vector_vector_operation_test(
         .rr      ( 'd2      ),

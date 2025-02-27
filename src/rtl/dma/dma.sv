@@ -1,6 +1,6 @@
 module dma #(
     parameter ADDR_WIDTH = 32   ,
-    parameter DATA_WIDTH = 128  
+    parameter DATA_WIDTH = 128   // width of internal data interfaces, not axi
 ) (
     // generic signals
     input   logic                           clk                         ,
@@ -32,7 +32,7 @@ module dma #(
     AXI_BUS.Master                          axi                         
 );
 
-localparam DATA_BYTES       = DATA_WIDTH / 8;
+localparam DATA_BYTES       = axi.AXI_DATA_WIDTH / 8;
 localparam MAX_BURST_SIZE   = 256 * DATA_BYTES >= 4 * 1024 ? 4 * 1024 : 256 * DATA_BYTES; // max 4 KB
 localparam MAX_BURST        = MAX_BURST_SIZE / DATA_BYTES;
 localparam MAX_TRANSACTIONS = 8'(MAX_BURST - 1);
@@ -111,7 +111,7 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_size <= 'd0;             else
     if ( aw_accepted )              axi.aw_size <= 'd0;             else
-    if ( |write_len & ~|write_cnt )               axi.aw_size <= 3'($clog2(DATA_WIDTH / 8));
+    if ( |write_len & ~|write_cnt )               axi.aw_size <= 3'($clog2(axi.AXI_DATA_WIDTH/ 8));
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_burst <= 'd0;            else
@@ -205,7 +205,7 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.ar_size <= 'd0;                 else
     if ( ar_accepted )              axi.ar_size <= 'd0;                 else
-    if ( |read_len )                axi.ar_size <= 3'($clog2(DATA_WIDTH / 8));
+    if ( |read_len )                axi.ar_size <= 3'($clog2(axi.AXI_DATA_WIDTH/ 8));
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.ar_burst <= 'd0;                else
@@ -215,7 +215,7 @@ always_ff @( posedge aclk, negedge arst_n )
 
 // fifos
 
-logic [DATA_WIDTH - 1 : 0]  write_strobed_data;
+logic [axi.AXI_DATA_WIDTH- 1 : 0]  write_strobed_data;
 
 genvar write_fifo_i;
 generate
@@ -232,8 +232,9 @@ assign write_data_ready_o   = ~write_fifo_w_full;
 assign axi.w_valid          = ~write_fifo_r_empty;
 
 async_fifo #(
-    .DATA_WIDTH( DATA_WIDTH ),
-    .FIFO_DEPTH( MAX_BURST )    
+    .WRITE_WIDTH( DATA_WIDTH ),
+    .READ_WIDTH ( axi.AXI_DATA_WIDTH ),
+    .FIFO_DEPTH ( MAX_BURST )    
 ) write_fifo (
     .w_clk     ( clk                ) ,   // write interface clock
     .w_reset_n ( rst_n              ) ,   // write interface async reset
@@ -256,7 +257,8 @@ assign read_data_valid_o    = ~read_fifo_r_empty;
 assign axi.r_ready          = ~read_fifo_w_full;
 
 async_fifo #(
-    .DATA_WIDTH( DATA_WIDTH ),
+    .WRITE_WIDTH( axi.AXI_DATA_WIDTH ),
+    .READ_WIDTH( DATA_WIDTH ),
     .FIFO_DEPTH( MAX_BURST )    
 ) read_fifo (
     .w_clk     ( aclk               ) ,   // write interface clock

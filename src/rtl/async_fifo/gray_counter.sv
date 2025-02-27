@@ -1,5 +1,6 @@
 module gray_counter #(
-    parameter WIDTH = 3
+    parameter WIDTH = 3 ,
+    parameter STEP  = 1
 ) (
     input                       clk,        //  counter clk
     input                       reset_n,    //  counter async reset
@@ -21,7 +22,7 @@ assign next_gray_o = gray;
 assign addr_o = binary_reg;
 assign ptr_o = gray_reg;
 
-assign binary_next = binary_reg + inc;
+assign binary_next = binary_reg + (inc ? STEP : 'd0);
 
 always_ff @( posedge clk or negedge reset_n ) begin
     if ( ~reset_n )     binary_reg <= 'd0;      else
