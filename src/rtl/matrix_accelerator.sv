@@ -1,5 +1,6 @@
 module matrix_acclerator #(
     parameter OPCODE            =   7'h2B   ,
+    parameter DMA_DATA_WIDTH    =   64      ,
     parameter ADDR_WIDTH        =   32      ,
     parameter REGISTER_NUMBERS  =   32      ,
     parameter PRF_LOG_P         =   1       ,

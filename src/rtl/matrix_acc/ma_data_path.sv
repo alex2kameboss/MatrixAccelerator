@@ -37,9 +37,10 @@ module ma_data_path #(
     input   logic               [6 : 0]                             dtype                          
 );
 
+localparam DMA_DATA_WIDTH   = axi.AXI_DATA_WIDTH;
 localparam SRAM_WIDTH       = 32;
 localparam PRF_N_LANES      = 2 ** (PRF_LOG_P + PRF_LOG_Q);
-localparam DMA_DATA_WIDTH   = SRAM_WIDTH * PRF_N_LANES;
+localparam MEM_DATA_WIDTH   = SRAM_WIDTH * PRF_N_LANES;
 
 // write chanel
 logic                                                               dma_write_valid ;
@@ -175,7 +176,7 @@ always_ff @( posedge clk, negedge rst_n )
                                 dma_addr_gen_done_delayed <= dma_done;
 
 localparam ALU_WIDTH        = 32;
-localparam NUMBER_OF_ALU    = DMA_DATA_WIDTH / ALU_WIDTH;
+localparam NUMBER_OF_ALU    = MEM_DATA_WIDTH / ALU_WIDTH;
 
 logic vu_en;
 assign vu_en = arith & (op_cfg == ma_pkg::ADD | op_cfg == ma_pkg::SUB | op_cfg == ma_pkg::DIV | op_cfg == ma_pkg::SMUL);
@@ -189,9 +190,9 @@ logic                           [PRF_LOG_M - 1 : 0]         vu_rs2_j_out;
 logic                                                       vu_rd_write ;
 logic                           [PRF_LOG_N - 1 : 0]         vu_rd_i_out ;
 logic                           [PRF_LOG_M - 1 : 0]         vu_rd_j_out ;
-logic                           [DMA_DATA_WIDTH - 1 : 0]    vu_rs1_data ;
-logic                           [DMA_DATA_WIDTH - 1 : 0]    vu_rs2_data ;
-logic                           [DMA_DATA_WIDTH - 1 : 0]    vu_rd_data  ;
+logic                           [MEM_DATA_WIDTH - 1 : 0]    vu_rs1_data ;
+logic                           [MEM_DATA_WIDTH - 1 : 0]    vu_rs2_data ;
+logic                           [MEM_DATA_WIDTH - 1 : 0]    vu_rd_data  ;
 logic                                                       vu_done     ;
 
 logic mu_en;
@@ -206,17 +207,17 @@ logic                           [PRF_LOG_M - 1 : 0]         mu_rs2_j_out;
 logic                                                       mu_rd_write ;
 logic                           [PRF_LOG_N - 1 : 0]         mu_rd_i_out ;
 logic                           [PRF_LOG_M - 1 : 0]         mu_rd_j_out ;
-logic                           [DMA_DATA_WIDTH - 1 : 0]    mu_rs1_data ;
-logic                           [DMA_DATA_WIDTH - 1 : 0]    mu_rs2_data ;
-logic                           [DMA_DATA_WIDTH - 1 : 0]    mu_rd_data  ;
+logic                           [MEM_DATA_WIDTH - 1 : 0]    mu_rs1_data ;
+logic                           [MEM_DATA_WIDTH - 1 : 0]    mu_rs2_data ;
+logic                           [MEM_DATA_WIDTH - 1 : 0]    mu_rd_data  ;
 logic                                                       mu_done     ;
 
 logic                               dma_read_incr, dma_write_incr;
-logic   [DMA_DATA_WIDTH - 1 : 0]    mem_w_data;
+logic   [MEM_DATA_WIDTH - 1 : 0]    mem_w_data;
 
-logic   [DMA_DATA_WIDTH - 1 : 0]    mem_r_op1;
-logic   [DMA_DATA_WIDTH - 1 : 0]    mem_r_op2;
-logic   [DMA_DATA_WIDTH - 1 : 0]    scalar_line;
+logic   [MEM_DATA_WIDTH - 1 : 0]    mem_r_op1;
+logic   [MEM_DATA_WIDTH - 1 : 0]    mem_r_op2;
+logic   [MEM_DATA_WIDTH - 1 : 0]    scalar_line;
 
 assign scalar_line = rd_cfg.dtype == ma_pkg::INT32 | rd_cfg.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {scalar_cfg}} :
                      rd_cfg.dtype == ma_pkg::INT16 | rd_cfg.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {scalar_cfg[15 : 0]}} :
@@ -328,7 +329,7 @@ assign dma_write_data = mem_r_op1;
 
 // vectorial alu
 vectorial_unit #(
-    .DMA_DATA_WIDTH ( DMA_DATA_WIDTH ),
+    .MEM_DATA_WIDTH ( MEM_DATA_WIDTH ),
     .ALU_WIDTH      ( ALU_WIDTH      ),
     .PRF_N_LANES    ( PRF_N_LANES    ),
     .PRF_LOG_N      ( PRF_LOG_N      ),
@@ -360,7 +361,7 @@ vectorial_unit #(
 
 // matrix alu
 matrix_unit #(
-    .DMA_DATA_WIDTH ( DMA_DATA_WIDTH ),
+    .MEM_DATA_WIDTH ( MEM_DATA_WIDTH ),
     .ALU_WIDTH      ( ALU_WIDTH      ),
     .PRF_N_LANES    ( PRF_N_LANES    ),
     .PRF_LOG_N      ( PRF_LOG_N      ),

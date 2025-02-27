@@ -1,5 +1,5 @@
 module vectorial_unit #(
-    parameter   DMA_DATA_WIDTH  =   128 ,
+    parameter   MEM_DATA_WIDTH  =   128 ,
     parameter   ALU_WIDTH       =   32  ,
     parameter   PRF_N_LANES     =   8   ,
     parameter   PRF_LOG_N       =   10  ,
@@ -29,14 +29,14 @@ module vectorial_unit #(
     output  logic                           [PRF_LOG_N - 1 : 0]         rd_i_out    ,
     output  logic                           [PRF_LOG_M - 1 : 0]         rd_j_out    ,
     // data
-    input   logic                           [DMA_DATA_WIDTH - 1 : 0]    rs1_data    ,
-    input   logic                           [DMA_DATA_WIDTH - 1 : 0]    rs2_data    ,
-    output  logic                           [DMA_DATA_WIDTH - 1 : 0]    rd_data     ,
+    input   logic                           [MEM_DATA_WIDTH - 1 : 0]    rs1_data    ,
+    input   logic                           [MEM_DATA_WIDTH - 1 : 0]    rs2_data    ,
+    output  logic                           [MEM_DATA_WIDTH - 1 : 0]    rd_data     ,
 // control data
     output  logic                                                       done        
 );
     
-localparam NUMBER_OF_ALU = DMA_DATA_WIDTH / ALU_WIDTH;
+localparam NUMBER_OF_ALU = MEM_DATA_WIDTH / ALU_WIDTH;
 
 
 ma_pkg::dtype_t dtype;
@@ -107,7 +107,7 @@ prf_addr_gen_seq #(
 
 // vectorial arithmetics
 vectorial_splitter #(
-    .IN_DATA_WIDTH  ( DMA_DATA_WIDTH ),
+    .IN_DATA_WIDTH  ( MEM_DATA_WIDTH ),
     .OUT_DATA_WIDTH ( ALU_WIDTH      )
 ) i_op1_splitter (
     .clk        ( clk       ),
@@ -121,7 +121,7 @@ vectorial_splitter #(
 );
 
 vectorial_splitter #(
-    .IN_DATA_WIDTH  ( DMA_DATA_WIDTH ),
+    .IN_DATA_WIDTH  ( MEM_DATA_WIDTH ),
     .OUT_DATA_WIDTH ( ALU_WIDTH      )
 ) i_op2_splitter (
     .clk        ( clk       ),
@@ -155,7 +155,7 @@ always_ff @( posedge clk, negedge rst_n )
                                 concat_en <= splitter_en;
 
 vectorial_concat #(
-    .OUT_DATA_WIDTH ( DMA_DATA_WIDTH ),
+    .OUT_DATA_WIDTH ( MEM_DATA_WIDTH ),
     .IN_DATA_WIDTH  ( ALU_WIDTH      )
 ) i_vectorial_concat (
     .clk        ( clk       ),
