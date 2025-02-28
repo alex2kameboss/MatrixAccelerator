@@ -17,11 +17,11 @@ module read_concat #(
 logic [$clog2(DATA_MULTIPLIER) - 1 : 0] cnt, cnt_next;
 
 assign cnt_next = cnt + 1'b1;
-assign fifo_incr = empty; 
+assign fifo_incr = empty | incr; // empty | (~empty & incr)
 
 always_ff @(posedge clk, negedge rst_n)
     if ( ~rst_n )                       cnt <= 'd0;             else
-    if ( ~fifo_empty & empty )          cnt <= cnt_next;        
+    if ( ~fifo_empty & (empty | incr) ) cnt <= cnt_next;        
 
 always_ff @(posedge clk, negedge rst_n)
     if ( ~rst_n )                       empty <= 'd1;           else
@@ -30,6 +30,6 @@ always_ff @(posedge clk, negedge rst_n)
 
 always_ff @(posedge clk, negedge rst_n)
     if ( ~rst_n )                       data <= 'd0;            else
-    if ( empty )                        data[((cnt + 1) * FIFO_DATA_WIDTH - 1) -: FIFO_DATA_WIDTH] <= fifo_data;
+    if ( (empty | incr) )               data[((cnt + 1) * FIFO_DATA_WIDTH - 1) -: FIFO_DATA_WIDTH] <= fifo_data;
 
 endmodule
