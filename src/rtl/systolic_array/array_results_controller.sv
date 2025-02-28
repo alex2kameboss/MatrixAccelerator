@@ -1,7 +1,5 @@
 // TODO: add start signal to reset result_reset_n
 
-import ma_pkg::*;
-
 module array_results_controller #(
     parameter   ARRAY_HEIGHT        =   4   ,
     parameter   ARRAY_WIDTH         =   32  ,
@@ -10,7 +8,7 @@ module array_results_controller #(
     input   logic                                                   clk                                                         ,
     input   logic                                                   reset_n                                                     ,
     input   logic                                                   en                                                          ,
-    input   dtype_t                                                 dtype                                                       ,
+    input   ma_pkg::dtype_t                                         dtype                                                       ,
     input   logic                                                   start                                                       ,
     input   ma_pkg::register_file_line_t                            rd                                                          ,
     input   ma_pkg::register_file_line_t                            rs1                                                         ,
@@ -43,15 +41,15 @@ logic col_en [ARRAY_WIDTH - 1 : 0];
 
 generate
     for ( i_en = 0; i_en < ARRAY_WIDTH / 4; i_en = i_en + 1 ) begin : b32_en
-        assign col_en[i_en] = en & ( dtype == INT32 | dtype == UINT32 | dtype == INT16 | dtype == UINT16 | dtype == INT8 | dtype == UINT8 );
+        assign col_en[i_en] = en & ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 | dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
     end
 
     for ( i_en = ARRAY_WIDTH / 4; i_en < ARRAY_WIDTH / 2; i_en = i_en + 1 ) begin : b16_en
-        assign col_en[i_en] = en & ( dtype == INT16 | dtype == UINT16 | dtype == INT8 | dtype == UINT8 );
+        assign col_en[i_en] = en & ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
     end
 
     for ( i_en = ARRAY_WIDTH / 2; i_en < ARRAY_WIDTH; i_en = i_en + 1 ) begin : b8_en
-        assign col_en[i_en] = en & ( dtype == INT8 | dtype == UINT8 );
+        assign col_en[i_en] = en & ( dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
     end
 endgenerate
 
@@ -114,6 +112,15 @@ auto_shift_register #(
     end
 endgenerate
 
+genvar reduction_i;
+wand en_delay_input;
+
+generate
+    for ( reduction_i = 0; reduction_i < ARRAY_WIDTH; reduction_i = reduction_i + 1 ) begin : en_reduction
+assign en_delay_input = array_reset_n[0][reduction_i];
+    end
+endgenerate
+
 auto_shift_register #(
     .DATA_WIDTH ( 1                 ),
     .STEPS      ( ARRAY_HEIGHT      )
@@ -122,7 +129,7 @@ auto_shift_register #(
     .reset_n        ( reset_n               ),
     .sync_reset_n   ( 1'b1                  ),
     .shift          ( en                    ),
-    .data_i         ( ~&{<<{array_reset_n[0]}}),
+    .data_i         ( ~en_delay_input       ),
     .data_o         ( valid_o               )
 );
 

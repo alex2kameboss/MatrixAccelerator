@@ -1,5 +1,5 @@
 module matrix_unit #(
-    parameter   DMA_DATA_WIDTH  =   128 ,
+    parameter   MEM_DATA_WIDTH  =   128 ,
     parameter   ALU_WIDTH       =   32  ,
     parameter   PRF_N_LANES     =   8   ,
     parameter   PRF_LOG_N       =   10  ,
@@ -29,9 +29,9 @@ module matrix_unit #(
     output  logic                           [PRF_LOG_N - 1 : 0]         rd_i_out    ,
     output  logic                           [PRF_LOG_M - 1 : 0]         rd_j_out    ,
     // data
-    input   logic                           [DMA_DATA_WIDTH - 1 : 0]    rs1_data    ,
-    input   logic                           [DMA_DATA_WIDTH - 1 : 0]    rs2_data    ,
-    output  logic                           [DMA_DATA_WIDTH - 1 : 0]    rd_data     ,
+    input   logic                           [MEM_DATA_WIDTH - 1 : 0]    rs1_data    ,
+    input   logic                           [MEM_DATA_WIDTH - 1 : 0]    rs2_data    ,
+    output  logic                           [MEM_DATA_WIDTH - 1 : 0]    rd_data     ,
 // control data
     output  logic                                                       done        
 );
@@ -39,7 +39,7 @@ module matrix_unit #(
 localparam SA_HEIGHT = PRF_N_LANES;
 localparam SA_WIDTH = PRF_N_LANES * 4;
 
-localparam NUMBER_OF_ALU = DMA_DATA_WIDTH / ALU_WIDTH;
+localparam NUMBER_OF_ALU = MEM_DATA_WIDTH / ALU_WIDTH;
 
 logic array_reset_n   [SA_HEIGHT - 1 : 0][SA_WIDTH - 1 : 0];
 logic concat_en;
@@ -118,7 +118,7 @@ col_addr_gen_seq #(
 );
 
 vectorial_splitter #(
-    .IN_DATA_WIDTH  ( DMA_DATA_WIDTH ),
+    .IN_DATA_WIDTH  ( MEM_DATA_WIDTH ),
     .OUT_DATA_WIDTH ( ALU_WIDTH      )
 ) i_row_splitter (
     .clk        ( clk       ),
@@ -126,15 +126,13 @@ vectorial_splitter #(
     .reset      ( start     ),
     .en         (splitter_en),
     .dtype      ( rs1.dtype ),
-    .op1_in     ( rs1_data  ),
-    .op2_in     (   ),
-    .op1_out    ( op1_alu   ),
-    .op2_out    (    ),
+    .op_in      ( rs1_data  ),
+    .op_out     ( op1_alu   ),
     .next       ( rs_incr   )
 );
 
 sa_col_splitter #(
-    .IN_DATA_WIDTH  ( DMA_DATA_WIDTH ),
+    .IN_DATA_WIDTH  ( MEM_DATA_WIDTH ),
     .OUT_DATA_WIDTH ( ALU_WIDTH      )
 ) i_col_splitter (
     .clk        ( clk       ),
@@ -149,7 +147,7 @@ sa_col_splitter #(
 // systolic array
 crossbar #(
     .DATA_WIDTH     ( ALU_WIDTH     ),
-    .ARRAY_ELLEMENTS( SA_HEIGHT     )
+    .ARRAY_ELEMENTS ( SA_HEIGHT     )
 ) row_crossbar (
     .clk            ( clk           ),
     .reset_n        ( rst_n         ),
@@ -161,7 +159,7 @@ crossbar #(
 
 crossbar #(
     .DATA_WIDTH     ( ALU_WIDTH     ),
-    .ARRAY_ELLEMENTS( SA_WIDTH      )
+    .ARRAY_ELEMENTS ( SA_WIDTH      )
 ) col_crossbar (
     .clk            ( clk           ),
     .reset_n        ( rst_n         ),
@@ -211,7 +209,7 @@ always_ff @( posedge clk, negedge rst_n )
     if ( done )                 concat_en <= 'd0;       
 
 vectorial_concat #(
-    .OUT_DATA_WIDTH ( DMA_DATA_WIDTH ),
+    .OUT_DATA_WIDTH ( MEM_DATA_WIDTH ),
     .IN_DATA_WIDTH  ( ALU_WIDTH      )
 ) i_vectorial_concat (
     .clk        ( clk       ),

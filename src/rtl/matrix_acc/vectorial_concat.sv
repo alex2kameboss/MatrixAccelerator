@@ -52,7 +52,9 @@ generate
     for ( i_reg = NUMBER_OF_ALU - 1; i_reg >= 0 ; i_reg  = i_reg - 1 ) begin : dtype_selection_outer
         for ( j_reg = IN_BYTES - 1; j_reg >= 0; j_reg = j_reg - 1 ) begin : dtype_selection_inner
 always_ff @( posedge clk, negedge rst_n )
-    if ( en ) begin
+    if ( ~rst_n )
+        rez_out[(i_reg * IN_BYTES + j_reg + 1) * 8 - 1 -: 8] <= 'd0;
+    else if ( en ) begin
         if (dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32)
             rez_out[(i_reg * IN_BYTES + j_reg + 1) * 8 - 1 -: 8] <= rez_in_byte[i_reg][j_reg];
         else if ((dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) & (j_reg / 2) == cnt)

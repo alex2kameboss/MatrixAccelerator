@@ -16,10 +16,10 @@ module extension_driver #(
     output  logic                                                   valid           ,
     input   logic                                                   ready           ,
 // control signal                           
-    output  logic                                                   arth_data       ,   // 1 arithmetic operation, 0 data operation
+    output  logic                                                   arith_data      ,   // 1 arithmetic operation, 0 data operation
     output  logic                                                   define          ,   // 1 define register, 0 memory operation
     output  logic                                                   prf_define      ,   // 1 define for prf, 0 define for matrix
-// memori data                          
+// memory data                          
     output  logic                                                   ld_st           ,   // 1 load, 0 store
     output  logic               [ADDR_WIDTH - 1 : 0]                addr            ,
 // arithmetics data 
@@ -102,7 +102,7 @@ end
 // decode instr
 
 logic funct3_wire;    
-logic arth_data_wire; 
+logic arith_data_wire; 
 logic define_wire;   
 logic prf_define_wire;
 logic ld_st_wire;     
@@ -111,7 +111,7 @@ logic error_wire;
 
 instr_decoder i_decoder (
     .funct3      ( instr.decode.funct3  ),
-    .arth_data   ( arth_data_wire       ),
+    .arith_data  ( arith_data_wire      ),
     .define      ( define_wire          ),
     .define_prf  ( prf_define_wire      ),
     .ld_st       ( ld_st_wire           ),
@@ -124,19 +124,19 @@ assign load_data = response_issuer & valid_instr;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
-        arth_data   <=  1'b0;
+        arith_data  <=  1'b0;
         define      <=  1'b0;
         prf_define  <=  1'b0;
         ld_st       <=  1'b0;
         scalar_op   <=  1'b0;
     end else if ( load_data) begin
-        arth_data   <=  arth_data_wire;
+        arith_data  <=  arith_data_wire;
         define      <=  define_wire   ;
         prf_define  <=  prf_define_wire;
         ld_st       <=  ld_st_wire    ;
         scalar_op   <=  scalar_op_wire;
     end else if ( valid & ready ) begin
-        arth_data   <=  1'b0;
+        arith_data  <=  1'b0;
         define      <=  1'b0;
         prf_define  <=  1'b0;
         ld_st       <=  1'b0;
@@ -192,18 +192,18 @@ always_ff @ ( posedge clk, negedge rst_n )
     registers_if.register.rs_valid[1])  height <= registers_if.register.rs[1];   else
     if ( valid & ready )    height <= 'd0;
 
-logic commited, rs1_valid, rs2_valid;
+logic committed, rs1_valid, rs2_valid;
 assign registers_if.register_ready = ~rs1_valid | ~rs2_valid | registers_if.register_valid;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           valid <= 'd0;                               else
     if ( valid & ready )    valid <= 'd0;                               else
-                            valid <= commited & rs1_valid & rs2_valid & ready;
+                            valid <= committed & rs1_valid & rs2_valid & ready;
 
 always_ff @ ( posedge clk, negedge rst_n )                              
-    if ( ~rst_n )           commited <= 'd0;                            else
-    if ( commit_if.commit_valid & ~commit_if.commit.commit_kill) commited <= 'd1;        else
-    if ( valid & ready )    commited <= 'd0;
+    if ( ~rst_n )           committed <= 'd0;                            else
+    if ( commit_if.commit_valid & ~commit_if.commit.commit_kill) committed <= 'd1;        else
+    if ( valid & ready )    committed <= 'd0;
 
 always_ff @ ( posedge clk, negedge rst_n )                              
     if ( ~rst_n )           rs1_valid <= 'd0;                           else
@@ -244,7 +244,7 @@ always_ff @ ( posedge clk, negedge rst_n )
     if ( result_if.result_valid & result_if.result_ready ) result_if.result_valid <= 'd0; else
     if ( ready_posedge )    result_if.result_valid <= 'd1;
 
-posedge_detector i_arth_done (
+posedge_detector i_arith_done (
     .clk    ( clk           ),
     .rst_n  ( rst_n         ),
     .signal ( ready         ),

@@ -1,5 +1,3 @@
-import ma_pkg::*;
-
 module systolic_array #(
     parameter ARRAY_WIDTH   = 2,
     parameter ARRAY_HEIGHT  = 2,
@@ -10,7 +8,7 @@ module systolic_array #(
     input   logic                                   reset_n                                                     ,
     // array control signals
     input   logic                                   en                                                          ,
-    input   dtype_t                                 dtype                                                       ,
+    input   ma_pkg::dtype_t                         dtype                                                       ,
     input   logic                                   array_reset_n   [ARRAY_HEIGHT - 1 : 0][ARRAY_WIDTH - 1 : 0] ,
     // data
     input   logic           [DATA_WIDTH - 1 : 0]    a_array_input   [ARRAY_HEIGHT - 1 : 0]                      ,
@@ -27,15 +25,15 @@ logic col_en [ARRAY_WIDTH - 1 : 0];
 
 generate
     for ( i_en = 0; i_en < ARRAY_WIDTH / 4; i_en = i_en + 1 ) begin : b32_en
-        assign col_en[i_en] = en & ( dtype == INT32 | dtype == UINT32 | dtype == INT16 | dtype == UINT16 | dtype == INT8 | dtype == UINT8 );
+        assign col_en[i_en] = en & ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 | dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
     end
 
     for ( i_en = ARRAY_WIDTH / 4; i_en < ARRAY_WIDTH / 2; i_en = i_en + 1 ) begin : b16_en
-        assign col_en[i_en] = en & ( dtype == INT16 | dtype == UINT16 | dtype == INT8 | dtype == UINT8 );
+        assign col_en[i_en] = en & ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
     end
 
     for ( i_en = ARRAY_WIDTH / 2; i_en < ARRAY_WIDTH; i_en = i_en + 1 ) begin : b8_en
-        assign col_en[i_en] = en & ( dtype == INT8 | dtype == UINT8 );
+        assign col_en[i_en] = en & ( dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
     end
 endgenerate
 

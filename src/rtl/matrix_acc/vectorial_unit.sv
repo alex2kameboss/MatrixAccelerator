@@ -1,5 +1,5 @@
 module vectorial_unit #(
-    parameter   DMA_DATA_WIDTH  =   128 ,
+    parameter   MEM_DATA_WIDTH  =   128 ,
     parameter   ALU_WIDTH       =   32  ,
     parameter   PRF_N_LANES     =   8   ,
     parameter   PRF_LOG_N       =   10  ,
@@ -29,14 +29,14 @@ module vectorial_unit #(
     output  logic                           [PRF_LOG_N - 1 : 0]         rd_i_out    ,
     output  logic                           [PRF_LOG_M - 1 : 0]         rd_j_out    ,
     // data
-    input   logic                           [DMA_DATA_WIDTH - 1 : 0]    rs1_data    ,
-    input   logic                           [DMA_DATA_WIDTH - 1 : 0]    rs2_data    ,
-    output  logic                           [DMA_DATA_WIDTH - 1 : 0]    rd_data     ,
+    input   logic                           [MEM_DATA_WIDTH - 1 : 0]    rs1_data    ,
+    input   logic                           [MEM_DATA_WIDTH - 1 : 0]    rs2_data    ,
+    output  logic                           [MEM_DATA_WIDTH - 1 : 0]    rd_data     ,
 // control data
     output  logic                                                       done        
 );
     
-localparam NUMBER_OF_ALU = DMA_DATA_WIDTH / ALU_WIDTH;
+localparam NUMBER_OF_ALU = MEM_DATA_WIDTH / ALU_WIDTH;
 
 
 ma_pkg::dtype_t dtype;
@@ -44,7 +44,7 @@ assign dtype = rd.dtype;
 wire fast = dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32;
 
 logic rs1_done, rs2_done;
-logic rs_incr;
+wor rs_incr;
 
 logic   [ALU_WIDTH - 1 : 0]    op1_alu [NUMBER_OF_ALU - 1 : 0];
 logic   [ALU_WIDTH - 1 : 0]    op2_alu [NUMBER_OF_ALU - 1 : 0];
@@ -107,18 +107,30 @@ prf_addr_gen_seq #(
 
 // vectorial arithmetics
 vectorial_splitter #(
-    .IN_DATA_WIDTH  ( DMA_DATA_WIDTH ),
+    .IN_DATA_WIDTH  ( MEM_DATA_WIDTH ),
     .OUT_DATA_WIDTH ( ALU_WIDTH      )
-) i_data_splitter (
+) i_op1_splitter (
     .clk        ( clk       ),
     .rst_n      ( rst_n     ),
     .reset      ( start     ),
     .en         ( splitter_en),
     .dtype      ( dtype     ),
-    .op1_in     ( rs1_data  ),
-    .op2_in     ( rs2_data  ),
-    .op1_out    ( op1_alu   ),
-    .op2_out    ( op2_alu   ),
+    .op_in      ( rs1_data  ),
+    .op_out     ( op1_alu   ),
+    .next       ( rs_incr   )
+);
+
+vectorial_splitter #(
+    .IN_DATA_WIDTH  ( MEM_DATA_WIDTH ),
+    .OUT_DATA_WIDTH ( ALU_WIDTH      )
+) i_op2_splitter (
+    .clk        ( clk       ),
+    .rst_n      ( rst_n     ),
+    .reset      ( start     ),
+    .en         ( splitter_en),
+    .dtype      ( dtype     ),
+    .op_in      ( rs2_data  ),
+    .op_out     ( op2_alu   ),
     .next       ( rs_incr   )
 );
 
@@ -143,7 +155,7 @@ always_ff @( posedge clk, negedge rst_n )
                                 concat_en <= splitter_en;
 
 vectorial_concat #(
-    .OUT_DATA_WIDTH ( DMA_DATA_WIDTH ),
+    .OUT_DATA_WIDTH ( MEM_DATA_WIDTH ),
     .IN_DATA_WIDTH  ( ALU_WIDTH      )
 ) i_vectorial_concat (
     .clk        ( clk       ),

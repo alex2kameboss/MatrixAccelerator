@@ -34,7 +34,9 @@ genvar i;
 generate
     for ( i = 0; i < NUMBER_OF_ALU / 4; i = i + 1 ) begin : dtype_selection_32b
 always_ff @(posedge clk, negedge rst_n)
-    if (en) begin
+    if ( ~rst_n )
+        op_out[i] <= 'd0;
+    else if (en) begin
         if ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 ) begin
             op_out[i] <= op_in[(i + 1) * OUT_DATA_WIDTH - 1 -: OUT_DATA_WIDTH];
         end else if ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 ) begin
@@ -47,7 +49,9 @@ end
 
 for ( i = NUMBER_OF_ALU / 4; i < NUMBER_OF_ALU / 2; i = i + 1 ) begin : dtype_selection_16b
 always_ff @(posedge clk, negedge rst_n)
-    if (en) begin
+    if ( ~rst_n )
+        op_out[i] <= 'd0;
+    else if (en) begin
         if ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 ) begin
             op_out[i] <= 'd0;
         end else if ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 ) begin
@@ -60,7 +64,9 @@ end
 
 for ( i = NUMBER_OF_ALU / 2; i < NUMBER_OF_ALU; i = i + 1 ) begin : dtype_selection_8b
 always_ff @(posedge clk, negedge rst_n)
-    if (en) begin
+    if ( ~rst_n )
+        op_out[i] <= 'd0;
+    else if (en) begin
         if ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 ) begin
             op_out[i] <= 'd0;
         end else if ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 ) begin
