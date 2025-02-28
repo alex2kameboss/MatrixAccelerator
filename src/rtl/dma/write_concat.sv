@@ -19,19 +19,19 @@ logic [FIFO_DATA_WIDTH * DATA_MULTIPLIER - 1 : 0] buffer;
 
 assign cnt_next = cnt + 1'b1;
 assign fifo_data = buffer[((cnt + 1) * FIFO_DATA_WIDTH - 1) -: FIFO_DATA_WIDTH];
-assign fifo_incr = full;
+assign full = fifo_incr & ~(&cnt & ~fifo_full);
 
 always_ff @(posedge clk, negedge rst_n)
     if ( ~rst_n )                       cnt <= 'd0;             else
-    if ( ~fifo_full & full )            cnt <= cnt_next;     
+    if ( ~fifo_full & fifo_incr )       cnt <= cnt_next;     
 
 always_ff @(posedge clk, negedge rst_n)
     if ( ~rst_n )                       buffer <= 'd0;          else
     if ( ~full & incr )                 buffer <= data;                        
 
 always_ff @(posedge clk, negedge rst_n)
-    if ( ~rst_n )                       full <= 'd0;            else
-    if ( ~fifo_full & &cnt )            full <= 'd0;            else
-    if ( incr )                         full <= 'd1;                     
+    if ( ~rst_n )                       fifo_incr <= 'd0;       else
+    if ( ~|cnt & incr )                 fifo_incr <= 'd1;       else
+    if ( &cnt & ~incr & ~fifo_full )    fifo_incr <= 'd0;
 
 endmodule

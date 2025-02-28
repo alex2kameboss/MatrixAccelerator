@@ -303,14 +303,14 @@ write_concat #(
     .FIFO_DATA_WIDTH    ( axi.AXI_DATA_WIDTH                ),
     .DATA_MULTIPLIER    ( DATA_WIDTH / axi.AXI_DATA_WIDTH   )
 ) i_write_concat (
-    .clk         ( clk                                      ),
-    .rst_n       ( rst_n                                    ),
-    .fifo_data   ( write_fifo_data                          ),
-    .fifo_full   ( write_fifo_w_full                        ),
-    .fifo_incr   ( write_fifo_w_incr                        ),
-    .data        ( write_data_i                             ),
-    .full        ( write_concat_full                        ),
-    .incr        ( write_data_valid_i & write_data_ready_o  )
+    .clk         ( clk                  ),
+    .rst_n       ( rst_n                ),
+    .fifo_data   ( write_fifo_data      ),
+    .fifo_full   ( write_fifo_w_full    ),
+    .fifo_incr   ( write_fifo_w_incr    ),
+    .data        ( write_data_i         ),
+    .full        ( write_concat_full    ),
+    .incr        ( write_data_valid_i   )
 );
 
 logic read_fifo_w_incr, read_fifo_r_incr;
