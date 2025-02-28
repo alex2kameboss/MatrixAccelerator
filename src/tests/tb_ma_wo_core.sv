@@ -28,7 +28,7 @@ localparam DATA_WIDTH   = 32'd32 * 2 ** (PRF_LOG_P + PRF_LOG_Q);
 localparam DATA_BYTES   = DATA_WIDTH / 8;
 
 localparam int unsigned TbAxiIdWidth        = 32'd5;
-localparam int unsigned TbAxiDataWidth      = DATA_WIDTH;
+localparam int unsigned TbAxiDataWidth      = 64;
 localparam int unsigned TbAxiAddrWidth      = 32'd32;
 localparam int unsigned TbAxiStrbWidth      = TbAxiDataWidth / 8;
 localparam int unsigned TbAxiUserWidth      = 5;
@@ -66,8 +66,8 @@ AXI_BUS #(
 ) axi ();
 
 axi_sim_mem_intf #(
-  .AXI_ADDR_WIDTH      ( ADDR_WIDTH     ),
-  .AXI_DATA_WIDTH      ( DATA_WIDTH     ),
+  .AXI_ADDR_WIDTH      ( TbAxiAddrWidth ),
+  .AXI_DATA_WIDTH      ( TbAxiDataWidth ),
   .AXI_ID_WIDTH        ( TbAxiIdWidth   ),
   .AXI_USER_WIDTH      ( TbAxiUserWidth ),
   .WARN_UNINITIALIZED  ( 1'b0           ),

@@ -39,7 +39,6 @@ module ma_data_path #(
 
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
-localparam DMA_DATA_WIDTH   = axi.AXI_DATA_WIDTH;
 localparam SRAM_WIDTH       = 32;
 localparam PRF_N_LANES      = 2 ** (PRF_LOG_P + PRF_LOG_Q);
 localparam MEM_DATA_WIDTH   = SRAM_WIDTH * PRF_N_LANES;
@@ -47,6 +46,7 @@ localparam ALU_WIDTH        = 32;
 localparam NUMBER_OF_ALU    = MEM_DATA_WIDTH / ALU_WIDTH;
 localparam PRF_N_RPORTS  = 2 ;
 localparam PRF_N_WPORTS  = 1 ;
+localparam DMA_DATA_WIDTH   = MEM_DATA_WIDTH;
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
@@ -163,7 +163,7 @@ assign scalar_line = rd_cfg.dtype == ma_pkg::INT32 | rd_cfg.dtype == ma_pkg::UIN
 assign mem_w_data = arith ? (vu_en ? vu_rd_data : (mu_en ? mu_rd_data : 'd0)) : dma_read_data;
 
 assign dma_read_incr = dma_read_data_valid & dma_read_data_ready;
-assign dma_write_incr = (dma_write_data_valid | start_addr_gen_delayed) & dma_write_data_ready;
+assign dma_write_incr = dma_write_data_valid & dma_write_data_ready;
 
 assign dscheme = prf_dtypes::ROW_COL;
 assign taccess_write[0] = mu_en ? prf_dtypes::COL : prf_dtypes::ROW;

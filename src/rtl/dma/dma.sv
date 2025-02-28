@@ -1,6 +1,6 @@
 module dma #(
     parameter ADDR_WIDTH = 32   ,
-    parameter DATA_WIDTH = 128  
+    parameter DATA_WIDTH = 128   // data size inside the core
 ) (
     // generic signals
     input   logic                           clk                         ,
@@ -32,7 +32,8 @@ module dma #(
     AXI_BUS.Master                          axi                         
 );
 
-localparam DATA_BYTES       = DATA_WIDTH / 8;
+// for AXI interface
+localparam DATA_BYTES       = axi.AXI_DATA_WIDTH / 8;
 localparam MAX_BURST_SIZE   = 256 * DATA_BYTES >= 4 * 1024 ? 4 * 1024 : 256 * DATA_BYTES; // max 4 KB
 localparam MAX_BURST        = MAX_BURST_SIZE / DATA_BYTES;
 localparam MAX_TRANSACTIONS = 8'(MAX_BURST - 1);
@@ -111,7 +112,7 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_size <= 'd0;             else
     if ( aw_accepted )              axi.aw_size <= 'd0;             else
-    if ( |write_len & ~|write_cnt )               axi.aw_size <= 3'($clog2(DATA_WIDTH / 8));
+    if ( |write_len & ~|write_cnt )               axi.aw_size <= 3'($clog2(DATA_BYTES));
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_burst <= 'd0;            else
@@ -205,7 +206,7 @@ always_ff @( posedge aclk, negedge arst_n )
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.ar_size <= 'd0;                 else
     if ( ar_accepted )              axi.ar_size <= 'd0;                 else
-    if ( |read_len )                axi.ar_size <= 3'($clog2(DATA_WIDTH / 8));
+    if ( |read_len )                axi.ar_size <= 3'($clog2(DATA_BYTES));
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.ar_burst <= 'd0;                else
@@ -215,7 +216,7 @@ always_ff @( posedge aclk, negedge arst_n )
 
 // fifos
 
-logic [DATA_WIDTH - 1 : 0]  write_strobed_data;
+logic [axi.AXI_DATA_WIDTH - 1 : 0]  write_strobed_data;
 
 genvar write_fifo_i;
 generate
@@ -223,6 +224,8 @@ generate
     assign axi.w_data[(write_fifo_i + 1) * 8 - 1 : write_fifo_i * 8] = write_strobed_data[(write_fifo_i + 1) * 8 - 1 : write_fifo_i * 8] & {8{write_strobe[write_fifo_i] & axi.w_valid}};
 endgenerate
 
+generate
+    if ( DATA_WIDTH == axi.AXI_DATA_WIDTH ) begin : equal_sizes
 logic write_fifo_w_incr, write_fifo_r_incr;
 logic write_fifo_w_full, write_fifo_r_empty;
 
@@ -270,6 +273,86 @@ async_fifo #(
     .r_empty_o ( read_fifo_r_empty  ) ,   // read interface empty
     .r_data    ( read_data_o        )     // read data
 );
+    end else if ( DATA_WIDTH > axi.AXI_DATA_WIDTH ) begin : larger_size
+logic write_fifo_w_incr, write_fifo_r_incr;
+logic write_fifo_w_full, write_fifo_r_empty, write_concat_full;
+logic [axi.AXI_DATA_WIDTH - 1 : 0]  write_fifo_data;
+
+
+assign write_fifo_r_incr    = axi.w_ready & axi.w_valid;
+assign write_data_ready_o   = ~write_concat_full;
+assign axi.w_valid          = ~write_fifo_r_empty;
+
+async_fifo #(
+    .DATA_WIDTH( axi.AXI_DATA_WIDTH ),
+    .FIFO_DEPTH( MAX_BURST          )    
+) write_fifo (
+    .w_clk     ( clk                ) ,   // write interface clock
+    .w_reset_n ( rst_n              ) ,   // write interface async reset
+    .w_incr_i  ( write_fifo_w_incr  ) ,   // write iterface increment
+    .w_full_o  ( write_fifo_w_full  ) ,   // write interface full
+    .w_data    ( write_fifo_data    ) ,   // write data
+    .r_clk     ( aclk               ) ,   // read interface clock
+    .r_reset_n ( arst_n             ) ,   // read interface async reset
+    .r_incr_i  ( write_fifo_r_incr  ) ,   // read increment
+    .r_empty_o ( write_fifo_r_empty ) ,   // read interface empty
+    .r_data    ( write_strobed_data )     // read data
+);
+
+write_concat #(
+    .FIFO_DATA_WIDTH    ( axi.AXI_DATA_WIDTH                ),
+    .DATA_MULTIPLIER    ( DATA_WIDTH / axi.AXI_DATA_WIDTH   )
+) i_write_concat (
+    .clk         ( clk                                      ),
+    .rst_n       ( rst_n                                    ),
+    .fifo_data   ( write_fifo_data                          ),
+    .fifo_full   ( write_fifo_w_full                        ),
+    .fifo_incr   ( write_fifo_w_incr                        ),
+    .data        ( write_data_i                             ),
+    .full        ( write_concat_full                        ),
+    .incr        ( write_data_valid_i & write_data_ready_o  )
+);
+
+logic read_fifo_w_incr, read_fifo_r_incr;
+logic read_fifo_w_full, read_fifo_r_empty, read_concat_empty;
+logic [axi.AXI_DATA_WIDTH - 1 : 0]  read_fifo_data;
+
+assign read_fifo_w_incr     = axi.r_ready & axi.r_valid;
+assign read_data_valid_o    = ~read_concat_empty;
+assign axi.r_ready          = ~read_fifo_w_full;
+
+async_fifo #(
+    .DATA_WIDTH( axi.AXI_DATA_WIDTH ),
+    .FIFO_DEPTH( MAX_BURST          )    
+) read_fifo (
+    .w_clk     ( aclk               ) ,   // write interface clock
+    .w_reset_n ( arst_n             ) ,   // write interface async reset
+    .w_incr_i  ( read_fifo_w_incr   ) ,   // write iterface increment
+    .w_full_o  ( read_fifo_w_full   ) ,   // write interface full
+    .w_data    ( axi.r_data         ) ,   // write data
+    .r_clk     ( clk                ) ,   // read interface clock
+    .r_reset_n ( rst_n              ) ,   // read interface async reset
+    .r_incr_i  ( read_fifo_r_incr   ) ,   // read increment
+    .r_empty_o ( read_fifo_r_empty  ) ,   // read interface empty
+    .r_data    ( read_fifo_data     )     // read data
+);        
+
+read_concat #(
+    .FIFO_DATA_WIDTH    ( axi.AXI_DATA_WIDTH                ),
+    .DATA_MULTIPLIER    ( DATA_WIDTH / axi.AXI_DATA_WIDTH   )
+) i_read_concat (
+    .clk         ( clk                                  ),
+    .rst_n       ( rst_n                                ),
+    .fifo_data   ( read_fifo_data                       ),
+    .fifo_empty  ( read_fifo_r_empty                    ),
+    .fifo_incr   ( read_fifo_r_incr                     ),
+    .data        ( read_data_o                          ),
+    .empty       ( read_concat_empty                    ),
+    .incr        ( read_data_valid_o & read_data_ready_i)
+);
+
+    end
+endgenerate
 
 // syncronizers
 
