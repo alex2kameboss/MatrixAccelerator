@@ -34,7 +34,7 @@ AXI_BUS #(
   .AXI_USER_WIDTH ( 32'd5       )
 ) axi ();
 
-matrix_acclerator #(
+matrix_accelerator #(
     .OPCODE             ( OPCODE            ),
     .ADDR_WIDTH         ( ADDR_WIDTH        ),
     .REGISTER_NUMBERS   ( REGISTER_NUMBERS  ),

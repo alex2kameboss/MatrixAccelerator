@@ -5,7 +5,7 @@ module async_fifo #(
     // write interface
     input                           w_clk       ,   // write interface clock
     input                           w_reset_n   ,   // write interface async reset
-    input                           w_incr_i    ,   // write iterface increment
+    input                           w_incr_i    ,   // write interface increment
     output  logic                   w_full_o    ,   // write interface full
     input   [ DATA_WIDTH - 1 : 0 ]  w_data      ,   // write data
     // read interface    
@@ -58,7 +58,7 @@ gray_counter #(.WIDTH($clog2(FIFO_DEPTH) + 1)) read_counter_i (
 
 
 // write -> read domain
-syncronizer #(.DATA_WIDTH($clog2(FIFO_DEPTH) + 1)) r_syncronizer_i (
+synchronizer #(.DATA_WIDTH($clog2(FIFO_DEPTH) + 1)) r_synchronizer_i (
     .dest_clk(r_clk),
     .dest_reset_n(r_reset_n),
     .async_data_i(w_gray),
@@ -66,7 +66,7 @@ syncronizer #(.DATA_WIDTH($clog2(FIFO_DEPTH) + 1)) r_syncronizer_i (
 );
 
 // read -> write domain
-syncronizer #(.DATA_WIDTH($clog2(FIFO_DEPTH) + 1)) w_syncronizer_i (
+synchronizer #(.DATA_WIDTH($clog2(FIFO_DEPTH) + 1)) w_synchronizer_i (
     .dest_clk(w_clk),
     .dest_reset_n(w_reset_n),
     .async_data_i(r_gray),
@@ -75,7 +75,7 @@ syncronizer #(.DATA_WIDTH($clog2(FIFO_DEPTH) + 1)) w_syncronizer_i (
 
 
 memory #(.DATA_SIZE(DATA_WIDTH), .DEPTH(FIFO_DEPTH)) 
-        fifo_memeory_i (
+        fifo_memory_i (
     // write interface
     .w_clk(w_clk),
     .w_addr_i(w_addr[$clog2(FIFO_DEPTH) -1 : 0]),

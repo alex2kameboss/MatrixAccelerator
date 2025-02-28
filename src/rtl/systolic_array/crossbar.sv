@@ -1,19 +1,19 @@
 module crossbar #(
     parameter   DATA_WIDTH      =   8,
-    parameter   ARRAY_ELLEMENTS =   4
+    parameter   ARRAY_ELEMENTS  =   4
 ) (
     input   logic                           clk                                     ,
     input   logic                           reset_n                                 ,
     input   logic                           sync_reset_n                            ,
     input   logic                           shift                                   ,
-    input   logic   [DATA_WIDTH - 1 : 0]    data_i      [ARRAY_ELLEMENTS - 1 : 0]   ,
-    output  logic   [DATA_WIDTH - 1 : 0]    data_o      [ARRAY_ELLEMENTS - 1 : 0]      
+    input   logic   [DATA_WIDTH - 1 : 0]    data_i      [ARRAY_ELEMENTS - 1 : 0]    ,
+    output  logic   [DATA_WIDTH - 1 : 0]    data_o      [ARRAY_ELEMENTS - 1 : 0]      
 );
     
 genvar i;
 
 generate
-    for ( i = 0; i < ARRAY_ELLEMENTS; i = i + 1) begin : shift_block
+    for ( i = 0; i < ARRAY_ELEMENTS; i = i + 1) begin : shift_block
         auto_shift_register #(
             .DATA_WIDTH ( DATA_WIDTH),
             .STEPS      ( i         )

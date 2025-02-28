@@ -22,7 +22,7 @@ localparam ADDR_WIDTH   = 32'd32;
 
 logic                                       valid    ;
 logic                                       ready    ;
-logic                                       arth_data;
+logic                                       arith_data;
 logic                                       define   ;
 logic                                       prf_define;
 logic                                       ld_st    ;
@@ -114,7 +114,7 @@ begin
 end
 endtask //automatic
 
-task automatic define_rgeister;
+task automatic define_register;
 input reg_t     rd_i    ;
 input int       width_i ;
 input int       height_i;
@@ -145,7 +145,7 @@ begin
 
     // assertions
     // check operation configuration
-    assert( arth_data == 1'b0 );
+    assert( arith_data == 1'b0 );
     assert( define == 1'b1 );
     assert( prf_define == 1'b0 );
     assert( ld_st == 1'b0 );
@@ -159,7 +159,7 @@ begin
 end
 endtask //automatic
 
-task automatic define_prf_rgeister;
+task automatic define_prf_register;
 input reg_t             rd_i    ;
 input int               prf_x   ;
 input int               prf_y   ;
@@ -190,7 +190,7 @@ begin
 
     // assertions
     // check operation configuration
-    assert( arth_data == 1'b0 );
+    assert( arith_data == 1'b0 );
     assert( define == 1'b1 );
     assert( prf_define == 1'b1 );
     assert( ld_st == 1'b0 );
@@ -204,7 +204,7 @@ begin
 end
 endtask //automatic
 
-task automatic load_rgeister;
+task automatic load_register;
 input reg_t rd_i    ;
 input int   addr_i  ;
 input imm_t imm     ;
@@ -231,7 +231,7 @@ begin
 
     // assertions
     // check operation configuration
-    assert( arth_data == 1'b0 );
+    assert( arith_data == 1'b0 );
     assert( define == 1'b0 );
     assert( prf_define == 1'b0 );
     assert( ld_st == 1'b1 );
@@ -243,7 +243,7 @@ begin
 end
 endtask //automatic
 
-task automatic store_rgeister;
+task automatic store_register;
 input reg_t rd_i    ;
 input int   addr_i  ;
 input imm_t imm     ;
@@ -270,7 +270,7 @@ begin
 
     // assertions
     // check operation configuration
-    assert( arth_data == 1'b0 );
+    assert( arith_data == 1'b0 );
     assert( define == 1'b0 );
     assert( prf_define == 1'b0 );
     assert( ld_st == 1'b0 );
@@ -308,7 +308,7 @@ begin
 
     // assertions
     // check operation configuration
-    assert( arth_data == 1'b1 );
+    assert( arith_data == 1'b1 );
     assert( scalar_op == 1'b0 );
     // check data
     assert( rd == rd_i );
@@ -329,7 +329,7 @@ input int           rs2_v   ;
 begin
     riscv_r_t inst;
     
-    $display("Vector-scalr operation");
+    $display("Vector-scalar operation");
 
     rf[rs2_i] = rs2_v;
 
@@ -349,7 +349,7 @@ begin
 
     // assertions
     // check operation configuration
-    assert( arth_data == 1'b1 );
+    assert( arith_data == 1'b1 );
     assert( scalar_op == 1'b1 );
     // check data
     assert( rd == rd_i );
@@ -459,7 +459,7 @@ initial begin
     @(posedge rst_n);
     
     @(posedge clk)
-    define_rgeister(
+    define_register(
         .rd_i    ( 'd0  ),
         .width_i ( 'd8  ),
         .height_i( 'd8  ),
@@ -468,7 +468,7 @@ initial begin
         .height_r( 'd1  )
     );
 
-    define_prf_rgeister(
+    define_prf_register(
         .rd_i   ( 'd0  ),
         .prf_x  ( 'd8  ),
         .prf_y  ( 'd8  ),
@@ -477,14 +477,14 @@ initial begin
         .prf_y_r( 'd1  )
     );
 
-    load_rgeister(
+    load_register(
         .rd_i    ( 'd0  ),
         .addr_i  ( 'd0  ),
         .imm     ( 'd16 ),
         .addr_r  ( 'd12 )
     );
 
-    store_rgeister(
+    store_register(
         .rd_i    ( 'd0  ),
         .addr_i  ( 'd0  ),
         .imm     ( 'd16 ),
@@ -527,7 +527,7 @@ extension_driver #(
     .result_if       ( xif          ),
     .valid           ( valid        ),
     .ready           ( ready        ),
-    .arth_data       ( arth_data    ),   // 1 arithmetic operation, 0 data operation
+    .arith_data       ( arith_data    ),   // 1 arithmetic operation, 0 data operation
     .define          ( define       ),   // 1 define register, 0 memory operation
     .prf_define      ( prf_define   ),   // 1 define for prf, 0 define for matrix
     .ld_st           ( ld_st        ),   // 1 load, 0 store

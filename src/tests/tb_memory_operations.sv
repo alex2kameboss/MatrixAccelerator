@@ -23,10 +23,10 @@ typedef logic [$clog2(NUMBER_OF_REGISTERS) - 1 : 0] register;
 
 logic clk, rst_n;
 
-// dut controll signals
+// dut control signals
 logic                                       valid     ;
 logic                                       ready     ;
-logic                                       arth_data ;
+logic                                       arith_data;
 logic                                       define    ;
 logic                                       define_prf;
 logic                                       ld_st     ;
@@ -88,7 +88,7 @@ axi_sim_mem_intf #(
 
 instr_decoder i_op_decoder (
   .funct3     ( funct3    ),
-  .arth_data  ( arth_data ),
+  .arith_data  ( arith_data ),
   .define     ( define    ),
   .define_prf ( define_prf),
   .ld_st      ( ld_st     ),
@@ -111,7 +111,7 @@ ma_data_path #(
   .rst_n      ( rst_n     ),
   .valid      ( valid     ),
   .ready      ( ready     ),
-  .arth_data  ( arth_data ),
+  .arith_data  ( arith_data ),
   .define     ( define    ),
   .prf_define ( define_prf),
   .ld_st      ( ld_st     ),
@@ -613,7 +613,7 @@ initial begin
   end
 
 
-  // ------- test memory operaions -------
+  // ------- test memory operations -------
   load_store_test(
     .r     ( 'd0    ), 
     .w     ( 32     ), 

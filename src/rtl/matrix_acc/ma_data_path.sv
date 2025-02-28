@@ -18,10 +18,10 @@ module ma_data_path #(
     input   logic                                                   valid           ,
     output  logic                                                   ready           ,
 // control signal                           
-    input   logic                                                   arth_data       ,   // 1 arithmetic operation, 0 data operation
+    input   logic                                                   arith_data      ,   // 1 arithmetic operation, 0 data operation
     input   logic                                                   define          ,   // 1 define register, 0 memory operation
     input   logic                                                   prf_define      ,   // 1 define for prf, 0 define for matrix
-// memori data                          
+// memory data                          
     input   logic                                                   ld_st           ,   // 1 load, 0 store
     input   logic               [ADDR_WIDTH - 1 : 0]                addr            ,
 // arithmetics data 
@@ -228,7 +228,7 @@ control_unit #(
     .rst_n           ( rst_n            ),
     .valid           ( valid            ),
     .ready           ( ready            ),
-    .arth_data       ( arth_data        ),
+    .arith_data      ( arith_data       ),
     .define          ( define           ),
     .prf_define      ( prf_define       ),
     .ld_st           ( ld_st            ),
@@ -252,7 +252,7 @@ control_unit #(
     .dma_read_addr   ( dma_read_addr    ),
     .dma_read_len    ( dma_read_len     ),
     .dma_read_done   ( dma_read_done    ),
-    .arth_done       ( arith_done       ),
+    .arith_done      ( arith_done       ),
     .rd_cfg          ( rd_cfg           ),
     .start_addr_gen  ( start_addr_gen   ),
     .load            ( load             ),

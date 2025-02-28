@@ -1,4 +1,4 @@
-module matrix_acclerator #(
+module matrix_accelerator #(
     parameter OPCODE            =   7'h2B   ,
     parameter DMA_DATA_WIDTH    =   64      ,
     parameter ADDR_WIDTH        =   32      ,
@@ -24,7 +24,7 @@ module matrix_acclerator #(
     
 logic                                                   valid    ;
 logic                                                   ready    ;
-logic                                                   arth_data;   // 1 arithmetic operation, 0 data operation
+logic                                                   arith_data;   // 1 arithmetic operation, 0 data operation
 logic                                                   define   ;   // 1 define register, 0 memory operation
 logic                                                   prf_define;  // 1 define for prf, 0 define for matrix
 logic                                                   ld_st    ;   // 1 load, 0 store
@@ -52,7 +52,7 @@ extension_driver #(
     .result_if      ( result_if     ),
     .valid          ( valid         ),
     .ready          ( ready         ),
-    .arth_data      ( arth_data     ),   // 1 arithmetic operation, 0 data operation
+    .arith_data     ( arith_data    ),   // 1 arithmetic operation, 0 data operation
     .define         ( define        ),   // 1 define register, 0 memory operation
     .prf_define     ( prf_define    ),
     .ld_st          ( ld_st         ),   // 1 load, 0 store
@@ -83,7 +83,7 @@ ma_data_path #(
     .rst_n      ( rst_n     ),
     .valid      ( valid     ),
     .ready      ( ready     ),
-    .arth_data  ( arth_data ),   // 1 arithmetic operation, 0 data operation
+    .arith_data ( arith_data),   // 1 arithmetic operation, 0 data operation
     .define     ( define    ),   // 1 define register, 0 memory operation
     .prf_define ( prf_define),
     .ld_st      ( ld_st     ),   // 1 load, 0 store

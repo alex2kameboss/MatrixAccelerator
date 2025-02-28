@@ -93,7 +93,7 @@ axi_sim_mem_intf #(
   .mon_r_last_o      (        )
 );
 
-matrix_acclerator #(
+matrix_accelerator #(
     .OPCODE             ( OPCODE                ),
     .ADDR_WIDTH         ( ADDR_WIDTH            ),
     .REGISTER_NUMBERS   ( NUMBER_OF_REGISTERS   ),
@@ -841,7 +841,7 @@ initial begin
         $display("------------------------------------------------------");
     end
 
-    // ------- test memory operaions -------
+    // ------- test memory operations -------
     load_store_test(
         .r     ( 'd0    ), 
         .w     ( 32     ), 

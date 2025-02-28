@@ -93,16 +93,16 @@ always_ff @( posedge aclk, negedge arst_n )
     if ( aw_accepted )                  write_transactions_counter <= write_transactions_counter + 1'b1;    else
     if ( b_accepted )                   write_transactions_counter <= write_transactions_counter - 1'b1;
 
-// write control chanels
+// write control chanel
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_valid <= 1'b0;           else
     if ( aw_accepted )              axi.aw_valid <= 1'b0;           else
-    if ( |write_len & ~|write_cnt )  axi.aw_valid <= 1'b1;           
+    if ( |write_len & ~|write_cnt ) axi.aw_valid <= 1'b1;           
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_addr <= 'd0;             else
     if ( aw_accepted )              axi.aw_addr <= 'd0;             else
-    if ( |write_len & ~|write_cnt )               axi.aw_addr <= write_addr;      
+    if ( |write_len & ~|write_cnt ) axi.aw_addr <= write_addr;      
 
 always_ff @( posedge aclk, negedge arst_n )
     if ( ~arst_n )                  axi.aw_len <= 'd0;              else
@@ -216,12 +216,12 @@ always_ff @( posedge aclk, negedge arst_n )
 
 // fifos
 
-logic [axi.AXI_DATA_WIDTH - 1 : 0]  write_strobed_data;
+logic [axi.AXI_DATA_WIDTH - 1 : 0]  write_strobe_data;
 
 genvar write_fifo_i;
 generate
     for ( write_fifo_i = 0; write_fifo_i < DATA_BYTES; write_fifo_i = write_fifo_i + 1 )
-    assign axi.w_data[(write_fifo_i + 1) * 8 - 1 : write_fifo_i * 8] = write_strobed_data[(write_fifo_i + 1) * 8 - 1 : write_fifo_i * 8] & {8{write_strobe[write_fifo_i] & axi.w_valid}};
+    assign axi.w_data[(write_fifo_i + 1) * 8 - 1 : write_fifo_i * 8] = write_strobe_data[(write_fifo_i + 1) * 8 - 1 : write_fifo_i * 8] & {8{write_strobe[write_fifo_i] & axi.w_valid}};
 endgenerate
 
 generate
@@ -240,14 +240,14 @@ async_fifo #(
 ) write_fifo (
     .w_clk     ( clk                ) ,   // write interface clock
     .w_reset_n ( rst_n              ) ,   // write interface async reset
-    .w_incr_i  ( write_fifo_w_incr  ) ,   // write iterface increment
+    .w_incr_i  ( write_fifo_w_incr  ) ,   // write interface increment
     .w_full_o  ( write_fifo_w_full  ) ,   // write interface full
     .w_data    ( write_data_i       ) ,   // write data
     .r_clk     ( aclk               ) ,   // read interface clock
     .r_reset_n ( arst_n             ) ,   // read interface async reset
     .r_incr_i  ( write_fifo_r_incr  ) ,   // read increment
     .r_empty_o ( write_fifo_r_empty ) ,   // read interface empty
-    .r_data    ( write_strobed_data )     // read data
+    .r_data    ( write_strobe_data )     // read data
 );
 
 logic read_fifo_w_incr, read_fifo_r_incr;
@@ -264,7 +264,7 @@ async_fifo #(
 ) read_fifo (
     .w_clk     ( aclk               ) ,   // write interface clock
     .w_reset_n ( arst_n             ) ,   // write interface async reset
-    .w_incr_i  ( read_fifo_w_incr   ) ,   // write iterface increment
+    .w_incr_i  ( read_fifo_w_incr   ) ,   // write interface increment
     .w_full_o  ( read_fifo_w_full   ) ,   // write interface full
     .w_data    ( axi.r_data         ) ,   // write data
     .r_clk     ( clk                ) ,   // read interface clock
@@ -289,14 +289,14 @@ async_fifo #(
 ) write_fifo (
     .w_clk     ( clk                ) ,   // write interface clock
     .w_reset_n ( rst_n              ) ,   // write interface async reset
-    .w_incr_i  ( write_fifo_w_incr  ) ,   // write iterface increment
+    .w_incr_i  ( write_fifo_w_incr  ) ,   // write interface increment
     .w_full_o  ( write_fifo_w_full  ) ,   // write interface full
     .w_data    ( write_fifo_data    ) ,   // write data
     .r_clk     ( aclk               ) ,   // read interface clock
     .r_reset_n ( arst_n             ) ,   // read interface async reset
     .r_incr_i  ( write_fifo_r_incr  ) ,   // read increment
     .r_empty_o ( write_fifo_r_empty ) ,   // read interface empty
-    .r_data    ( write_strobed_data )     // read data
+    .r_data    ( write_strobe_data )     // read data
 );
 
 write_concat #(
@@ -327,7 +327,7 @@ async_fifo #(
 ) read_fifo (
     .w_clk     ( aclk               ) ,   // write interface clock
     .w_reset_n ( arst_n             ) ,   // write interface async reset
-    .w_incr_i  ( read_fifo_w_incr   ) ,   // write iterface increment
+    .w_incr_i  ( read_fifo_w_incr   ) ,   // write interface increment
     .w_full_o  ( read_fifo_w_full   ) ,   // write interface full
     .w_data    ( axi.r_data         ) ,   // write data
     .r_clk     ( clk                ) ,   // read interface clock
@@ -354,10 +354,10 @@ read_concat #(
     end
 endgenerate
 
-// syncronizers
+// synchronizers
 
 // clk -> aclk
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( 1 )
 ) i_write_valid (
     .dest_clk      ( aclk               ) ,
@@ -366,7 +366,7 @@ syncronizer #(
     .sync_data_o   ( write_valid_aclk   ) 
 );
 
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( ADDR_WIDTH )
 ) i_write_addr (
     .dest_clk      ( aclk               ) ,
@@ -375,7 +375,7 @@ syncronizer #(
     .sync_data_o   ( write_addr_aclk    ) 
 );
 
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( ADDR_WIDTH )
 ) i_write_len (
     .dest_clk      ( aclk               ) ,
@@ -384,7 +384,7 @@ syncronizer #(
     .sync_data_o   ( write_len_aclk     ) 
 );
 
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( 1 )
 ) i_read_valid (
     .dest_clk      ( aclk               ) ,
@@ -393,7 +393,7 @@ syncronizer #(
     .sync_data_o   ( read_valid_aclk    ) 
 );
 
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( ADDR_WIDTH )
 ) i_read_addr (
     .dest_clk      ( aclk               ) ,
@@ -402,7 +402,7 @@ syncronizer #(
     .sync_data_o   ( read_addr_aclk     ) 
 );
 
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( ADDR_WIDTH )
 ) i_read_len (
     .dest_clk      ( aclk               ) ,
@@ -412,7 +412,7 @@ syncronizer #(
 );
 
 // aclk -> clk
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( 1 )
 ) i_write_ready (
     .dest_clk      ( clk                ) ,
@@ -421,7 +421,7 @@ syncronizer #(
     .sync_data_o   ( write_ready_o      ) 
 );
 
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( 1 )
 ) i_write_done (
     .dest_clk      ( clk                ) ,
@@ -430,7 +430,7 @@ syncronizer #(
     .sync_data_o   ( write_done_o       ) 
 );
 
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( 1 )
 ) i_read_ready (
     .dest_clk      ( clk                ) ,
@@ -439,7 +439,7 @@ syncronizer #(
     .sync_data_o   ( read_ready_o       ) 
 );
 
-syncronizer #(
+synchronizer #(
     .DATA_WIDTH( 1 )
 ) i_read_done (
     .dest_clk      ( clk                ) ,

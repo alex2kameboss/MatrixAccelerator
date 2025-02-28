@@ -147,7 +147,7 @@ sa_col_splitter #(
 // systolic array
 crossbar #(
     .DATA_WIDTH     ( ALU_WIDTH     ),
-    .ARRAY_ELLEMENTS( SA_HEIGHT     )
+    .ARRAY_ELEMENTS ( SA_HEIGHT     )
 ) row_crossbar (
     .clk            ( clk           ),
     .reset_n        ( rst_n         ),
@@ -159,7 +159,7 @@ crossbar #(
 
 crossbar #(
     .DATA_WIDTH     ( ALU_WIDTH     ),
-    .ARRAY_ELLEMENTS( SA_WIDTH      )
+    .ARRAY_ELEMENTS ( SA_WIDTH      )
 ) col_crossbar (
     .clk            ( clk           ),
     .reset_n        ( rst_n         ),

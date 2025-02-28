@@ -1,4 +1,4 @@
-module syncronizer #(
+module synchronizer #(
     parameter DATA_WIDTH = 3
 ) (
     input                               dest_clk,
