@@ -1,0 +1,57 @@
+interface ma_data_bus #(
+    parameter   PRF_LOG_P   =   1   ,
+    parameter   PRF_LOG_Q   =   2   ,
+    parameter   PRF_LOG_N   =   10  ,
+    parameter   PRF_LOG_M   =   10  ,
+    parameter   SRAM_WIDTH  =   32  
+) ( 
+    input   logic   clk     ,
+    input   logic   rst_n   
+);
+    
+localparam PRF_N_LANES  = 2 ** (PRF_LOG_P + PRF_LOG_Q);
+localparam DATA_WIDTH   = SRAM_WIDTH * PRF_N_LANES;
+
+typedef logic [DATA_WIDTH - 1 : 0] data_t;
+
+typedef struct packed {
+    logic                   [PRF_LOG_N - 1 : 0]     i       ;
+    logic                   [PRF_LOG_M - 1 : 0]     j       ;
+    prf_dtypes::taccess_t                           scheme  ;
+    logic                                           valid   ;
+} prf_config_chanel_t;
+
+ma_intf_pkg::unit_id_t  unit_id;
+prf_config_chanel_t     op1;
+prf_config_chanel_t     op2;
+prf_config_chanel_t     rez;
+data_t                  op1_data;
+data_t                  op2_data;
+data_t                  rez_data;
+
+
+modport accelerator (
+    input   clk     ,
+    input   rst_n   ,
+    output  unit_id ,
+    output  rez     ,
+    output  op1     ,
+    output  op2     ,
+    input   op1_data,  
+    input   op2_data,  
+    output  rez_data  
+);
+
+modport memory (
+    input   clk     ,
+    input   rst_n   ,
+    output  unit_id ,
+    output  rez     ,
+    input   op1     ,
+    input   op2     ,
+    output  op1_data,  
+    output  op2_data,  
+    input   rez_data  
+);
+
+endinterface //ma_data_bus
