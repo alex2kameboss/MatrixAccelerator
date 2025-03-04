@@ -12,7 +12,6 @@ localparam NUMBER_OF_ALU = data_intf.DATA_WIDTH / config_intf.ALU_WIDTH;
 logic   en;
 logic   scalar_op;
 
-
 logic   [config_intf.ALU_WIDTH - 1 : 0]    op1_alu [NUMBER_OF_ALU - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]    op2_alu [NUMBER_OF_ALU - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]    res_alu [NUMBER_OF_ALU - 1 : 0];
