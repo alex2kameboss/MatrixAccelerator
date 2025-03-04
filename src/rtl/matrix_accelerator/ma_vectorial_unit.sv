@@ -12,6 +12,9 @@ localparam NUMBER_OF_ALU = data_intf.DATA_WIDTH / config_intf.ALU_WIDTH;
 logic   en;
 logic   scalar_op;
 
+logic   [config_intf.DATA_WIDTH - 1 : 0]    scalar_line;
+logic   [config_intf.DATA_WIDTH - 1 : 0]    op2;
+
 logic   [config_intf.ALU_WIDTH - 1 : 0]    op1_alu [NUMBER_OF_ALU - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]    op2_alu [NUMBER_OF_ALU - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]    res_alu [NUMBER_OF_ALU - 1 : 0];
@@ -37,6 +40,11 @@ assign scalar_op =  config_intf.internal_op == ma_intf_pkg::ADD_VS |
                     config_intf.internal_op == ma_intf_pkg::SUB_VS |
                     config_intf.internal_op == ma_intf_pkg::DIV_VS |
                     config_intf.internal_op == ma_intf_pkg::MUL_VS ; 
+
+assign scalar_line = config_intf.rd.dtype == ma_pkg::INT32 | config_intf.rd.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {config_intf.scalar}} :
+                     config_intf.rd.dtype == ma_pkg::INT16 | config_intf.rd.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {config_intf.scalar[15 : 0]}} :
+                                                                                                      {NUMBER_OF_ALU * 4 {config_intf.scalar[7 : 0]}};
+assign op2 = scalar_op ? scalar_line : data_intf.op2_data;                                                                                      
 
 assign operands_addr_gen_en = rs_addr_en | config_intf.start;
 assign op1_addr_gen_incr = rs1_incr | fast_rs1 & start_delayed;
@@ -131,7 +139,7 @@ vectorial_splitter #(
     .reset      ( config_intf.start     ),
     .en         ( splitter_en           ),
     .dtype      ( config_intf.rs2.dtype ),
-    .op_in      ( data_intf.op2_data    ),
+    .op_in      ( op2                   ),
     .op_out     ( op2_alu               ),
     .next       ( rs2_incr              )
 );
