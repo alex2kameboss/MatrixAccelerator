@@ -3,6 +3,8 @@ interface ma_config_bus #(
 );
     
 ma_intf_pkg::unit_id_t                              dst_unit;
+ma_intf_pkg::internal_op_t                          internal_op;
+ma_pkg::operation_t                                 op;
 ma_pkg::register_file_line_t                        rs1;
 ma_pkg::register_file_line_t                        rs2;
 ma_pkg::register_file_line_t                        rd;

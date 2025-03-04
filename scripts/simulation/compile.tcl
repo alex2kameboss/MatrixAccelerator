@@ -14,6 +14,10 @@ set include "+incdir+${PROJECT_ROOT}/src/includes"
 foreach file [findFiles ${PROJECT_ROOT}/src/packages/ *.sv] {
     vlog $include $file
 }
+# compile interfaces
+foreach file [findFiles ${PROJECT_ROOT}/src/interfaces/ *.sv] {
+    vlog $include $file
+}
 # compile ips
 source ${PROJECT_ROOT}/scripts/simulation/ips.tcl
 # compile rtl

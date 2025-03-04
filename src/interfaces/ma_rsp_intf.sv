@@ -4,8 +4,8 @@ ma_intf_pkg::unit_id_t  unit_id;
 logic                   done;
 
 modport control (
-    input   unit_id ,
-            done    
+    output  unit_id ,
+    input   done    
 );
 
 modport accelerator (
