@@ -1,4 +1,4 @@
-module control_unit #(
+module ma_control_unit #(
     parameter ADDR_WIDTH        =   32   ,
     parameter REGISTER_NUMBERS  =   32  
 ) (
