@@ -15,42 +15,72 @@ module ma_extension_driver #(
 // communication signals                            
     output  logic                                                   valid           ,
     input   logic                                                   ready           ,
-// control signal                           
-    output  logic                                                   arith_data      ,   // 1 arithmetic operation, 0 data operation
-    output  logic                                                   define          ,   // 1 define register, 0 memory operation
-    output  logic                                                   prf_define      ,   // 1 define for prf, 0 define for matrix
-// memory data                          
-    output  logic                                                   ld_st           ,   // 1 load, 0 store
-    output  logic               [ADDR_WIDTH - 1 : 0]                addr            ,
-// arithmetics data 
+// control signal       
+    output  ma_pkg::funct3_op_t                                     funct3          ,                    
     output  ma_pkg::operation_t                                     op              ,
-    output  logic                                                   scalar_op       ,
+    output  logic               [ADDR_WIDTH - 1 : 0]                addr            ,
     output  logic               [ADDR_WIDTH - 1 : 0]                scalar          ,
     output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd              ,
     output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1             ,
     output  logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2             ,
-// define registers 
-    output  logic               [ADDR_WIDTH - 1 : 0]                width           ,
-    output  logic               [ADDR_WIDTH - 1 : 0]                height          ,
-    output  logic               [6 : 0]                             dtype            
+    output  logic               [ADDR_WIDTH - 1 : 0]                reg1            ,
+    output  logic               [ADDR_WIDTH - 1 : 0]                reg2            ,
+    output  logic               [6 : 0]                             funct7            
 );
     
+// Local Parameters Definition  ------------------------------------------------------------------------------
+
+
+
+// Wires Definition ------------------------------------------------------------------------------------------
 riscv_pkg::ma_riscv_inst_t instr;
 logic accept_issue, valid_instr, taken_instr, response_issuer;
+logic load_data;
+logic ready_posedge;
+logic committed, rs1_valid, rs2_valid;
+logic accept_registers;
 
+
+// Combinatorial Logic ---------------------------------------------------------------------------------------
 assign instr.bits = instr_if.issue_req.instr;
 assign taken_instr = valid & ready;
 assign accept_issue = instr_if.issue_ready & instr_if.issue_valid;
 assign response_issuer = instr_if.issue_valid & ready;
+assign load_data = response_issuer & valid_instr;
 
+always_comb begin : validate_instr // TODO: when add new instruction, update here
+    valid_instr = instr.decode.opcode == OPCODE;
+    valid_instr = valid_instr & (
+        instr.decode.funct3 == ma_pkg::DEFINE       | 
+        instr.decode.funct3 == ma_pkg::DEFINE_POLY  | 
+        instr.decode.funct3 == ma_pkg::LOAD         |
+        instr.decode.funct3 == ma_pkg::STORE        |
+        instr.decode.funct3 == ma_pkg::VV           |
+        instr.decode.funct3 == ma_pkg::VS           );
+    if ( instr.decode.funct3 == ma_pkg::DEFINE )
+        valid_instr = valid_instr & (
+            'd0 <= instr.r_type.func7 &
+            instr.r_type.func7 <= 'd5 );
+    if ( instr.decode.funct3 == ma_pkg::VV | instr.decode.funct3 == ma_pkg::VS )
+        valid_instr = valid_instr & ( 
+            instr.r_type.func7 == ma_pkg::ADD    |
+            instr.r_type.func7 == ma_pkg::SUB    |
+            instr.r_type.func7 == ma_pkg::CNV    |
+            instr.r_type.func7 == ma_pkg::DIV    |
+            instr.r_type.func7 == ma_pkg::MUL    |
+            instr.r_type.func7 == ma_pkg::SMUL   );
+end
+
+assign registers_if.register_ready = ~rs1_valid | ~rs2_valid | registers_if.register_valid;
+assign scalar = reg1;
+assign accept_registers = ready & registers_if.register_valid & registers_if.register_ready;
+
+
+// Sequential Logic ------------------------------------------------------------------------------------------
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )               instr_if.issue_ready <= 'd0;        else
     if ( accept_issue )         instr_if.issue_ready <= 'd0;        else
     if ( response_issuer )      instr_if.issue_ready <= 'd1;        
-
-//always_ff @ ( posedge clk, negedge rst_n )
-//    if ( ~rst_n )               inst.bits <= 'd0;                    else
-//    if ( accept_issue )         inst.bits <= instr_if.issue_req.instr;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
@@ -76,72 +106,15 @@ always_ff @ ( posedge clk, negedge rst_n )
         instr_if.issue_resp.loadstore       <= 'd0;
     end
 
-always_comb begin : validate_instr // TODO: when add new instruction, update here
-    valid_instr = instr.decode.opcode == OPCODE;
-    valid_instr = valid_instr & (
-        instr.decode.funct3 == ma_pkg::DEFINE       | 
-        instr.decode.funct3 == ma_pkg::DEFINE_POLY  | 
-        instr.decode.funct3 == ma_pkg::LOAD         |
-        instr.decode.funct3 == ma_pkg::STORE        |
-        instr.decode.funct3 == ma_pkg::VV           |
-        instr.decode.funct3 == ma_pkg::VS           );
-    if ( instr.decode.funct3 == ma_pkg::DEFINE )
-        valid_instr = valid_instr & (
-            'd0 <= instr.r_type.func7 &
-            instr.r_type.func7 <= 'd5 );
-    if ( instr.decode.funct3 == ma_pkg::VV | instr.decode.funct3 == ma_pkg::VS )
-        valid_instr = valid_instr & ( 
-            instr.r_type.func7 == ma_pkg::ADD    |
-            instr.r_type.func7 == ma_pkg::SUB    |
-            instr.r_type.func7 == ma_pkg::CNV    |
-            instr.r_type.func7 == ma_pkg::DIV    |
-            instr.r_type.func7 == ma_pkg::MUL    |
-            instr.r_type.func7 == ma_pkg::SMUL   );
-end
-
-// decode instr
-
-logic funct3_wire;    
-logic arith_data_wire; 
-logic define_wire;   
-logic prf_define_wire;
-logic ld_st_wire;     
-logic scalar_op_wire; 
-logic error_wire;     
-
-instr_decoder i_decoder (
-    .funct3      ( instr.decode.funct3  ),
-    .arith_data  ( arith_data_wire      ),
-    .define      ( define_wire          ),
-    .define_prf  ( prf_define_wire      ),
-    .ld_st       ( ld_st_wire           ),
-    .scalar_op   ( scalar_op_wire       ),
-    .error       ( error_wire           )
-);
-
-logic load_data;
-assign load_data = response_issuer & valid_instr;
+always_ff @ ( posedge clk, negedge rst_n )
+    if ( ~rst_n )           funct7 <= ma_pkg::NDT;                       else
+    if ( load_data )        funct7 <= instr.r_type.func7;                else
+    if ( valid & ready )    funct7 <= ma_pkg::NDT;
 
 always_ff @ ( posedge clk, negedge rst_n )
-    if ( ~rst_n ) begin
-        arith_data  <=  1'b0;
-        define      <=  1'b0;
-        prf_define  <=  1'b0;
-        ld_st       <=  1'b0;
-        scalar_op   <=  1'b0;
-    end else if ( load_data) begin
-        arith_data  <=  arith_data_wire;
-        define      <=  define_wire   ;
-        prf_define  <=  prf_define_wire;
-        ld_st       <=  ld_st_wire    ;
-        scalar_op   <=  scalar_op_wire;
-    end else if ( valid & ready ) begin
-        arith_data  <=  1'b0;
-        define      <=  1'b0;
-        prf_define  <=  1'b0;
-        ld_st       <=  1'b0;
-        scalar_op   <=  1'b0;
-    end
+    if ( ~rst_n )           op <= ma_pkg::NOP;                          else
+    if ( load_data )        op <= ma_pkg::operation_t'(instr.r_type.func7);else
+    if ( valid & ready )    op <= ma_pkg::NOP;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
@@ -159,21 +132,6 @@ always_ff @ ( posedge clk, negedge rst_n )
     end
 
 always_ff @ ( posedge clk, negedge rst_n )
-    if ( ~rst_n )           dtype <= ma_pkg::NDT;                       else
-    if ( load_data )        dtype <= instr.r_type.func7;                else
-    if ( valid & ready )    dtype <= ma_pkg::NDT;
-
-always_ff @ ( posedge clk, negedge rst_n )
-    if ( ~rst_n )           op <= ma_pkg::NOP;                          else
-    if ( load_data )        op <= ma_pkg::operation_t'(instr.r_type.func7);else
-    if ( valid & ready )    op <= ma_pkg::NOP;
-
-logic accept_registers;
-assign accept_registers = ready & registers_if.register_valid & registers_if.register_ready;
-
-assign scalar = height;
-
-always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           addr <= 'd0;                              else
     if ( load_data )        addr <= {{20{instr.i_type.imm[11]}}, instr.i_type.imm}; else
     if ( accept_registers &  
@@ -181,19 +139,16 @@ always_ff @ ( posedge clk, negedge rst_n )
     if ( valid & ready )    addr <= 'd0;
 
 always_ff @ ( posedge clk, negedge rst_n )
-    if ( ~rst_n )           width <= 'd0;                               else
+    if ( ~rst_n )           reg1 <= 'd0;                               else
     if ( accept_registers &  
-    registers_if.register.rs_valid[0])  width <= registers_if.register.rs[0];   else
-    if ( valid & ready )    width <= 'd0;
+    registers_if.register.rs_valid[0])  reg1 <= registers_if.register.rs[0];   else
+    if ( valid & ready )    reg1 <= 'd0;
 
 always_ff @ ( posedge clk, negedge rst_n )
-    if ( ~rst_n )           height <= 'd0;                              else
+    if ( ~rst_n )           reg2 <= 'd0;                              else
     if ( accept_registers &  
-    registers_if.register.rs_valid[1])  height <= registers_if.register.rs[1];   else
-    if ( valid & ready )    height <= 'd0;
-
-logic committed, rs1_valid, rs2_valid;
-assign registers_if.register_ready = ~rs1_valid | ~rs2_valid | registers_if.register_valid;
+    registers_if.register.rs_valid[1])  reg2 <= registers_if.register.rs[1];   else
+    if ( valid & ready )    reg2 <= 'd0;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           valid <= 'd0;                               else
@@ -238,13 +193,14 @@ always_ff @ ( posedge clk, negedge rst_n )
         result_if.result.id     <= instr_if.issue_req.id;
     end
 
-logic ready_posedge;
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           result_if.result_valid <= 'd0;      else
     if ( result_if.result_valid & result_if.result_ready ) result_if.result_valid <= 'd0; else
     if ( ready_posedge )    result_if.result_valid <= 'd1;
 
-posedge_detector i_arith_done (
+
+// Modules Instances -----------------------------------------------------------------------------------------
+posedge_detector i_ready_posedge (
     .clk    ( clk           ),
     .rst_n  ( rst_n         ),
     .signal ( ready         ),

@@ -15,6 +15,7 @@ module ma_control_unit #(
 // control signal                           
     input   ma_pkg::funct3_op_t                                                 funct3          ,
     input   ma_pkg::operation_t                                                 op              ,
+    input   logic                           [ADDR_WIDTH - 1 : 0]                addr            ,
     input   logic                           [ADDR_WIDTH - 1 : 0]                scalar          ,
     input   logic                           [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd              ,
     input   logic                           [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1             ,
@@ -98,8 +99,8 @@ always_ff @( posedge clk, negedge rst_n )
             rft[rft_i]  <= 'd0;
         end
     end else if ( valid & ready & funct3 == ma_pkg::DEFINE ) begin
-        rft[rd].width       <= reg1[31 : 0];
-        rft[rd].height      <= reg2[31 : 0];
+        rft[rd].height      <= reg1[31 : 0];
+        rft[rd].width       <= reg2[31 : 0];
         rft[rd].dtype       <= ma_pkg::dtype_t'(funct7);
         rft[rd].valid       <= 1'b1;
         rft[rd].prf_valid   <= 1'b0;
@@ -137,7 +138,7 @@ always_ff @( posedge clk, negedge rst_n )
         config_intf.rs2         <= rft[rs2];
         config_intf.rd          <= rft[rd];
         config_intf.start       <= 'd1;
-        config_intf.scalar      <= scalar;
+        config_intf.scalar      <= dst_unit == ma_intf_pkg::DMA_UNIT ? addr : scalar;
     end else if ( config_intf.start ) begin 
         config_intf.start <= 'd0;
     end else if ( rsp_intf.done ) begin
