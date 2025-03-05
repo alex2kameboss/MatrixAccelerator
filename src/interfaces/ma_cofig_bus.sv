@@ -12,21 +12,25 @@ logic                                               start;
 logic                           [ALU_WIDTH - 1 : 0] scalar;
 
 modport control (
-    output  dst_unit,
-            rs1     ,
-            rs2     ,
-            rd      ,
-            start   ,
+    output  dst_unit    ,
+            internal_op ,
+            op          ,
+            rs1         ,
+            rs2         ,
+            rd          ,
+            start       ,
             scalar  
 );
 
 modport accelerator (
-    input   dst_unit,
-            rs1     ,
-            rs2     ,
-            rd      ,
-            start   ,
-            scalar  
+    input   dst_unit    ,
+            internal_op ,
+            op          ,
+            rs1         ,
+            rs2         ,
+            rd          ,
+            start       ,
+            scalar      
 );
 
 modport arbiter (

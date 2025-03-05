@@ -24,7 +24,8 @@ typedef enum logic[3 : 0] {
     MUL_VS  ,
     // MEMORY
     LOAD    ,
-    STORE   
+    STORE   ,
+    NOP     
 } internal_op_t;
 
 endpackage

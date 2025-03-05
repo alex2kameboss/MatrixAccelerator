@@ -2,6 +2,10 @@ module ma_control_unit #(
     parameter ADDR_WIDTH        =   32   ,
     parameter REGISTER_NUMBERS  =   32  
 ) (
+    // generic signals
+    input   logic                                                               clk             ,
+    input   logic                                                               rst_n           ,
+    // internal interfaces
     ma_config_bus.control                                                       config_intf     ,
     ma_rsp_intf.control                                                         rsp_intf        ,
     // signals from CPU interface                               
@@ -9,7 +13,6 @@ module ma_control_unit #(
     input   logic                                                               valid           ,
     output  logic                                                               ready           ,
 // control signal                           
-// arithmetics data 
     input   ma_pkg::funct3_op_t                                                 funct3          ,
     input   ma_pkg::operation_t                                                 op              ,
     input   logic                           [ADDR_WIDTH - 1 : 0]                scalar          ,
@@ -89,8 +92,8 @@ end
 
 
 // Sequential Logic ------------------------------------------------------------------------------------------
-always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
-    if ( ~data_intf.rst_n ) begin
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
         for ( rft_i = 0; rft_i < REGISTER_NUMBERS; rft_i = rft_i + 1 ) begin
             rft[rft_i]  <= 'd0;
         end
@@ -111,13 +114,13 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
         rft[rd].in_mem  <= 1'b1;
     end
 
-always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
-    if ( ~data_intf.rst_n )                 ready <= 1'b1;              else
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                           ready <= 1'b1;              else
     if ( valid & ready )                    ready <= 1'b0;              else
     if ( rsp_intf.done )                    ready <= 1'b1;          
 
-always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
-    if ( ~data_intf.rst_n ) begin 
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin 
         config_intf.dst_unit    <= ma_intf_pkg::NONE_MODULE;
         config_intf.internal_op <= ma_intf_pkg::NOP;
         config_intf.op          <= ma_pkg::NOP;
