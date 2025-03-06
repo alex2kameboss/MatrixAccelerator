@@ -35,7 +35,9 @@ logic   concat_en;
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign data_intf.unit_id = ma_intf_pkg::MATRIX_UNIT;
 assign data_intf.op1.scheme = prf_dtypes::COL;
+assign data_intf.op1.valid = (~fast_rs1 ? rs1_incr_1 : rs1_incr) | start_delayed;
 assign data_intf.op2.scheme = prf_dtypes::ROW;
+assign data_intf.op2.valid = rs_addr_en;
 assign data_intf.rez.scheme = prf_dtypes::COL;
 assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;

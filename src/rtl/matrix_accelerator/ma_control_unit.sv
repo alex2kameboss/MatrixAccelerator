@@ -73,12 +73,12 @@ always_comb begin
                 internal_op = ma_intf_pkg::DIV_VV;
                 dst_unit = ma_intf_pkg::VECTORIAL_UNIT;
             end
-            ma_pkg::MUL : begin 
-                internal_op = ma_intf_pkg::MUL_VV;
-                dst_unit = ma_intf_pkg::VECTORIAL_UNIT;
-            end
             ma_pkg::SMUL : begin 
                 internal_op = ma_intf_pkg::SMUL_VV;
+                dst_unit = ma_intf_pkg::VECTORIAL_UNIT;
+            end
+            ma_pkg::MUL : begin 
+                internal_op = ma_intf_pkg::MUL_VV;
                 dst_unit = ma_intf_pkg::MATRIX_UNIT;
             end
             ma_pkg::CNV : begin 
