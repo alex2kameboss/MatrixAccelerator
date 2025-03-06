@@ -15,8 +15,8 @@ module ma_dma (
 // Wires Definition ------------------------------------------------------------------------------------------
 logic   en;
 
-logic   [data_config.PRF_LOG_N - 1 : 0]    dma_i_out;
-logic   [data_config.PRF_LOG_M - 1 : 0]    dma_j_out;
+logic   [data_intf.PRF_LOG_N - 1 : 0]    dma_i_out;
+logic   [data_intf.PRF_LOG_M - 1 : 0]    dma_j_out;
 
 // write chanel
 logic                                   dma_write_valid ;
@@ -38,6 +38,8 @@ logic   [data_intf.DATA_WIDTH - 1 : 0]  dma_write_data      ;
 logic                                   dma_write_data_valid;          
 logic                                   dma_write_data_ready;   
 
+logic   dma_write_done_edge, dma_read_done_edge;
+
 logic                                   load, store;
 logic   [2 : 0]                         bytes_len  ;
 logic   [axi.AXI_ADDR_WIDTH - 1 : 0]    dma_len    ;
@@ -54,14 +56,16 @@ assign en = config_intf.dst_unit == data_intf.unit_id;
 assign data_intf.op1.scheme = prf_dtypes::ROW;
 assign data_intf.op1.i = dma_i_out;
 assign data_intf.op1.j = dma_j_out;
+assign data_intf.op1.valid = store;
 assign dma_write_data = data_intf.op1_data;
 assign data_intf.op2 = 'd0;
 assign data_intf.rez.scheme = prf_dtypes::ROW;
 assign data_intf.rez.i = dma_i_out;
 assign data_intf.rez.j = dma_j_out;
+assign data_intf.rez.valid = load & dma_read_incr;
 assign data_intf.rez_data = dma_read_data;
 
-assign rsp_intf.done = en & (dma_write_done & store | dma_read_done & load);
+assign rsp_intf.done = en & (dma_write_done_edge & store | dma_read_done & load & dma_done);
 
 assign load = config_intf.internal_op == ma_intf_pkg::LOAD;
 assign store = config_intf.internal_op == ma_intf_pkg::STORE;
@@ -182,6 +186,20 @@ prf_addr_gen_seq #(
     .i_out   ( dma_i_out            ),
     .j_out   ( dma_j_out            ),
     .done    ( dma_done             )
+);
+
+posedge_detector i_write_done (
+    .clk    ( data_intf.clk         ),
+    .rst_n  ( data_intf.rst_n       ),
+    .signal ( dma_write_done        ),
+    .flag   ( dma_write_done_edge   ) 
+);
+
+posedge_detector i_read_done (
+    .clk    ( data_intf.clk         ),
+    .rst_n  ( data_intf.rst_n       ),
+    .signal ( dma_read_done         ),
+    .flag   ( dma_read_done_edge    ) 
 );
 
 endmodule

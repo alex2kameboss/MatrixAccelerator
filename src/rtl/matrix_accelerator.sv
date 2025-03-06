@@ -21,82 +21,127 @@ module matrix_accelerator #(
     input                                       arst_n          ,
     AXI_BUS.Master                              axi             
 );
-    
-logic                                                   valid    ;
-logic                                                   ready    ;
-logic                                                   arith_data;   // 1 arithmetic operation, 0 data operation
-logic                                                   define   ;   // 1 define register, 0 memory operation
-logic                                                   prf_define;  // 1 define for prf, 0 define for matrix
-logic                                                   ld_st    ;   // 1 load, 0 store
-logic               [ADDR_WIDTH - 1 : 0]                addr     ;
-ma_pkg::operation_t                                     op       ;
-logic                                                   scalar_op;
-logic               [ADDR_WIDTH - 1 : 0]                scalar   ;
-logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd       ;
-logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1      ;
-logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2      ;
-logic               [ADDR_WIDTH - 1 : 0]                width    ;
-logic               [ADDR_WIDTH - 1 : 0]                height   ;
-logic               [6 : 0]                             dtype    ; 
 
-extension_driver #(
-    .OPCODE            ( OPCODE             ),
-    .ADDR_WIDTH        ( ADDR_WIDTH         ),
-    .REGISTER_NUMBERS  ( REGISTER_NUMBERS   )
-) i_xif (
-    .clk            ( clk           ),
-    .rst_n          ( rst_n         ),
-    .instr_if       ( instr_if      ),
-    .registers_if   ( registers_if  ),
-    .commit_if      ( commit_if     ),
-    .result_if      ( result_if     ),
-    .valid          ( valid         ),
-    .ready          ( ready         ),
-    .arith_data     ( arith_data    ),   // 1 arithmetic operation, 0 data operation
-    .define         ( define        ),   // 1 define register, 0 memory operation
-    .prf_define     ( prf_define    ),
-    .ld_st          ( ld_st         ),   // 1 load, 0 store
-    .addr           ( addr          ),
-    .op             ( op            ),
-    .scalar_op      ( scalar_op     ),
-    .scalar         ( scalar        ),
-    .rd             ( rd            ),
-    .rs1            ( rs1           ),
-    .rs2            ( rs2           ),
-    .width          ( width         ),
-    .height         ( height        ),
-    .dtype          ( dtype         )  
+localparam ALU_WIDTH = 32;
+localparam NUMBER_OF_UNITS = 3;
+
+// interfaces
+ma_config_bus #(
+    .ALU_WIDTH  ( ALU_WIDTH )
+) config_intf();
+
+ma_rsp_intf rsp_intf[NUMBER_OF_UNITS : 0](); // one for every units + 1 for control unit
+
+ma_data_bus #(
+    .PRF_LOG_P  ( PRF_LOG_P ),
+    .PRF_LOG_Q  ( PRF_LOG_Q ),
+    .PRF_LOG_N  ( PRF_LOG_N ),
+    .PRF_LOG_M  ( PRF_LOG_M ),
+    .SRAM_WIDTH ( ALU_WIDTH )
+) data_intf[NUMBER_OF_UNITS : 0] ( 
+    .clk    ( clk   ),
+    .rst_n  ( rst_n )
+); // one for every units + 1 for memory
+
+// wires
+ma_pkg::funct3_op_t                                     funct3;
+ma_pkg::operation_t                                     op    ;
+logic               [ADDR_WIDTH - 1 : 0]                addr  ;
+logic               [ADDR_WIDTH - 1 : 0]                scalar;
+logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rd    ;
+logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs1   ;
+logic               [$clog2(REGISTER_NUMBERS) - 1 : 0]  rs2   ;
+logic               [ADDR_WIDTH - 1 : 0]                reg1  ;
+logic               [ADDR_WIDTH - 1 : 0]                reg2  ;
+logic               [6 : 0]                             funct7;
+
+// instances
+ma_extension_driver #(
+    .OPCODE             ( OPCODE            ),
+    .ADDR_WIDTH         ( ADDR_WIDTH        ),
+    .REGISTER_NUMBERS   ( REGISTER_NUMBERS  )
+) i_decoder (
+    .clk             ( clk          ),
+    .rst_n           ( rst_n        ),
+    .instr_if        ( instr_if     ),
+    .registers_if    ( registers_if ),
+    .commit_if       ( commit_if    ),
+    .result_if       ( result_if    ),
+    .valid           ( valid        ),
+    .ready           ( ready        ),
+    .funct3          ( funct3       ),                    
+    .op              ( op           ),
+    .addr            ( addr         ),
+    .scalar          ( scalar       ),
+    .rd              ( rd           ),
+    .rs1             ( rs1          ),
+    .rs2             ( rs2          ),
+    .reg1            ( reg1         ),
+    .reg2            ( reg2         ),
+    .funct7          ( funct7       )  
 );
 
-ma_data_path #(
-    .ADDR_WIDTH        ( ADDR_WIDTH         ),
-    .REGISTER_NUMBERS  ( REGISTER_NUMBERS   ),
-    .PRF_LOG_P         ( PRF_LOG_P          ),
-    .PRF_LOG_Q         ( PRF_LOG_Q          ),
-    .PRF_LOG_N         ( PRF_LOG_N          ), 
-    .PRF_LOG_M         ( PRF_LOG_M          ) 
-) i_data_path (
-    .aclk       ( aclk      ),
-    .arst_n     ( arst_n    ),
-    .axi        ( axi       ),
-    .clk        ( clk       ),
-    .rst_n      ( rst_n     ),
-    .valid      ( valid     ),
-    .ready      ( ready     ),
-    .arith_data ( arith_data),   // 1 arithmetic operation, 0 data operation
-    .define     ( define    ),   // 1 define register, 0 memory operation
-    .prf_define ( prf_define),
-    .ld_st      ( ld_st     ),   // 1 load, 0 store
-    .addr       ( addr      ),
-    .op         ( op        ),
-    .scalar_op  ( scalar_op ),
-    .scalar     ( scalar    ),
-    .rd         ( rd        ),
-    .rs1        ( rs1       ),
-    .rs2        ( rs2       ),
-    .width      ( width     ),
-    .height     ( height    ),
-    .dtype      ( dtype     )               
+ma_control_unit #(
+    .ADDR_WIDTH         ( ADDR_WIDTH        ),
+    .REGISTER_NUMBERS   ( REGISTER_NUMBERS  )
+) i_control_unit (
+    .clk            ( clk                       ),
+    .rst_n          ( rst_n                     ),
+    .config_intf    ( config_intf               ),
+    .rsp_intf       ( rsp_intf[NUMBER_OF_UNITS] ),
+    .valid          ( valid                     ),
+    .ready          ( ready                     ),
+    .funct3         ( funct3                    ),
+    .op             ( op                        ),
+    .addr           ( addr                      ),
+    .scalar         ( scalar                    ),
+    .rd             ( rd                        ),
+    .rs1            ( rs1                       ),
+    .rs2            ( rs2                       ),
+    .reg1           ( reg1                      ),
+    .reg2           ( reg2                      ),
+    .funct7         ( funct7                    )          
+);
+
+ma_dma i_dma_unit (
+    .config_intf ( config_intf  ),
+    .data_intf   ( data_intf[0] ),
+    .rsp_intf    ( rsp_intf[0]  ),
+    .aclk        ( aclk         ),
+    .arst_n      ( arst_n       ),
+    .axi         ( axi          )
+);
+
+ma_vectorial_unit i_vectorial_unit (
+    .config_intf ( config_intf  ),
+    .data_intf   ( data_intf[1] ),
+    .rsp_intf    ( rsp_intf[1]  )
+);
+
+ma_matrix_unit i_matrix_unit (
+    .config_intf ( config_intf  ),
+    .data_intf   ( data_intf[2] ),
+    .rsp_intf    ( rsp_intf[2]  )
+);
+
+ma_memory i_memory (
+    .intf   ( data_intf[NUMBER_OF_UNITS] )
+);
+
+ma_data_bus_arbiter i_memory_arbiter (
+    .control    ( config_intf               ),
+    .mem_intf   ( data_intf[NUMBER_OF_UNITS]),
+    .dma_intf   ( data_intf[0]              ),
+    .vu_intf    ( data_intf[1]              ),
+    .mu_intf    ( data_intf[2]              )
+);
+
+ma_rsp_intf_arbiter #(
+    .NUMBER_OF_UNITS    ( NUMBER_OF_UNITS )
+) i_rsp_arbiter (
+    .config_intf    ( config_intf                       ),
+    .rsp_intf_out   ( rsp_intf[NUMBER_OF_UNITS]         ),
+    .rsp_intf_in    ( rsp_intf[NUMBER_OF_UNITS - 1 : 0] )
 );
 
 endmodule

@@ -38,9 +38,18 @@ always_comb begin
             mu_intf.op2_data  = mem_intf.op2_data;
         end
         default: begin
-                mem_intf.rez        = 'd0;
-                mem_intf.op1        = 'd0;
-                mem_intf.op2        = 'd0;
+                mem_intf.rez.valid  = 'd0;
+                mem_intf.rez.i      = 'd0;
+                mem_intf.rez.j      = 'd0;
+                mem_intf.rez.scheme = prf_dtypes::ROW;
+                mem_intf.op1.valid  = 'd0;
+                mem_intf.op1.i      = 'd0;
+                mem_intf.op1.j      = 'd0;
+                mem_intf.op1.scheme = prf_dtypes::ROW;
+                mem_intf.op2.valid  = 'd0;
+                mem_intf.op2.i      = 'd0;
+                mem_intf.op2.j      = 'd0;
+                mem_intf.op2.scheme = prf_dtypes::ROW;
                 mem_intf.rez_data   = 'd0;
         end
     endcase

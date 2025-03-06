@@ -37,6 +37,8 @@ int rft_i;
 ma_intf_pkg::unit_id_t dst_unit;
 ma_intf_pkg::internal_op_t internal_op;
 
+logic   define_operation;
+
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 always_comb begin
@@ -111,14 +113,18 @@ always_ff @( posedge clk, negedge rst_n )
         rft[rd].prf_org     <= ma_pkg::organization_t'(funct7);
         rft[rd].prf_valid   <= 1'b1;
         rft[rd].in_mem      <= 1'b0;
-    end else if ( valid & ready & funct3 == ma_pkg::LOAD ) begin
+    end else if ( valid & ready & (funct3 == ma_pkg::LOAD | funct3 == ma_pkg::VV | funct3 == ma_pkg::VS ) ) begin
         rft[rd].in_mem  <= 1'b1;
     end
 
 always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                           define_operation <= 'd0;    else
+                                            define_operation <= funct3 == ma_pkg::DEFINE | funct3 == ma_pkg::DEFINE_POLY;
+
+always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                           ready <= 1'b1;              else
     if ( valid & ready )                    ready <= 1'b0;              else
-    if ( rsp_intf.done )                    ready <= 1'b1;          
+    if ( rsp_intf.done | define_operation ) ready <= 1'b1;              
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin 

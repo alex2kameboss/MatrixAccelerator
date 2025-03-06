@@ -10,6 +10,8 @@ vlib work
 
 set include "+incdir+${PROJECT_ROOT}/src/includes"
 
+# compile ips
+source ${PROJECT_ROOT}/scripts/simulation/ips.tcl
 # compile packages
 foreach file [findFiles ${PROJECT_ROOT}/src/packages/ *.sv] {
     vlog $include $file
@@ -18,8 +20,6 @@ foreach file [findFiles ${PROJECT_ROOT}/src/packages/ *.sv] {
 foreach file [findFiles ${PROJECT_ROOT}/src/interfaces/ *.sv] {
     vlog $include $file
 }
-# compile ips
-source ${PROJECT_ROOT}/scripts/simulation/ips.tcl
 # compile rtl
 foreach file [findFiles ${PROJECT_ROOT}/src/rtl/ *.sv] {
     vlog $include $file

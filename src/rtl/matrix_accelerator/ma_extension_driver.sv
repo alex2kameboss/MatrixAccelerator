@@ -72,7 +72,7 @@ always_comb begin : validate_instr // TODO: when add new instruction, update her
 end
 
 assign registers_if.register_ready = ~rs1_valid | ~rs2_valid | registers_if.register_valid;
-assign scalar = reg1;
+assign scalar = reg2;
 assign accept_registers = ready & registers_if.register_valid & registers_if.register_ready;
 
 
@@ -110,6 +110,11 @@ always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           funct7 <= ma_pkg::NDT;                       else
     if ( load_data )        funct7 <= instr.r_type.func7;                else
     if ( valid & ready )    funct7 <= ma_pkg::NDT;
+
+always_ff @ ( posedge clk, negedge rst_n )
+    if ( ~rst_n )           funct3 <= ma_pkg::NF3;                                  else
+    if ( load_data )        funct3 <= ma_pkg::funct3_op_t'(instr.decode.funct3);    else
+    if ( valid & ready )    funct3 <= ma_pkg::NF3;
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           op <= ma_pkg::NOP;                          else

@@ -76,7 +76,7 @@ row_addr_gen_seq #(
     .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M      ( data_intf.PRF_LOG_M   )
 ) i_rs1_addr_gen (
-    .clk     ( data_int.clk             ),
+    .clk     ( data_intf.clk            ),
     .rst_n   ( data_intf.rst_n          ),
     .start   ( config_intf.start        ),
     .en      ( operands_addr_gen_en     ),
@@ -178,7 +178,7 @@ array_results_controller #(
     .ARRAY_WIDTH     ( SA_WIDTH             ),
     .DATA_WIDTH      ( config_intf.ALU_WIDTH)
 ) i_result_controller (
-    .clk            ( data_int.clk          ),
+    .clk            ( data_intf.clk         ),
     .reset_n        ( data_intf.rst_n       ),
     .en             ( concat_en             ),
     .dtype          ( config_intf.rs2.dtype ),

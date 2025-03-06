@@ -25,17 +25,17 @@ logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_out_w  [0 : PRF_N_R
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign dscheme = prf_dtypes::ROW_COL;
 // rez
-assign taccess_write[1] = intf.rez.scheme;
+assign taccess_write[0] = intf.rez.scheme;
 assign prf_write[1] = ~intf.rez.valid;
 assign write_i[0] = intf.rez.i;
 assign write_j[0] = intf.rez.j;
 // op1
-assign taccess_read[1] = intf.op1.scheme;
+assign taccess_read[0] = intf.op1.scheme;
 assign prf_read[1] = ~intf.op1.valid; // wtf, read 1 for port 0
 assign read_i[0] = intf.op1.i;
 assign read_j[0] = intf.op1.j;
 // op2
-assign taccess_read[0] = intf.op2.scheme;
+assign taccess_read[1] = intf.op2.scheme;
 assign prf_read[0] = ~intf.op2.valid; // wtf, read 0 for port 1
 assign read_i[1] = intf.op2.i;
 assign read_j[1] = intf.op2.j;
