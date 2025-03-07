@@ -204,12 +204,12 @@ begin
     );
 
     // check register in RFT
-    assert (i_dut.i_data_path.i_ccu.rft[r].width == w);
-    assert (i_dut.i_data_path.i_ccu.rft[r].height == h);
-    assert (i_dut.i_data_path.i_ccu.rft[r].dtype == dt);
-    assert (i_dut.i_data_path.i_ccu.rft[r].valid);
-    assert (~i_dut.i_data_path.i_ccu.rft[r].prf_valid);
-    assert (~i_dut.i_data_path.i_ccu.rft[r].in_mem);
+    assert (i_dut.i_control_unit.rft[r].width == w);
+    assert (i_dut.i_control_unit.rft[r].height == h);
+    assert (i_dut.i_control_unit.rft[r].dtype == dt);
+    assert (i_dut.i_control_unit.rft[r].valid);
+    assert (~i_dut.i_control_unit.rft[r].prf_valid);
+    assert (~i_dut.i_control_unit.rft[r].in_mem);
 end
 endtask
 
@@ -223,7 +223,7 @@ begin
     int prf_x_r, prf_y_r;
     $display("Define prf register ( prf_x: %d, prf_y: %d, organization: %s, registerId: %d )", prf_x, prf_y, org, r);
     
-    assert (i_dut.i_data_path.i_ccu.rft[r].valid);
+    assert (i_dut.i_control_unit.rft[r].valid);
 
     prf_x_r = reg_id();
     prf_y_r = reg_id();
@@ -245,11 +245,11 @@ begin
     );
 
     // check register in RFT
-    assert (i_dut.i_data_path.i_ccu.rft[r].prf_x == prf_x);
-    assert (i_dut.i_data_path.i_ccu.rft[r].prf_y == prf_y);
-    assert (i_dut.i_data_path.i_ccu.rft[r].prf_org == org);
-    assert (i_dut.i_data_path.i_ccu.rft[r].prf_valid);
-    assert (~i_dut.i_data_path.i_ccu.rft[r].in_mem);
+    assert (i_dut.i_control_unit.rft[r].prf_x == prf_x);
+    assert (i_dut.i_control_unit.rft[r].prf_y == prf_y);
+    assert (i_dut.i_control_unit.rft[r].prf_org == org);
+    assert (i_dut.i_control_unit.rft[r].prf_valid);
+    assert (~i_dut.i_control_unit.rft[r].in_mem);
 end
 endtask
 
@@ -287,8 +287,8 @@ begin
     int addr_r;
 
     $display("Load register ( registerId: %d, addr: %h )", r, addr);
-    assert(i_dut.i_data_path.i_ccu.rft[r].valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r].prf_valid);
+    assert(i_dut.i_control_unit.rft[r].valid);
+    assert(i_dut.i_control_unit.rft[r].prf_valid);
 
     addr_r = reg_id();
 
@@ -306,7 +306,7 @@ begin
         .commit   ( 1'd1 )
     );
 
-    assert(i_dut.i_data_path.i_ccu.rft[r].in_mem);
+    assert(i_dut.i_control_unit.rft[r].in_mem);
     end
     endtask
 
@@ -321,23 +321,23 @@ begin
     $display("Vector-Vector operation ( rd: %d, r1: %d, r2: %d, operation: %s )", rr, r1, r2, o);
 
     // check registers
-    assert(i_dut.i_data_path.i_ccu.rft[rr].valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r1].valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r2].valid);
-    assert(i_dut.i_data_path.i_ccu.rft[rr].prf_valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r1].prf_valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r2].prf_valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r1].in_mem);
-    assert(i_dut.i_data_path.i_ccu.rft[r2].in_mem);
+    assert(i_dut.i_control_unit.rft[rr].valid);
+    assert(i_dut.i_control_unit.rft[r1].valid);
+    assert(i_dut.i_control_unit.rft[r2].valid);
+    assert(i_dut.i_control_unit.rft[rr].prf_valid);
+    assert(i_dut.i_control_unit.rft[r1].prf_valid);
+    assert(i_dut.i_control_unit.rft[r2].prf_valid);
+    assert(i_dut.i_control_unit.rft[r1].in_mem);
+    assert(i_dut.i_control_unit.rft[r2].in_mem);
     if ( o == MUL ) begin
-        assert(i_dut.i_data_path.i_ccu.rft[rr].height == i_dut.i_data_path.i_ccu.rft[r1].height &
-                i_dut.i_data_path.i_ccu.rft[rr].width == i_dut.i_data_path.i_ccu.rft[r2].width &
-                i_dut.i_data_path.i_ccu.rft[r1].width == i_dut.i_data_path.i_ccu.rft[r2].height);
+        assert(i_dut.i_control_unit.rft[rr].height == i_dut.i_control_unit.rft[r1].height &
+                i_dut.i_control_unit.rft[rr].width == i_dut.i_control_unit.rft[r2].width &
+                i_dut.i_control_unit.rft[r1].width == i_dut.i_control_unit.rft[r2].height);
     end else begin 
-        assert(i_dut.i_data_path.i_ccu.rft[r1].width == i_dut.i_data_path.i_ccu.rft[r2].width &
-                i_dut.i_data_path.i_ccu.rft[r1].height == i_dut.i_data_path.i_ccu.rft[r2].height);
-        assert(i_dut.i_data_path.i_ccu.rft[rr].width == i_dut.i_data_path.i_ccu.rft[r2].width &
-                i_dut.i_data_path.i_ccu.rft[rr].height == i_dut.i_data_path.i_ccu.rft[r2].height);
+        assert(i_dut.i_control_unit.rft[r1].width == i_dut.i_control_unit.rft[r2].width &
+                i_dut.i_control_unit.rft[r1].height == i_dut.i_control_unit.rft[r2].height);
+        assert(i_dut.i_control_unit.rft[rr].width == i_dut.i_control_unit.rft[r2].width &
+                i_dut.i_control_unit.rft[rr].height == i_dut.i_control_unit.rft[r2].height);
     end
 
     inst.opcode   = OPCODE;
@@ -353,7 +353,7 @@ begin
         .commit   ( 1'd1 )
     );
 
-    assert(i_dut.i_data_path.i_ccu.rft[rr].in_mem);
+    assert(i_dut.i_control_unit.rft[rr].in_mem);
 end
 endtask
 
@@ -375,9 +375,9 @@ begin
 
     $display("Store register ( registerId: %d, addr: %h )", r, addr);
 
-    assert(i_dut.i_data_path.i_ccu.rft[r].valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r].prf_valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r].in_mem);
+    assert(i_dut.i_control_unit.rft[r].valid);
+    assert(i_dut.i_control_unit.rft[r].prf_valid);
+    assert(i_dut.i_control_unit.rft[r].in_mem);
 
     addr_r = reg_id();
     rf[addr_r] = addr;
@@ -409,13 +409,13 @@ begin
     $display("Vector-Scalar operation ( rd: %d, r1: %d, r2: %d, operation: %s )", rr, r1, r2, o);
 
     // check registers
-    assert(i_dut.i_data_path.i_ccu.rft[rr].valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r1].valid);
-    assert(i_dut.i_data_path.i_ccu.rft[rr].prf_valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r1].prf_valid);
-    assert(i_dut.i_data_path.i_ccu.rft[r1].in_mem);
-    assert(i_dut.i_data_path.i_ccu.rft[rr].width == i_dut.i_data_path.i_ccu.rft[r1].width &
-            i_dut.i_data_path.i_ccu.rft[rr].height == i_dut.i_data_path.i_ccu.rft[r1].height)
+    assert(i_dut.i_control_unit.rft[rr].valid);
+    assert(i_dut.i_control_unit.rft[r1].valid);
+    assert(i_dut.i_control_unit.rft[rr].prf_valid);
+    assert(i_dut.i_control_unit.rft[r1].prf_valid);
+    assert(i_dut.i_control_unit.rft[r1].in_mem);
+    assert(i_dut.i_control_unit.rft[rr].width == i_dut.i_control_unit.rft[r1].width &
+            i_dut.i_control_unit.rft[rr].height == i_dut.i_control_unit.rft[r1].height)
 
     rs2_i = reg_id();
     rf[rs2_i] = r2;
@@ -433,7 +433,7 @@ begin
         .commit   ( 1'd1 )
     );
 
-    assert(i_dut.i_data_path.i_ccu.rft[rr].in_mem);
+    assert(i_dut.i_control_unit.rft[rr].in_mem);
 end
 endtask
 
@@ -999,7 +999,7 @@ initial begin
         .w       ( 'd32     ),
         .h       ( 'd32     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
-        .r1_addr ( MEM_SIZE )
+        .r1_addr ( 0 )
     );
     vector_scalar_operation_test(
         .rr      ( 'd2      ),
@@ -1014,7 +1014,7 @@ initial begin
         .w       ( 'd32     ),
         .h       ( 'd32     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
-        .r1_addr ( MEM_SIZE )
+        .r1_addr ( 0 )
     );
     vector_scalar_operation_test(
         .rr      ( 'd2      ),
@@ -1029,7 +1029,7 @@ initial begin
         .w       ( 'd32     ),
         .h       ( 'd32     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
-        .r1_addr ( MEM_SIZE )
+        .r1_addr ( 0 )
     );
     
 
