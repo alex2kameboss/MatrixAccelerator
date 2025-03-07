@@ -11,7 +11,7 @@ module matrix_accelerator_vivado #(
     input   rst_n   
 );
 
-localparam DATA_WIDTH   = 32'd32 * 2 ** (PRF_LOG_P + PRF_LOG_Q);
+localparam DATA_WIDTH   = 64;
 
 core_v_xif #(
     .X_NUM_RS              ( 2  ),
