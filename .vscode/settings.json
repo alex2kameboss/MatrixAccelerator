@@ -16,6 +16,8 @@
         "SMUL",
         "strb",
         "taccess",
+        "vsim",
+        "vlib",
         "WPORTS",
         "writeback"
     ]
