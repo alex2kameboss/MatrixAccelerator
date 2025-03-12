@@ -1,0 +1,76 @@
+package:
+  name: matrix_accelerator
+  authors:
+    - "Alexandru Puscasu <alexandru.puscasu@imt.ro>"
+
+dependencies:
+  axi:                { git: "https://github.com/pulp-platform/axi.git",                      rev: master       }
+  common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",             rev: master       }
+  cv_x_if:            { git: "https://github.com/alex2kameboss/core-v-xif-fix.git",           rev: bender       }
+  poly_mem:           { git: "https://gitlab.com/catalin.ciobanu/PolyMem_System_Verilog.git", rev: refactoring  }
+
+workspace:
+  checkout_dir: "src/ips"
+
+sources:
+  include_dirs:
+    - src/includes
+  files:
+    # packages
+    - src/packages/ma_pkg.sv
+    - src/packages/ma_intf_pkg.sv
+    - src/packages/riscv_pkg.sv
+    # interfaces
+    - src/interfaces/ma_config_bus.sv
+    - src/interfaces/ma_rsp_intf.sv
+    - src/interfaces/ma_data_bus.sv
+    # common files
+    - src/rtl/common/async_fifo/synchronizer.sv
+    - src/rtl/common/async_fifo/memory.sv
+    - src/rtl/common/async_fifo/async_fifo.sv
+    - src/rtl/common/async_fifo/gray_counter.sv
+    - src/rtl/common/posedge_detector.sv
+    # dma
+    - src/rtl/dma/read_concat.sv
+    - src/rtl/dma/dma.sv
+    - src/rtl/dma/write_concat.sv
+    - src/rtl/dma/strobe_generator.sv
+    # vectorial unit
+    - src/rtl/vectorial_unit/alu.sv
+    - src/rtl/vectorial_unit/vectorial_splitter.sv
+    - src/rtl/vectorial_unit/vectorial_concat.sv
+    - src/rtl/vectorial_unit/prf_addr_gen_seq.sv
+    # matrix unit
+    - src/rtl/matrix_unit/row_addr_gen_seq.sv
+    - src/rtl/matrix_unit/systolic_array
+    - src/rtl/matrix_unit/systolic_array/mac.sv
+    - src/rtl/matrix_unit/systolic_array/auto_shift_register.sv
+    - src/rtl/matrix_unit/systolic_array/mult.sv
+    - src/rtl/matrix_unit/systolic_array/add.sv
+    - src/rtl/matrix_unit/systolic_array/systolic_array.sv
+    - src/rtl/matrix_unit/systolic_array/crossbar.sv
+    - src/rtl/matrix_unit/systolic_array/sa_col_splitter.sv
+    - src/rtl/matrix_unit/systolic_array/col_addr_gen_seq.sv
+    - src/rtl/matrix_unit/systolic_array/array_results_controller.sv
+    - src/rtl/matrix_unit/systolic_array/line_mux.sv
+    # matrix accelerator components
+    - src/rtl/matrix_accelerator/ma_extension_driver.sv
+    - src/rtl/matrix_accelerator/ma_control_unit.sv
+    - src/rtl/matrix_accelerator/ma_memory.sv
+    - src/rtl/matrix_accelerator/ma_dma.sv
+    - src/rtl/matrix_accelerator/ma_matrix_unit.sv
+    - src/rtl/matrix_accelerator/ma_vectorial_unit.sv
+    # bus arbiter
+    - src/rtl/bus_arbiters/ma_data_bus_arbiter.sv
+    - src/rtl/bus_arbiters/ma_rsp_intf_arbiter.sv
+    # top
+    - src/rtl/matrix_accelerator.sv
+
+    - target: test_wo_core
+      files:
+        - src/tests/clk_rstn.sv
+        - src/tests/tb_ma_wo_core.sv
+      
+    - target: vivado
+      files:
+        - src/tests/vivado/matrix_accelerator_vivado.sv
