@@ -189,10 +189,10 @@ always_ff @ ( posedge clk, negedge rst_n )
         result_if.result.data   <= 'd0;
         result_if.result.rd     <= 'd0;
         result_if.result.we     <= 'd0;
-        result_if.result.exc    <= 'd0;
-        result_if.result.exccode<= 'd0;
-        result_if.result.dbg    <= 'd0;
-        result_if.result.err    <= 'd0;
+        //result_if.result.exc    <= 'd0;
+        //result_if.result.exccode<= 'd0;
+        //result_if.result.dbg    <= 'd0;
+        //result_if.result.err    <= 'd0;
     end else if ( instr_if.issue_valid & instr_if.issue_ready ) begin
         result_if.result.hartid <= instr_if.issue_req.hartid;
         result_if.result.id     <= instr_if.issue_req.id;
