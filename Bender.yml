@@ -54,7 +54,7 @@ sources:
     - src/rtl/matrix_unit/systolic_array/array_results_controller.sv
     - src/rtl/matrix_unit/systolic_array/line_mux.sv
     # matrix accelerator components
-    - src/rtl/matrix_accelerator/ma_extension_driver.sv
+    - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv
     - src/rtl/matrix_accelerator/ma_memory.sv
     - src/rtl/matrix_accelerator/ma_dma.sv
