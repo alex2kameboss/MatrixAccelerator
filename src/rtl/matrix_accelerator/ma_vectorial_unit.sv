@@ -150,7 +150,7 @@ vectorial_splitter #(
 genvar j;
 generate
     for ( j = 0; j < NUMBER_OF_ALU; j = j + 1 ) begin : alu_generate
-alu #(
+ma_alu #(
     .DATA_WIDTH( config_intf.ALU_WIDTH  )
 ) i_vectorial_alu (
     .op  ( config_intf.op   ),

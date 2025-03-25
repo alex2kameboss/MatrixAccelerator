@@ -142,18 +142,20 @@ begin
 
     if ( shallPass ) begin
         // register interface
-        xif.register.rs_valid = 'd0;
-        for ( i = 0; i < 2; i = i + 1 ) begin
-            if ( xif.issue_resp.register_read[i] ) begin
-                xif.register.rs[i] = rf[rs[i]];
-                xif.register.rs_valid[i] = 1'b1;
+        if ( |xif.issue_resp.register_read ) begin
+            xif.register.rs_valid = 'd0;
+            for ( i = 0; i < 2; i = i + 1 ) begin
+                if ( xif.issue_resp.register_read[i] ) begin
+                    xif.register.rs[i] = rf[rs[i]];
+                    xif.register.rs_valid[i] = 1'b1;
+                end
             end
-        end
 
-        xif.register_valid <= 1'b1;
-        @(posedge clk);
-        while (xif.register_ready != 1'b1) @(posedge clk);
-        xif.register_valid <= 1'b0;
+            xif.register_valid <= 1'b1;
+            @(posedge clk);
+            while (xif.register_ready != 1'b1) @(posedge clk);
+            xif.register_valid <= 1'b0;
+        end
 
         // commit interface
         xif.commit.commit_kill <= ~commit;

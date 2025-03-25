@@ -56,7 +56,7 @@ logic               [ADDR_WIDTH - 1 : 0]                reg2  ;
 logic               [6 : 0]                             funct7;
 
 // instances
-ma_extension_driver #(
+ma_decoder #(
     .OPCODE             ( OPCODE            ),
     .ADDR_WIDTH         ( ADDR_WIDTH        ),
     .REGISTER_NUMBERS   ( REGISTER_NUMBERS  )

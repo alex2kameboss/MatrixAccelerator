@@ -1,4 +1,4 @@
-module alu #(
+module ma_alu #(
     parameter DATA_WIDTH    =   32
 ) (
     input   ma_pkg::operation_t                         op  ,

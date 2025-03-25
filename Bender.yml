@@ -36,7 +36,7 @@ sources:
     - src/rtl/dma/write_concat.sv
     - src/rtl/dma/strobe_generator.sv
     # vectorial unit
-    - src/rtl/vectorial_unit/alu.sv
+    - src/rtl/vectorial_unit/ma_alu.sv
     - src/rtl/vectorial_unit/vectorial_splitter.sv
     - src/rtl/vectorial_unit/vectorial_concat.sv
     - src/rtl/vectorial_unit/prf_addr_gen_seq.sv
@@ -45,7 +45,7 @@ sources:
     - src/rtl/matrix_unit/systolic_array
     - src/rtl/matrix_unit/systolic_array/mac.sv
     - src/rtl/matrix_unit/systolic_array/auto_shift_register.sv
-    - src/rtl/matrix_unit/systolic_array/mult.sv
+    - src/rtl/matrix_unit/systolic_array/ma_mult.sv
     - src/rtl/matrix_unit/systolic_array/add.sv
     - src/rtl/matrix_unit/systolic_array/systolic_array.sv
     - src/rtl/matrix_unit/systolic_array/crossbar.sv
@@ -54,7 +54,7 @@ sources:
     - src/rtl/matrix_unit/systolic_array/array_results_controller.sv
     - src/rtl/matrix_unit/systolic_array/line_mux.sv
     # matrix accelerator components
-    - src/rtl/matrix_accelerator/ma_extension_driver.sv
+    - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv
     - src/rtl/matrix_accelerator/ma_memory.sv
     - src/rtl/matrix_accelerator/ma_dma.sv

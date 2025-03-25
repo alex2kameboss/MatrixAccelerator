@@ -1,4 +1,4 @@
-module mult #(
+module ma_mult #(
     parameter DATA_WIDTH = 8
 ) (
     input   [DATA_WIDTH - 1 : 0]    a   ,

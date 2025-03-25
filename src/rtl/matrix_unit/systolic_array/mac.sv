@@ -22,7 +22,7 @@ assign c_in = soft_reset_n ? add_result : prod_result;
 
 assign c_o = c_reg;
 
-mult #(.DATA_WIDTH(DATA_WIDTH)) mult_i (
+ma_mult #(.DATA_WIDTH(DATA_WIDTH)) mult_i (
     .a( a_i         ),
     .b( b_i         ),
     .c( prod_result )

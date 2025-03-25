@@ -87,7 +87,7 @@ always_ff @ ( posedge clk, negedge rst_n )
         instr_if.issue_resp.accept          <= 'd0;
         instr_if.issue_resp.writeback       <= 'd0;
         instr_if.issue_resp.register_read   <= 'd0;
-        instr_if.issue_resp.loadstore       <= 'd0;
+        //instr_if.issue_resp.loadstore       <= 'd0;
     end else if ( response_issuer ) begin
         instr_if.issue_resp.accept          <= valid_instr;
         instr_if.issue_resp.writeback       <= 'd0;
@@ -98,12 +98,12 @@ always_ff @ ( posedge clk, negedge rst_n )
         instr_if.issue_resp.register_read[1]<= instr.decode.funct3 == ma_pkg::DEFINE    | 
                                         instr.decode.funct3 == ma_pkg::DEFINE_POLY      |
                                         instr.decode.funct3 == ma_pkg::VS               ;
-        instr_if.issue_resp.loadstore       <= 'd0;
+        //instr_if.issue_resp.loadstore       <= 'd0;
     end else if ( taken_instr ) begin
         instr_if.issue_resp.accept          <= 'd0;
         instr_if.issue_resp.writeback       <= 'd0;
         instr_if.issue_resp.register_read   <= 'd0;
-        instr_if.issue_resp.loadstore       <= 'd0;
+        //instr_if.issue_resp.loadstore       <= 'd0;
     end
 
 always_ff @ ( posedge clk, negedge rst_n )
@@ -155,10 +155,11 @@ always_ff @ ( posedge clk, negedge rst_n )
     registers_if.register.rs_valid[1])  reg2 <= registers_if.register.rs[1];   else
     if ( valid & ready )    reg2 <= 'd0;
 
-always_ff @ ( posedge clk, negedge rst_n )
-    if ( ~rst_n )           valid <= 'd0;                               else
-    if ( valid & ready )    valid <= 'd0;                               else
-                            valid <= committed & rs1_valid & rs2_valid & ready;
+//always_ff @ ( posedge clk, negedge rst_n )
+//    if ( ~rst_n )           valid <= 'd0;                               else
+//    if ( valid & ready )    valid <= 'd0;                               else
+//                            valid <= committed & rs1_valid & rs2_valid & ready;
+assign valid = committed & rs1_valid & rs2_valid & ready;
 
 always_ff @ ( posedge clk, negedge rst_n )                              
     if ( ~rst_n )           committed <= 'd0;                            else
@@ -189,10 +190,10 @@ always_ff @ ( posedge clk, negedge rst_n )
         result_if.result.data   <= 'd0;
         result_if.result.rd     <= 'd0;
         result_if.result.we     <= 'd0;
-        result_if.result.exc    <= 'd0;
-        result_if.result.exccode<= 'd0;
-        result_if.result.dbg    <= 'd0;
-        result_if.result.err    <= 'd0;
+        //result_if.result.exc    <= 'd0;
+        //result_if.result.exccode<= 'd0;
+        //result_if.result.dbg    <= 'd0;
+        //result_if.result.err    <= 'd0;
     end else if ( instr_if.issue_valid & instr_if.issue_ready ) begin
         result_if.result.hartid <= instr_if.issue_req.hartid;
         result_if.result.id     <= instr_if.issue_req.id;
