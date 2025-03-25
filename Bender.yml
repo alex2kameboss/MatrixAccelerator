@@ -6,7 +6,7 @@ package:
 dependencies:
   axi:                { git: "https://github.com/pulp-platform/axi.git",                      rev: master       }
   common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",             rev: master       }
-  cv_x_if:            { git: "https://github.com/alex2kameboss/core-v-xif-fix.git",           rev: bender       }
+  cv_x_if:            { git: "https://github.com/alex2kameboss/core-v-xif-fix.git",           rev: demo         }
   poly_mem:           { git: "https://gitlab.com/catalin.ciobanu/PolyMem_System_Verilog.git", rev: refactoring  }
 
 workspace:
