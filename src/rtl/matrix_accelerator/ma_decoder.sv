@@ -234,7 +234,7 @@ always_ff @ ( posedge clk, negedge rst_n )
 
 always_ff @ ( posedge clk, negedge rst_n )                              
     if ( ~rst_n )           commit_valid <= 'd0;                    else
-    if ( commit_if.commit_valid ) commit_valid <= register_read[0];       else
+    if ( commit_if.commit_valid ) commit_valid <= 'd1;       else
     if ( clean )            commit_valid <= 'd0;                    
 
 always_ff @ ( posedge clk, negedge rst_n )                              

@@ -30,6 +30,7 @@ logic   splitter_en;
 logic   rs1_done, rs2_done;
 
 logic   concat_en;
+logic   sa_valid;
 
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
@@ -67,8 +68,8 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             concat_en <= 'd0;           else
-    if ( splitter_en )                  concat_en <= 'd1;           else
-    if ( rsp_intf.done )                concat_en <= 'd0;    
+    if ( rsp_intf.done )                concat_en <= 'd0;           else
+    if ( splitter_en )                  concat_en <= 'd1;           
 
 
 // Modules Instances -----------------------------------------------------------------------------------------
@@ -142,7 +143,7 @@ crossbar #(
 ) row_crossbar (
     .clk            ( data_intf.clk     ),
     .reset_n        ( data_intf.rst_n   ),
-    .sync_reset_n   ( 1'b1              ),
+    .sync_reset_n   ( ~rsp_intf.done    ),
     .shift          ( concat_en         ),
     .data_i         ( op1_alu           ),
     .data_o         ( op1_sa            ) 
@@ -154,7 +155,7 @@ crossbar #(
 ) col_crossbar (
     .clk            ( data_intf.clk     ),
     .reset_n        ( data_intf.rst_n   ),
-    .sync_reset_n   ( 1'b1              ),
+    .sync_reset_n   ( ~rsp_intf.done    ),
     .shift          ( concat_en         ),
     .data_i         ( op2_alu           ),
     .data_o         ( op2_sa            ) 
@@ -165,14 +166,14 @@ systolic_array #(
     .ARRAY_HEIGHT( SA_HEIGHT            ),
     .DATA_WIDTH  ( config_intf.ALU_WIDTH)
 ) array (
-    .clk            ( data_intf.clk         ),
-    .reset_n        ( data_intf.rst_n       ),
-    .array_reset_n  ( array_reset_n         ),
-    .en             ( concat_en             ),
-    .dtype          ( config_intf.rs2.dtype ),
-    .a_array_input  ( op1_sa                ),
-    .b_array_input  ( op2_sa                ),
-    .c_array_output ( res_sa                )
+    .clk            ( data_intf.clk                     ),
+    .reset_n        ( data_intf.rst_n & ~rsp_intf.done  ),
+    .array_reset_n  ( array_reset_n                     ),
+    .en             ( concat_en                         ),
+    .dtype          ( config_intf.rs2.dtype             ),
+    .a_array_input  ( op1_sa                            ),
+    .b_array_input  ( op2_sa                            ),
+    .c_array_output ( res_sa                            )
 );
 
 array_results_controller #(
@@ -183,6 +184,7 @@ array_results_controller #(
     .clk            ( data_intf.clk         ),
     .reset_n        ( data_intf.rst_n       ),
     .en             ( concat_en             ),
+    .soft_reset     ( rsp_intf.done         ),
     .dtype          ( config_intf.rs2.dtype ),
     .start          ( config_intf.start     ),
     .rd             ( config_intf.rd        ),
