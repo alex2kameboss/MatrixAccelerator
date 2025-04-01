@@ -8,6 +8,7 @@ module array_results_controller #(
     input   logic                                                   clk                                                         ,
     input   logic                                                   reset_n                                                     ,
     input   logic                                                   en                                                          ,
+    input   logic                                                   soft_reset                                                  ,
     input   ma_pkg::dtype_t                                         dtype                                                       ,
     input   logic                                                   start                                                       ,
     input   ma_pkg::register_file_line_t                            rd                                                          ,
@@ -58,7 +59,11 @@ always_ff @( posedge clk or negedge reset_n )
         for ( int ii = 0; ii < ARRAY_HEIGHT; ii = ii + 1 )
             for ( int jj = 0; jj < ARRAY_WIDTH; jj = jj + 1 )
                 array_reset_n[ii][jj] <= 1'b1;
-    end else begin
+    end else if ( soft_reset ) begin
+        for ( int ii = 0; ii < ARRAY_HEIGHT; ii = ii + 1 )
+            for ( int jj = 0; jj < ARRAY_WIDTH; jj = jj + 1 )
+                array_reset_n[ii][jj] <= 1'b1;
+    end else if ( en ) begin
         for ( int ii = 0; ii < ARRAY_HEIGHT; ii = ii + 1 )
             for ( int jj = 0; jj < ARRAY_WIDTH; jj = jj + 1 )
                 if ( col_en[jj] ) begin
@@ -103,7 +108,7 @@ auto_shift_register #(
     .STEPS      ( ARRAY_HEIGHT - k  )
 ) i_result_shifter (
     .clk            ( clk                   ),
-    .reset_n        ( reset_n               ),
+    .reset_n        ( reset_n & ~soft_reset ),
     .sync_reset_n   ( 1'b1                  ),
     .shift          ( en                    ),
     .data_i         ( line_result[k]        ),
@@ -126,7 +131,7 @@ auto_shift_register #(
     .STEPS      ( ARRAY_HEIGHT      )
 ) i_valid_shifter (
     .clk            ( clk                   ),
-    .reset_n        ( reset_n               ),
+    .reset_n        ( reset_n & ~soft_reset ),
     .sync_reset_n   ( 1'b1                  ),
     .shift          ( en                    ),
     .data_i         ( ~en_delay_input       ),

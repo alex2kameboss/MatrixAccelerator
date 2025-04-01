@@ -55,7 +55,6 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             rs_addr_en <= 1'b0;         else
-    if ( rsp_intf.done )                rs_addr_en <= 1'b0;         else
     if ( config_intf.start & en )       rs_addr_en <= 1'b1;         else
     if ( rs1_done & rs2_done )          rs_addr_en <= 1'b0;                                          
 
@@ -83,7 +82,7 @@ row_addr_gen_seq #(
     .clk     ( data_intf.clk            ),
     .rst_n   ( data_intf.rst_n          ),
     .start   ( config_intf.start        ),
-    .en      ( operands_addr_gen_en & en),
+    .en      ( operands_addr_gen_en     ),
     .incr    ( op1_addr_gen_incr        ),
     .r       ( config_intf.rs1          ),
     .r2      ( config_intf.rs2          ),
@@ -102,7 +101,7 @@ col_addr_gen_seq #(
     .clk     ( data_intf.clk        ),
     .rst_n   ( data_intf.rst_n      ),
     .start   ( config_intf.start    ),
-    .en      ( operands_addr_gen_en & en),
+    .en      ( operands_addr_gen_en ),
     .incr    ( rs_addr_en           ),
     .r       ( config_intf.rs2      ),
     .repeater(config_intf.rs1.height),
@@ -118,7 +117,7 @@ vectorial_splitter #(
     .clk        ( data_intf.clk         ),
     .rst_n      ( data_intf.rst_n       ),
     .reset      ( config_intf.start     ),
-    .en         ( splitter_en & en      ),
+    .en         ( splitter_en           ),
     .dtype      ( config_intf.rs1.dtype ),
     .op_in      ( data_intf.op1_data    ),
     .op_out     ( op1_alu               ),
@@ -132,7 +131,7 @@ sa_col_splitter #(
     .clk        ( data_intf.clk         ),
     .rst_n      ( data_intf.rst_n       ),
     .reset      ( config_intf.start     ),
-    .en         ( splitter_en & en      ),
+    .en         ( splitter_en           ),
     .dtype      ( config_intf.rs2.dtype ),
     .op_in      ( data_intf.op2_data    ),
     .op_out     ( op2_alu               )
@@ -144,7 +143,7 @@ crossbar #(
 ) row_crossbar (
     .clk            ( data_intf.clk     ),
     .reset_n        ( data_intf.rst_n   ),
-    .sync_reset_n   ( 1'b1              ),
+    .sync_reset_n   ( ~rsp_intf.done    ),
     .shift          ( concat_en         ),
     .data_i         ( op1_alu           ),
     .data_o         ( op1_sa            ) 
@@ -156,7 +155,7 @@ crossbar #(
 ) col_crossbar (
     .clk            ( data_intf.clk     ),
     .reset_n        ( data_intf.rst_n   ),
-    .sync_reset_n   ( 1'b1              ),
+    .sync_reset_n   ( ~rsp_intf.done    ),
     .shift          ( concat_en         ),
     .data_i         ( op2_alu           ),
     .data_o         ( op2_sa            ) 
@@ -167,14 +166,14 @@ systolic_array #(
     .ARRAY_HEIGHT( SA_HEIGHT            ),
     .DATA_WIDTH  ( config_intf.ALU_WIDTH)
 ) array (
-    .clk            ( data_intf.clk         ),
-    .reset_n        ( data_intf.rst_n       ),
-    .array_reset_n  ( array_reset_n         ),
-    .en             ( concat_en & en        ),
-    .dtype          ( config_intf.rs2.dtype ),
-    .a_array_input  ( op1_sa                ),
-    .b_array_input  ( op2_sa                ),
-    .c_array_output ( res_sa                )
+    .clk            ( data_intf.clk                     ),
+    .reset_n        ( data_intf.rst_n & ~rsp_intf.done  ),
+    .array_reset_n  ( array_reset_n                     ),
+    .en             ( concat_en                         ),
+    .dtype          ( config_intf.rs2.dtype             ),
+    .a_array_input  ( op1_sa                            ),
+    .b_array_input  ( op2_sa                            ),
+    .c_array_output ( res_sa                            )
 );
 
 array_results_controller #(
@@ -184,7 +183,8 @@ array_results_controller #(
 ) i_result_controller (
     .clk            ( data_intf.clk         ),
     .reset_n        ( data_intf.rst_n       ),
-    .en             ( concat_en & en         ),
+    .en             ( concat_en             ),
+    .soft_reset     ( rsp_intf.done         ),
     .dtype          ( config_intf.rs2.dtype ),
     .start          ( config_intf.start     ),
     .rd             ( config_intf.rd        ),
@@ -203,7 +203,7 @@ vectorial_concat #(
     .clk        ( data_intf.clk         ),
     .rst_n      ( data_intf.rst_n       ),
     .reset      ( config_intf.start     ),
-    .en         ( sa_valid & en         ),
+    .en         ( sa_valid              ),
     .dtype      ( config_intf.rd.dtype  ),
     .rez_in     ( res_alu               ),
     .rez_out    ( data_intf.rez_data    ),
