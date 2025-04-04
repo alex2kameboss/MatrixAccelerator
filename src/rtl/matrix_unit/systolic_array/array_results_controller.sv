@@ -37,23 +37,6 @@ always_ff @( posedge clk or negedge reset_n )
 
 logic                                       loop_done;
 
-genvar i_en;
-logic col_en [ARRAY_WIDTH - 1 : 0];
-
-generate
-    for ( i_en = 0; i_en < ARRAY_WIDTH / 4; i_en = i_en + 1 ) begin : b32_en
-        assign col_en[i_en] = en & ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 | dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
-    end
-
-    for ( i_en = ARRAY_WIDTH / 4; i_en < ARRAY_WIDTH / 2; i_en = i_en + 1 ) begin : b16_en
-        assign col_en[i_en] = en & ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
-    end
-
-    for ( i_en = ARRAY_WIDTH / 2; i_en < ARRAY_WIDTH; i_en = i_en + 1 ) begin : b8_en
-        assign col_en[i_en] = en & ( dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
-    end
-endgenerate
-
 always_ff @( posedge clk or negedge reset_n )
     if ( ~reset_n ) begin
         for ( int ii = 0; ii < ARRAY_HEIGHT; ii = ii + 1 )
@@ -66,7 +49,7 @@ always_ff @( posedge clk or negedge reset_n )
     end else if ( en ) begin
         for ( int ii = 0; ii < ARRAY_HEIGHT; ii = ii + 1 )
             for ( int jj = 0; jj < ARRAY_WIDTH; jj = jj + 1 )
-                if ( col_en[jj] ) begin
+                if ( en ) begin
                     if ( ii == 0 & jj == 0 )
                         array_reset_n[ii][jj] <= ~loop_done;
                     else if ( ii >= jj )

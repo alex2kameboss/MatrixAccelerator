@@ -21,22 +21,6 @@ genvar i, j, i_en;
 wire    [DATA_WIDTH - 1 : 0]    a_pass  [ARRAY_HEIGHT -1 : 0][ARRAY_WIDTH : 0];
 wire    [DATA_WIDTH - 1 : 0]    b_pass  [ARRAY_HEIGHT : 0][ARRAY_WIDTH -1 : 0];
 
-logic col_en [ARRAY_WIDTH - 1 : 0];
-
-generate
-    for ( i_en = 0; i_en < ARRAY_WIDTH / 4; i_en = i_en + 1 ) begin : b32_en
-        assign col_en[i_en] = en & ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 | dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
-    end
-
-    for ( i_en = ARRAY_WIDTH / 4; i_en < ARRAY_WIDTH / 2; i_en = i_en + 1 ) begin : b16_en
-        assign col_en[i_en] = en & ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
-    end
-
-    for ( i_en = ARRAY_WIDTH / 2; i_en < ARRAY_WIDTH; i_en = i_en + 1 ) begin : b8_en
-        assign col_en[i_en] = en & ( dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
-    end
-endgenerate
-
 generate
     for ( i = 0; i < ARRAY_HEIGHT; i = i + 1 ) begin : array_row
         for ( j = 0; j < ARRAY_WIDTH; j = j + 1 ) begin : array_col
@@ -46,12 +30,12 @@ generate
                 .clk            ( clk               ),
                 .reset_n        ( reset_n           ),
                 .soft_reset_n   (array_reset_n[i][j]),
-                .ld             ( col_en[j]         ),
+                .ld             ( en                ),
                 .a_i            ( a_pass[i][j]      ),
                 .b_i            ( b_pass[i][j]      ),
                 .a_o            ( a_pass[i][j + 1]  ),
                 .b_o            ( b_pass[i + 1][j]  ),
-                .c_o            ( c_array_output[i][j])
+                .c_o            (c_array_output[i][j])
             );
         end
     end

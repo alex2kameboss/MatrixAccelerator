@@ -41,6 +41,7 @@ sources:
     - src/rtl/vectorial_unit/vectorial_concat.sv
     - src/rtl/vectorial_unit/prf_addr_gen_seq.sv
     # matrix unit
+    - src/rtl/matrix_unit/col_vectorial_splitter.sv
     - src/rtl/matrix_unit/row_addr_gen_seq.sv
     - src/rtl/matrix_unit/systolic_array
     - src/rtl/matrix_unit/systolic_array/mac.sv

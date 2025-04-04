@@ -6,7 +6,7 @@ module ma_matrix_unit (
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
 localparam SA_HEIGHT = data_intf.PRF_N_LANES;
-localparam SA_WIDTH = data_intf.PRF_N_LANES * 4;
+localparam SA_WIDTH = data_intf.PRF_N_LANES;
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
@@ -22,9 +22,11 @@ logic   [config_intf.ALU_WIDTH - 1 : 0]     res_sa          [SA_HEIGHT - 1 : 0][
 
 logic   rs_addr_en, start_delayed;
 logic   operands_addr_gen_en;
-logic   op1_addr_gen_incr;
+logic   op1_addr_gen_incr, op2_addr_gen_incr;
 logic   fast_rs1;
 logic   rs1_incr, rs1_incr_1;
+logic   fast_rs2;
+logic   rs2_incr, rs2_incr_1;
 
 logic   splitter_en;
 logic   rs1_done, rs2_done;
@@ -38,20 +40,22 @@ assign data_intf.unit_id = ma_intf_pkg::MATRIX_UNIT;
 assign data_intf.op1.scheme = prf_dtypes::COL;
 assign data_intf.op1.valid = (~fast_rs1 ? rs1_incr_1 : rs1_incr) | start_delayed;
 assign data_intf.op2.scheme = prf_dtypes::ROW;
-assign data_intf.op2.valid = rs_addr_en;
+assign data_intf.op2.valid = (~fast_rs2 ? rs2_incr_1 : rs2_incr) | start_delayed;
 assign data_intf.rez.scheme = prf_dtypes::COL;
 assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;
 
-assign operands_addr_gen_en = rs_addr_en | config_intf.start;
+assign operands_addr_gen_en = en & (rs_addr_en | config_intf.start);
 assign op1_addr_gen_incr = rs1_incr | fast_rs1 & start_delayed;
+assign op2_addr_gen_incr = rs2_incr | fast_rs2 & start_delayed;
 assign fast_rs1 = config_intf.rs1.dtype == ma_pkg::INT32 | config_intf.rs1.dtype == ma_pkg::UINT32;
+assign fast_rs2 = config_intf.rs2.dtype == ma_pkg::INT32 | config_intf.rs2.dtype == ma_pkg::UINT32;
 
 
 // Sequential Logic ------------------------------------------------------------------------------------------
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             start_delayed <= 1'b0;      else
-                                        start_delayed <= config_intf.start;
+    if ( en )                           start_delayed <= config_intf.start;
 
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             rs_addr_en <= 1'b0;         else
@@ -60,11 +64,15 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             rs1_incr_1 <= 1'b0;         else
-                                        rs1_incr_1 <= rs1_incr;
+    if ( en )                           rs1_incr_1 <= rs1_incr;
+
+always @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )             rs2_incr_1 <= 1'b0;         else
+    if ( en )                           rs2_incr_1 <= rs2_incr;     
 
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             splitter_en <= 1'b0;         else
-                                        splitter_en <= rs_addr_en;
+    if ( en )                           splitter_en <= rs_addr_en;
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             concat_en <= 'd0;           else
@@ -102,7 +110,7 @@ col_addr_gen_seq #(
     .rst_n   ( data_intf.rst_n      ),
     .start   ( config_intf.start    ),
     .en      ( operands_addr_gen_en ),
-    .incr    ( rs_addr_en           ),
+    .incr    ( op2_addr_gen_incr    ),
     .r       ( config_intf.rs2      ),
     .repeater(config_intf.rs1.height),
     .i_out   ( data_intf.op2.i      ),
@@ -124,7 +132,7 @@ vectorial_splitter #(
     .next       ( rs1_incr              )
 );
 
-sa_col_splitter #(
+/*sa_col_splitter #(
     .IN_DATA_WIDTH  ( data_intf.DATA_WIDTH  ),
     .OUT_DATA_WIDTH ( config_intf.ALU_WIDTH )
 ) i_col_splitter (
@@ -135,6 +143,19 @@ sa_col_splitter #(
     .dtype      ( config_intf.rs2.dtype ),
     .op_in      ( data_intf.op2_data    ),
     .op_out     ( op2_alu               )
+);*/
+col_vectorial_splitter #(
+    .IN_DATA_WIDTH  ( data_intf.DATA_WIDTH  ),
+    .OUT_DATA_WIDTH ( config_intf.ALU_WIDTH )
+) i_col_splitter (
+    .clk    ( data_intf.clk         ),
+    .rst_n  ( data_intf.rst_n       ),
+    .reset  ( config_intf.start     ),
+    .en     ( splitter_en           ),
+    .dtype  ( config_intf.rs2.dtype ),
+    .op_in  ( data_intf.op2_data    ),
+    .op_out ( op2_alu               ),
+    .next   ( rs2_incr              )
 );
 
 crossbar #(
