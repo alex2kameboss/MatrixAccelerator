@@ -48,6 +48,13 @@ logic   dma_addr_en, dma_done, dma_addr_gen_en;
 logic   dma_read_incr, dma_write_incr, dma_addr_gen_incr;
 logic   start_addr_gen_delayed, dma_addr_gen_done_delayed;
 
+AXI_BUS #(
+    .AXI_ADDR_WIDTH ( axi.AXI_ADDR_WIDTH    ),
+    .AXI_DATA_WIDTH ( data_intf.DATA_WIDTH  ),
+    .AXI_ID_WIDTH   ( axi.AXI_ID_WIDTH      ),
+    .AXI_USER_WIDTH ( axi.AXI_USER_WIDTH    )
+) axi_n_lanes();
+
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign data_intf.unit_id = ma_intf_pkg::DMA_UNIT;
@@ -56,7 +63,7 @@ assign en = config_intf.dst_unit == data_intf.unit_id;
 assign data_intf.op1.scheme = prf_dtypes::ROW;
 assign data_intf.op1.i = dma_i_out;
 assign data_intf.op1.j = dma_j_out;
-assign data_intf.op1.valid = store;
+//assign data_intf.op1.valid = store;
 assign dma_write_data = data_intf.op1_data;
 assign data_intf.op2 = 'd0;
 assign data_intf.rez.scheme = prf_dtypes::ROW;
@@ -84,7 +91,7 @@ assign dma_len = config_intf.rd.width * config_intf.rd.height * bytes_len;
 assign dma_addr_gen_en = config_intf.start | dma_addr_en;
 assign dma_addr_gen_incr = load & dma_read_incr | store & dma_write_incr;
 assign dma_read_incr = dma_read_data_valid & dma_read_data_ready;
-assign dma_write_incr = dma_write_data_valid & dma_write_data_ready;
+assign dma_write_incr = data_intf.op1.valid & dma_write_data_ready;
 assign dma_read_data_ready = load;
 
 
@@ -121,13 +128,18 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )                 dma_addr_en <= 'd0;                 else
-    if ( load | store )                     dma_addr_en <= 'd1;                 else
+    if ( load | store & config_intf.start ) dma_addr_en <= 'd1;                 else
     if ( dma_done )                         dma_addr_en <= 'd0;   
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )                 dma_write_data_valid <= 'd0;        else
     if ( start_addr_gen_delayed & store )   dma_write_data_valid <= 'd1;        else
     if ( dma_addr_gen_done_delayed )        dma_write_data_valid <= 'd0;    
+
+always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )                 data_intf.op1.valid <= 'd0;        else
+    if ( config_intf.start & store )        data_intf.op1.valid <= 'd1;        else
+    if ( dma_addr_gen_done_delayed )        data_intf.op1.valid <= 'd0;    
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )                 start_addr_gen_delayed <= 'd0;      else
@@ -139,6 +151,20 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 
 // Modules Instances -----------------------------------------------------------------------------------------
+axi_dw_converter_intf #(
+    .AXI_ID_WIDTH           ( axi.AXI_ID_WIDTH      ),
+    .AXI_ADDR_WIDTH         ( axi.AXI_ADDR_WIDTH    ),
+    .AXI_SLV_PORT_DATA_WIDTH( data_intf.DATA_WIDTH  ),
+    .AXI_MST_PORT_DATA_WIDTH( axi.AXI_DATA_WIDTH    ),
+    .AXI_USER_WIDTH         ( axi.AXI_USER_WIDTH    ),
+    .AXI_MAX_READS          ( 1                     )
+) i_axi_dma_dw (
+    .clk_i  ( aclk          ),
+    .rst_ni ( arst_n        ),
+    .slv    ( axi_n_lanes   ),
+    .mst    ( axi           )
+);
+
 dma #(
     .ADDR_WIDTH ( axi.AXI_ADDR_WIDTH    ),
     .DATA_WIDTH ( data_intf.DATA_WIDTH  ) 
@@ -169,7 +195,7 @@ dma #(
     // axi interface
     .aclk               ( aclk                  ),
     .arst_n             ( arst_n                ),
-    .axi                ( axi                   ) 
+    .axi                ( axi_n_lanes           ) 
 );
 
 prf_addr_gen_seq #(
