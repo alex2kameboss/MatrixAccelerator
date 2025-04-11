@@ -44,6 +44,7 @@ logic                                   load, store;
 logic   [2 : 0]                         bytes_len  ;
 logic   [axi.AXI_ADDR_WIDTH - 1 : 0]    dma_len    ;
 
+logic   start_delayed;
 logic   dma_addr_en, dma_done, dma_addr_gen_en;
 logic   dma_read_incr, dma_write_incr, dma_addr_gen_incr;
 logic   start_addr_gen_delayed, dma_addr_gen_done_delayed;
@@ -91,7 +92,7 @@ assign dma_len = config_intf.rd.width * config_intf.rd.height * bytes_len;
 assign dma_addr_gen_en = config_intf.start | dma_addr_en;
 assign dma_addr_gen_incr = load & dma_read_incr | store & dma_write_incr;
 assign dma_read_incr = dma_read_data_valid & dma_read_data_ready;
-assign dma_write_incr = data_intf.op1.valid & dma_write_data_ready;
+assign dma_write_incr = dma_write_data_valid & dma_write_data_ready | config_intf.start;
 assign dma_read_data_ready = load;
 
 
@@ -133,21 +134,24 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )                 dma_write_data_valid <= 'd0;        else
-    if ( start_addr_gen_delayed & store )   dma_write_data_valid <= 'd1;        else
-    if ( dma_addr_gen_done_delayed )        dma_write_data_valid <= 'd0;    
+    if ( dma_done )                         dma_write_data_valid <= 'd0;        else
+    if ( store & en ) begin
+        if ( data_intf.op1.valid )          dma_write_data_valid <= 'd1;        else
+        if ( dma_write_data_ready )         dma_write_data_valid <= 'd0;        
+    end   
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )                 data_intf.op1.valid <= 'd0;        else
-    if ( config_intf.start & store )        data_intf.op1.valid <= 'd1;        else
-    if ( dma_addr_gen_done_delayed )        data_intf.op1.valid <= 'd0;    
+    if ( dma_done )                         data_intf.op1.valid <= 'd0;        else
+    if ( store & en )                       data_intf.op1.valid <= dma_write_incr;
 
-always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+/* TODO: remove */ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )                 start_addr_gen_delayed <= 'd0;      else
-                                            start_addr_gen_delayed <= config_intf.start;
+    if ( en )                               start_addr_gen_delayed <= config_intf.start;
 
-always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+/* TODO: remove */ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )                 dma_addr_gen_done_delayed <= 'd0;   else
-                                            dma_addr_gen_done_delayed <= dma_done;
+    if ( en )                               dma_addr_gen_done_delayed <= dma_done;
 
 
 // Modules Instances -----------------------------------------------------------------------------------------

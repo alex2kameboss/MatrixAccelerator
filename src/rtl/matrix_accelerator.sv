@@ -44,6 +44,8 @@ ma_data_bus #(
 ); // one for every units + 1 for memory
 
 // wires
+logic                                                   valid ;
+logic                                                   ready ;
 ma_pkg::funct3_op_t                                     funct3;
 ma_pkg::operation_t                                     op    ;
 logic               [ADDR_WIDTH - 1 : 0]                addr  ;

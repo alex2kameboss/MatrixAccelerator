@@ -153,6 +153,8 @@ generate
 ma_alu #(
     .DATA_WIDTH( config_intf.ALU_WIDTH  )
 ) i_vectorial_alu (
+    .clk ( data_intf.clk    ),
+    .en  ( splitter_en      ),
     .op  ( config_intf.op   ),
     .op1 ( op1_alu[j]       ),
     .op2 ( op2_alu[j]       ),

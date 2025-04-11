@@ -10,6 +10,14 @@ typedef enum logic [6:0] {
     NOP = {7{1'b1}}
 } operation_t;
 
+typedef enum logic [2:0] {
+    V_ADD,
+    V_SUB,
+    // V_DIV, - to much for fpga
+    V_MUL,
+    V_NOP
+} vectorial_operation_t;
+
 typedef enum logic [6:0] {
     INT8 = 0,
     UINT8 = 1,

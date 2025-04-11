@@ -45,8 +45,8 @@ modport accelerator (
 modport memory (
     input   clk     ,
     input   rst_n   ,
-    output  unit_id ,
-    output  rez     ,
+    input   unit_id ,
+    input   rez     ,
     input   op1     ,
     input   op2     ,
     output  op1_data,  
