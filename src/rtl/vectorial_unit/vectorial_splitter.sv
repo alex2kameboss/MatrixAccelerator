@@ -38,7 +38,7 @@ assign next = ((dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32) |
 
 assign cnt_8b = cnt;
 assign cnt_16b = cnt[$clog2(IN_BYTES - 2) - 1 : 0];
-assign cnt_32b = 1'b1; // TODO: improve
+assign cnt_32b = 1'b0; // TODO: improve
 
 genvar i_8b, i_16b, i_32b;
 
