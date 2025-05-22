@@ -10,6 +10,7 @@ module matrix_accelerator #(
 ) (
     // generic signals
     input                                       clk             ,
+    input                                       clk_2x          ,
     input                                       rst_n           ,
     // xif interface
     core_v_xif.core_v_xif_coprocessor_issue     instr_if        ,
@@ -127,7 +128,8 @@ ma_matrix_unit i_matrix_unit (
 );
 
 ma_memory i_memory (
-    .intf   ( data_intf[NUMBER_OF_UNITS] )
+    .clk_2x ( clk_2x                    ),
+    .intf   ( data_intf[NUMBER_OF_UNITS])
 );
 
 ma_data_bus_arbiter i_memory_arbiter (

@@ -1,13 +1,15 @@
 module ma_memory (
+    input               clk_2x  ,
     ma_data_bus.memory  intf    
 );
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
 localparam PRF_N_RPORTS  = 2 ;
-localparam PRF_N_WPORTS  = 1 ;
+localparam PRF_N_WPORTS  = 2 ;
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
+logic                                               r_en, w_en;
 logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_in     [0 : PRF_N_WPORTS - 1][0 : intf.PRF_N_LANES - 1]    ;
 logic                                               prf_read        [0 : PRF_N_RPORTS - 1]                              ;
 logic                                               prf_write       [0 : PRF_N_RPORTS - 1]                              ;
@@ -19,6 +21,7 @@ prf_dtypes::dscheme_t                               dscheme                     
 prf_dtypes::taccess_t   [PRF_N_RPORTS - 1 : 0]      taccess_read                                                        ;
 prf_dtypes::taccess_t   [PRF_N_WPORTS - 1 : 0]      taccess_write                                                       ;
 logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_out_r  [0 : PRF_N_RPORTS - 1][0 : intf.PRF_N_LANES - 1]    ;
+logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_out_r_q[0 : PRF_N_RPORTS - 1][0 : intf.PRF_N_LANES - 1]    ;
 logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_out_w  [0 : PRF_N_RPORTS - 1][0 : intf.PRF_N_LANES - 1]    ;
 
 
@@ -26,17 +29,18 @@ logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_out_w  [0 : PRF_N_R
 assign dscheme = prf_dtypes::ROW_COL;
 // rez
 assign taccess_write[0] = intf.rez.scheme;
-assign prf_write[1] = ~intf.rez.valid;
+assign prf_write[1] = ~(intf.rez.valid & w_en);
+assign prf_write[0] = 1'b1;
 assign write_i[0] = intf.rez.i;
 assign write_j[0] = intf.rez.j;
 // op1
 assign taccess_read[0] = intf.op1.scheme;
-assign prf_read[1] = ~intf.op1.valid; // wtf, read 1 for port 0
+assign prf_read[1] = ~(intf.op1.valid & r_en); // wtf, read 1 for port 0
 assign read_i[0] = intf.op1.i;
 assign read_j[0] = intf.op1.j;
 // op2
 assign taccess_read[1] = intf.op2.scheme;
-assign prf_read[0] = ~intf.op2.valid; // wtf, read 0 for port 1
+assign prf_read[0] = ~(intf.op2.valid & r_en); // wtf, read 0 for port 1
 assign read_i[1] = intf.op2.i;
 assign read_j[1] = intf.op2.j;
 
@@ -51,7 +55,17 @@ endgenerate
 
 
 // Sequential Logic ------------------------------------------------------------------------------------------
+always_ff @(posedge clk_2x, negedge intf.rst_n)
+    if ( ~intf.rst_n )          r_en <= 'd0;                            else
+                                r_en <= intf.clk;
 
+always_ff @(posedge clk_2x, negedge intf.rst_n)
+    if ( ~intf.rst_n )          w_en <= 'd0;                            else
+                                w_en <= ~intf.clk;
+
+always_ff @(posedge clk_2x, negedge intf.rst_n)
+    if ( ~intf.rst_n )          prf_data_out_r <= '{default: '0};       else
+    if ( w_en )                 prf_data_out_r <= prf_data_out_r_q;
 
 
 // Modules Instances -----------------------------------------------------------------------------------------
@@ -64,7 +78,7 @@ prf2d_wrapper #(
     .prf_log_n     ( intf.PRF_LOG_N ),
     .prf_log_m     ( intf.PRF_LOG_M )
 ) i_mem (
-    .clk            ( intf.clk       ),  
+    .clk            ( clk_2x         ),  
     .prf_data_in    ( prf_data_in    ),
     .prf_read       ( prf_read       ),
     .prf_write      ( prf_write      ),
@@ -75,7 +89,7 @@ prf2d_wrapper #(
     .dscheme        ( dscheme        ),
     .taccess_read   ( taccess_read   ),
     .taccess_write  ( taccess_write  ),
-    .prf_data_out_r ( prf_data_out_r ),
+    .prf_data_out_r (prf_data_out_r_q),
     .prf_data_out_w ( prf_data_out_w ) 
 );
 

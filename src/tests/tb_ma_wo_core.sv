@@ -36,7 +36,7 @@ localparam              NUMBER_OF_REGISTERS = 32;
 localparam              OPCODE              = 7'h2B;
 typedef logic [$clog2(NUMBER_OF_REGISTERS) - 1 : 0] register;
 
-logic clk, rst_n;
+logic clk, clk_2x, rst_n;
 int hartId, opId;
 
 assign xif.issue_req.hartid = hartId;
@@ -103,6 +103,7 @@ matrix_accelerator #(
     .PRF_LOG_M          ( PRF_LOG_M             ) 
 ) i_dut (
     .clk            ( clk   ),
+    .clk_2x         ( clk_2x),
     .rst_n          ( rst_n ),
     .instr_if       ( xif   ),
     .registers_if   ( xif   ),
@@ -119,7 +120,7 @@ function int reg_id;
     reg_id = regId % 32;
 endfunction
 
-clk_rstn i_clk_gen (.clk, .rst_n);
+clk_rstn i_clk_gen (.clk, .clk_2x, .rst_n);
 
 task automatic do_xif;
     input logic [31 : 0]    instr       ;
