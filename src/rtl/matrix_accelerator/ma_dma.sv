@@ -68,6 +68,7 @@ assign data_intf.op1.j = dma_j_out;
 assign dma_write_data = data_intf.op1_data;
 assign data_intf.op2 = 'd0;
 assign data_intf.rez.scheme = prf_dtypes::ROW;
+assign data_intf.rez.lane_valid = {data_intf.PRF_N_LANES{1'b1}};
 assign data_intf.rez.i = dma_i_out;
 assign data_intf.rez.j = dma_j_out;
 assign data_intf.rez.valid = load & dma_read_incr;

@@ -15,10 +15,11 @@ localparam DATA_WIDTH   = SRAM_WIDTH * PRF_N_LANES;
 typedef logic [DATA_WIDTH - 1 : 0] data_t;
 
 typedef struct packed {
-    logic                   [PRF_LOG_N - 1 : 0]     i       ;
-    logic                   [PRF_LOG_M - 1 : 0]     j       ;
-    prf_dtypes::taccess_t                           scheme  ;
-    logic                                           valid   ;
+    logic                   [PRF_LOG_N - 1 : 0]     i           ;
+    logic                   [PRF_LOG_M - 1 : 0]     j           ;
+    prf_dtypes::taccess_t                           scheme      ;
+    logic                                           valid       ;
+    logic                   [PRF_N_LANES - 1 : 0]   lane_valid  ;
 } prf_config_chanel_t;
 
 ma_intf_pkg::unit_id_t  unit_id;

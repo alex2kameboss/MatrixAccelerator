@@ -37,6 +37,7 @@ assign data_intf.unit_id = ma_intf_pkg::VECTORIAL_UNIT;
 assign data_intf.op1.scheme = prf_dtypes::ROW;
 assign data_intf.op2.scheme = prf_dtypes::ROW;
 assign data_intf.rez.scheme = prf_dtypes::ROW;
+assign data_intf.rez.lane_valid = {data_intf.PRF_N_LANES{1'b1}};
 assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;
 assign scalar_op =  config_intf.internal_op == ma_intf_pkg::ADD_VS | 

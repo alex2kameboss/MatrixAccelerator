@@ -11,6 +11,7 @@ localparam PRF_N_WPORTS  = 2 ;
 // Wires Definition ------------------------------------------------------------------------------------------
 logic                                               r_en, w_en;
 logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_in     [0 : PRF_N_WPORTS - 1][0 : intf.PRF_N_LANES - 1]    ;
+logic                                               prf_mask_in     [0 : PRF_N_WPORTS - 1][0 : intf.PRF_N_LANES - 1]    ;
 logic                                               prf_read        [0 : PRF_N_RPORTS - 1]                              ;
 logic                                               prf_write       [0 : PRF_N_RPORTS - 1]                              ;
 logic                   [intf.PRF_LOG_N - 1 : 0]    read_i          [0 : PRF_N_RPORTS - 1]                              ;
@@ -50,6 +51,7 @@ generate
         assign prf_data_in[0][i] = intf.rez_data[(i + 1) * intf.SRAM_WIDTH - 1 : i * intf.SRAM_WIDTH];
         assign intf.op1_data[(i + 1) * intf.SRAM_WIDTH - 1 : i * intf.SRAM_WIDTH] = prf_data_out_r[0][i];
         assign intf.op2_data[(i + 1) * intf.SRAM_WIDTH - 1 : i * intf.SRAM_WIDTH] = prf_data_out_r[1][i];
+        assign prf_mask_in[0][i] = ~intf.rez.lane_valid[i];
     end
 endgenerate
 
@@ -76,10 +78,12 @@ prf2d_wrapper #(
     .prf_log_p     ( intf.PRF_LOG_P ),
     .prf_log_q     ( intf.PRF_LOG_Q ),
     .prf_log_n     ( intf.PRF_LOG_N ),
-    .prf_log_m     ( intf.PRF_LOG_M )
+    .prf_log_m     ( intf.PRF_LOG_M ),
+    .write_select  ( 1              )
 ) i_mem (
     .clk            ( clk_2x         ),  
     .prf_data_in    ( prf_data_in    ),
+    .prf_mask_in    ( prf_mask_in    ),
     .prf_read       ( prf_read       ),
     .prf_write      ( prf_write      ),
     .read_i         ( read_i         ),
