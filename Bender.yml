@@ -69,6 +69,8 @@ sources:
     - src/rtl/matrix_accelerator.sv
 
     - target: test_wo_core
+      defines:
+        TARGET_VIVADO: ~
       files:
         - src/tests/clk_rstn.sv
         - src/tests/tb_ma_wo_core.sv

@@ -29,18 +29,18 @@ logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_out_w  [0 : PRF_N_R
 assign dscheme = prf_dtypes::ROW_COL;
 // rez
 assign taccess_write[0] = intf.rez.scheme;
-assign prf_write[1] = ~(intf.rez.valid & w_en);
-assign prf_write[0] = 1'b1;
+assign prf_write[0] = ~(intf.rez.valid & w_en);
+assign prf_write[1] = 1'b1;
 assign write_i[0] = intf.rez.i;
 assign write_j[0] = intf.rez.j;
 // op1
 assign taccess_read[0] = intf.op1.scheme;
-assign prf_read[1] = ~(intf.op1.valid & r_en); // wtf, read 1 for port 0
+assign prf_read[0] = ~(intf.op1.valid & r_en);
 assign read_i[0] = intf.op1.i;
 assign read_j[0] = intf.op1.j;
 // op2
 assign taccess_read[1] = intf.op2.scheme;
-assign prf_read[0] = ~(intf.op2.valid & r_en); // wtf, read 0 for port 1
+assign prf_read[1] = ~(intf.op2.valid & r_en);
 assign read_i[1] = intf.op2.i;
 assign read_j[1] = intf.op2.j;
 
