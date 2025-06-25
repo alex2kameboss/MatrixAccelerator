@@ -26,17 +26,27 @@ logic   [PRF_LOG_P + PRF_LOG_Q - 1 : 0] iteration;
 logic iteration_done, kernel_next;
 
 logic   [PRF_LOG_N : 0]    i_out_next, i_limit, i_start, i_start_next;
-logic   [PRF_LOG_M : 0]    j_out_next, j_limit, j_start, j_start_next;
+logic   [PRF_LOG_M : 0]    j_out_internal, j_out_next, j_limit, j_start, j_start_next;
 logic   [PRF_LOG_N : 0]    i_kernel, i_kernel_next, i_kernel_limit;
 logic   [PRF_LOG_M : 0]    j_kernel, j_kernel_next, j_kernel_limit;
 logic i_done, j_done, i_kernel_done, j_kernel_done, kernel_done;
 
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
+always_comb begin
+    if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin
+        j_out = j_out_internal;
+    end else if ( r.dtype == ma_pkg::UINT16 || r.dtype == ma_pkg::INT16 ) begin
+        j_out = {1'd0, j_out_internal[PRF_LOG_M + 1 : 1]};
+    end else begin
+        j_out = {2'd0, j_out_internal[PRF_LOG_M + 2 : 2]};
+    end
+end
+
 assign i_kernel_next = i_kernel + (2 ** PRF_LOG_P);
 assign j_kernel_next = j_kernel + (2 ** PRF_LOG_Q);
 assign i_done = i_start - r.prf_x[PRF_LOG_N - 1 : 0] > i_limit;
-assign j_done = j_out - j_kernel - r.prf_y[PRF_LOG_M - 1 : 0] >= j_limit;
+assign j_done = j_out_internal - j_kernel - r.prf_y[PRF_LOG_M - 1 : 0] >= j_limit;
 assign i_kernel_done = i_kernel_next >= i_kernel_limit;
 assign j_kernel_done = j_kernel_next >= j_kernel_limit;
 assign done = en & incr & i_done & j_done & iteration_done & (~|i_kernel) & (~|j_kernel);
@@ -52,12 +62,12 @@ always_comb begin
 end
 
 always_comb begin
-    j_out_next = j_out;
+    j_out_next = j_out_internal;
     if ( iteration_done ) begin
             j_out_next = j_start + j_kernel;
     end else begin
         if ( ~j_done )
-            j_out_next = j_out + 1'b1;    
+            j_out_next = j_out_internal + 1'b1;    
     end
 end
 
@@ -73,7 +83,7 @@ always_comb begin
         if ( j_done )
             j_start_next = r.prf_y[PRF_LOG_M - 1 : 0];
         else
-            j_start_next = j_out + 2'd2 - j_kernel;
+            j_start_next = j_out_internal + 2'd2 - j_kernel;
     end
 end
 
@@ -85,13 +95,7 @@ always_ff @( posedge clk, negedge rst_n )
         j_limit <= 'd0;
     end else if ( en & start ) begin
         i_limit <= r.height[PRF_LOG_N : 0] - r_k.height[PRF_LOG_N : 0];
-        if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin
-            j_limit <= r.width[PRF_LOG_M : 0] - r_k.width[PRF_LOG_M : 0];
-        end else if ( r.dtype == ma_pkg::UINT16 || r.dtype == ma_pkg::INT16 ) begin
-            j_limit <= r.width[PRF_LOG_M + 1 : 1] - r_k.width[PRF_LOG_M + 1 : 1];
-        end else begin
-            j_limit <= r.width[PRF_LOG_M + 2 : 2] - r_k.width[PRF_LOG_M + 2 : 2];
-        end
+        j_limit <= r.width[PRF_LOG_M : 0] - r_k.width[PRF_LOG_M : 0];
     end
 
 always_ff @( posedge clk, negedge rst_n )
@@ -100,13 +104,7 @@ always_ff @( posedge clk, negedge rst_n )
         j_kernel_limit <= 'd0;
     end else if ( en & start ) begin
         i_kernel_limit <= r_k.height[PRF_LOG_N : 0];
-        if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin
-            j_kernel_limit <= r_k.width[PRF_LOG_M : 0];
-        end else if ( r.dtype == ma_pkg::UINT16 || r.dtype == ma_pkg::INT16 ) begin
-            j_kernel_limit <= r_k.width[PRF_LOG_M + 1 : 1];
-        end else begin
-            j_kernel_limit <= r_k.width[PRF_LOG_M + 2 : 2];
-        end
+        j_kernel_limit <= r_k.width[PRF_LOG_M : 0];
     end
 
 always_ff @( posedge clk, negedge rst_n )
@@ -148,11 +146,11 @@ always_ff @( posedge clk, negedge rst_n )
     end
 
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   j_out <= 'd0;                           else
-    if ( done )                     j_out <= 'd0;                           else
+    if ( ~rst_n )                   j_out_internal<= 'd0;                   else
+    if ( done )                     j_out_internal<= 'd0;                   else
     if ( en ) begin
-        if ( start )                j_out <= r.prf_y[PRF_LOG_M - 1 : 0];    else
-        if ( incr )                 j_out <= j_out_next;
+        if ( start )                j_out_internal<= r.prf_y[PRF_LOG_M - 1 : 0];    else
+        if ( incr )                 j_out_internal<= j_out_next;
     end
 
 always_ff @( posedge clk, negedge rst_n )

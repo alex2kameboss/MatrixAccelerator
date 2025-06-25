@@ -52,6 +52,7 @@ initial begin
     en = 1'b0;
     start = 1'b0;
 
+    // 32b
     r.width = 8;
     r.height = 4;
     r.dtype = ma_pkg::INT32;
@@ -60,7 +61,81 @@ initial begin
 
     r_k.width = 2;
     r_k.height = 2;
-    r.dtype = ma_pkg::INT32;
+    r_k.dtype = ma_pkg::INT32;
+
+    repeat(5) @(posedge clk);
+    en = 1'b1;
+    start = 1'b1;
+    @(posedge clk);
+    start = 1'b0;
+
+    @(posedge clk)
+    wait(done);
+    @(posedge clk);
+    en = 1'b0;
+
+    r_k.width = 3;
+    r_k.height = 3;
+    r_k.dtype = ma_pkg::INT32;
+
+    repeat(5) @(posedge clk);
+    en = 1'b1;
+    start = 1'b1;
+    @(posedge clk);
+    start = 1'b0;
+
+    @(posedge clk);
+    wait(done);
+    @(posedge clk);
+    en = 1'b0;
+
+    // 16b
+    r.width = 8;
+    r.height = 4;
+    r.dtype = ma_pkg::INT16;
+    r.prf_x = 0;
+    r.prf_y = 0;
+
+    r_k.width = 2;
+    r_k.height = 2;
+    r_k.dtype = ma_pkg::INT32;
+
+    repeat(5) @(posedge clk);
+    en = 1'b1;
+    start = 1'b1;
+    @(posedge clk);
+    start = 1'b0;
+
+    @(posedge clk)
+    wait(done);
+    @(posedge clk);
+    en = 1'b0;
+
+    r_k.width = 3;
+    r_k.height = 3;
+    r_k.dtype = ma_pkg::INT32;
+
+    repeat(5) @(posedge clk);
+    en = 1'b1;
+    start = 1'b1;
+    @(posedge clk);
+    start = 1'b0;
+
+    @(posedge clk);
+    wait(done);
+    @(posedge clk);
+    en = 1'b0;
+
+    // 8b
+    r.width = 8;
+    r.height = 4;
+    r.dtype = ma_pkg::INT8;
+    r.prf_x = 0;
+    r.prf_y = 0;
+
+    r_k.width = 2;
+    r_k.height = 2;
+    r_k.dtype = ma_pkg::INT16;
 
     repeat(5) @(posedge clk);
     en = 1'b1;
