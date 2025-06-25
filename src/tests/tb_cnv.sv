@@ -18,7 +18,7 @@ logic                                               done ;
 
 matrix_addr_gen #(
     .PRF_LOG_P  ( 1         ),
-    .PRF_LOG_Q  ( 1         ),
+    .PRF_LOG_Q  ( 2         ),
     .PRF_LOG_N  ( PRF_LOG_N ),
     .PRF_LOG_M  ( PRF_LOG_M ),
     .SRAM_WIDTH ( 32        )
@@ -93,7 +93,7 @@ initial begin
     r.width = 8;
     r.height = 4;
     r.dtype = ma_pkg::INT16;
-    r.prf_x = 0;
+    r.prf_x = 1;
     r.prf_y = 0;
 
     r_k.width = 2;
@@ -130,8 +130,8 @@ initial begin
     r.width = 8;
     r.height = 4;
     r.dtype = ma_pkg::INT8;
-    r.prf_x = 0;
-    r.prf_y = 0;
+    r.prf_x = 4;
+    r.prf_y = 5;
 
     r_k.width = 2;
     r_k.height = 2;
@@ -150,7 +150,7 @@ initial begin
 
     r_k.width = 3;
     r_k.height = 3;
-    r.dtype = ma_pkg::INT32;
+    r_k.dtype = ma_pkg::INT32;
 
     repeat(5) @(posedge clk);
     en = 1'b1;
