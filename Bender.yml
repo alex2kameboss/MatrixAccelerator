@@ -55,6 +55,8 @@ sources:
     - src/rtl/matrix_unit/systolic_array/col_addr_gen_seq.sv
     - src/rtl/matrix_unit/systolic_array/array_results_controller.sv
     - src/rtl/matrix_unit/systolic_array/line_mux.sv
+    # convolution unit
+    - src/rtl/convolution_unit/matrix_addr_gen.sv
     # matrix accelerator components
     - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv
@@ -72,6 +74,7 @@ sources:
       defines:
         TARGET_VIVADO: ~
       files:
+        - src/tests/tb_cnv.sv
         - src/tests/clk_rstn.sv
         - src/tests/tb_ma_wo_core.sv
       
