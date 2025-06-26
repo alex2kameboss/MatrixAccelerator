@@ -4,6 +4,8 @@ module tb_cnv();
 
 localparam PRF_LOG_N = 10;
 localparam PRF_LOG_M = 10;
+localparam PRF_LOG_P = 1;
+localparam PRF_LOG_Q = 1;
 
 logic                                               clk  ;
 logic                                               rst_n;
@@ -12,16 +14,15 @@ logic                                               start;
 logic                                               incr ;
 ma_pkg::register_file_line_t                        r    ;
 ma_pkg::register_file_line_t                        r_k  ;
-logic                        [PRF_LOG_N - 1 : 0]    i_out;
-logic                        [PRF_LOG_M - 1 : 0]    j_out;
+logic                        [PRF_LOG_N - 1 : 0]    i_out, i_out_k;
+logic                        [PRF_LOG_M - 1 : 0]    j_out, j_out_k;
 logic                                               done ;
 
 matrix_addr_gen #(
-    .PRF_LOG_P  ( 1         ),
-    .PRF_LOG_Q  ( 2         ),
+    .PRF_LOG_P  ( PRF_LOG_P ),
+    .PRF_LOG_Q  ( PRF_LOG_Q ),
     .PRF_LOG_N  ( PRF_LOG_N ),
-    .PRF_LOG_M  ( PRF_LOG_M ),
-    .SRAM_WIDTH ( 32        )
+    .PRF_LOG_M  ( PRF_LOG_M )
 ) i_dut (
     .clk     ,
     .rst_n   ,
@@ -33,6 +34,22 @@ matrix_addr_gen #(
     .i_out   ,
     .j_out   ,
     .done    
+);
+
+kernel_addr_gen #(
+    .PRF_LOG_P  ( PRF_LOG_P ),
+    .PRF_LOG_Q  ( PRF_LOG_Q ),
+    .PRF_LOG_N  ( PRF_LOG_N ),
+    .PRF_LOG_M  ( PRF_LOG_M )
+) i_dut_kernel (
+    .clk    ( clk       ),
+    .rst_n  ( rst_n     ),
+    .en     ( en        ),
+    .start  ( start     ),
+    .incr   ( incr      ),
+    .r      ( r_k       ),
+    .i_out  ( i_out_k   ),
+    .j_out  ( j_out_k   )
 );
 
 initial begin
@@ -62,6 +79,8 @@ initial begin
     r_k.width = 2;
     r_k.height = 2;
     r_k.dtype = ma_pkg::INT32;
+    r_k.prf_x = 0;
+    r_k.prf_y = 0;
 
     repeat(5) @(posedge clk);
     en = 1'b1;
