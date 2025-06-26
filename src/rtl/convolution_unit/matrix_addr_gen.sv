@@ -24,7 +24,7 @@ localparam PRF_N_LANES  = 2 ** (PRF_LOG_P + PRF_LOG_Q);
 
 // Wires Definition ------------------------------------------------------------------------------------------
 logic   [PRF_LOG_P + PRF_LOG_Q - 1 : 0] iteration;
-logic iteration_done, kernel_next;
+logic iteration_done, kernel_next, done_internal;
 
 logic   [PRF_LOG_N : 0]    i_out_internal, i_out_next, i_limit, i_start, i_start_next;
 logic   [PRF_LOG_M : 0]    j_out_internal, j_out_internal_mux, j_out_next, j_limit, j_start, j_start_next;
@@ -34,10 +34,6 @@ logic i_done, j_done, i_kernel_done, j_kernel_done, kernel_done;
 
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
-assign i_out = r.prf_x[PRF_LOG_N - 1 : 0] + i_out_internal;
-assign j_out = r.prf_y[PRF_LOG_M - 1 : 0] + j_out_internal_mux;
-assign selector = j_out_internal[1 : 0];
-
 always_comb begin
     if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin
         j_out_internal_mux = j_out_internal;
@@ -54,7 +50,7 @@ assign i_done = i_start > i_limit;
 assign j_done = j_out_internal - j_kernel >= j_limit;
 assign i_kernel_done = i_kernel_next >= i_kernel_limit;
 assign j_kernel_done = j_kernel_next >= j_kernel_limit;
-assign done = en & incr & i_done & j_done & iteration_done & (~|i_kernel) & (~|j_kernel);
+assign done_internal = en & incr & i_done & j_done & iteration_done & (~|i_kernel) & (~|j_kernel);
 assign iteration_done = &iteration;
 assign kernel_next = &iteration[PRF_LOG_P + PRF_LOG_Q - 1 : 1] & ~iteration[0] & incr;
 assign kernel_done = i_kernel_done & j_kernel_done;
@@ -96,6 +92,19 @@ end
 // Sequential Logic ------------------------------------------------------------------------------------------
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
+        i_out <= 'd0;
+        j_out <= 'd0;
+        selector <= 'd0;
+        done <= 1'b0;
+    end else if ( en & incr ) begin
+        i_out <= r.prf_x[PRF_LOG_N - 1 : 0] + i_out_internal;
+        j_out <= r.prf_y[PRF_LOG_M - 1 : 0] + j_out_internal_mux;
+        selector <= j_out_internal[1 : 0];
+        done <= done_internal;
+    end
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
         i_limit <= 'd0;
         j_limit <= 'd0;
     end else if ( en & start ) begin
@@ -114,7 +123,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   i_kernel <= 'd0;                        else
-    if ( done )                     i_kernel <= 'd0;                        else
+    if ( done_internal )            i_kernel <= 'd0;                        else
     if ( en ) begin
         if ( start )                i_kernel <= 'd0;                        else
         if ( kernel_next ) begin 
@@ -125,7 +134,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   j_kernel <= 'd0;                        else
-    if ( done )                     j_kernel <= 'd0;                        else
+    if ( done_internal )            j_kernel <= 'd0;                        else
     if ( en ) begin
         if ( start )                j_kernel <= 'd0;                        else
         if ( kernel_next ) begin
@@ -136,7 +145,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   iteration <= 'd0;                       else
-    if ( done )                     iteration <= 'd0;                       else
+    if ( done_internal )            iteration <= 'd0;                       else
     if ( en ) begin
         if ( start )                iteration <= 'd0;                       else
         if ( incr )                 iteration <= iteration + 1'b1;
@@ -145,7 +154,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   i_out_internal <= 'd0;                  else
-    if ( done )                     i_out_internal <= 'd0;                  else
+    if ( done_internal )            i_out_internal <= 'd0;                  else
     if ( en ) begin
         if ( start )                i_out_internal <= 'd0;                  else
         if ( incr  )                i_out_internal <= i_out_next;       
@@ -153,7 +162,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   j_out_internal<= 'd0;                   else
-    if ( done )                     j_out_internal<= 'd0;                   else
+    if ( done_internal )            j_out_internal<= 'd0;                   else
     if ( en ) begin
         if ( start )                j_out_internal<= 'd0;                   else
         if ( incr )                 j_out_internal<= j_out_next;
@@ -161,7 +170,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   i_start <= 'd0;                         else
-    if ( done )                     i_start <= 'd0;                         else
+    if ( done_internal )            i_start <= 'd0;                         else
     if ( en ) begin
         if ( start )                i_start <= 'd0;                         else
         if ( kernel_next )          i_start <= i_start_next;
@@ -169,7 +178,7 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   j_start <= 'd0;                         else
-    if ( done )                     j_start <= 'd0;                         else
+    if ( done_internal )            j_start <= 'd0;                         else
     if ( en ) begin
         if ( start )                j_start <= 'd0;                         else
         if ( kernel_next )          j_start <= j_start_next;

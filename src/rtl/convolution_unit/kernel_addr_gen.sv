@@ -28,9 +28,6 @@ logic   i_kernel_done, j_kernel_done, kernel_done;
 
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
-assign i_out = r.prf_x[PRF_LOG_N - 1 : 0] + i_kernel;
-assign j_out = r.prf_y[PRF_LOG_M - 1 : 0] + j_kernel_mux;
-assign selector = j_kernel[1 : 0];
 assign iteration_done = &iteration;
 
 always_comb begin
@@ -50,6 +47,17 @@ assign j_kernel_done = j_kernel_next >= j_kernel_limit;
 assign kernel_done = i_kernel_done & j_kernel_done;
 
 // Sequential Logic ------------------------------------------------------------------------------------------
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
+        i_out <= 'd0;
+        j_out <= 'd0;
+        selector <= 'd0;
+    end else if ( en & incr ) begin
+        i_out <= r.prf_x[PRF_LOG_N - 1 : 0] + i_kernel;
+        j_out <= r.prf_y[PRF_LOG_M - 1 : 0] + j_kernel_mux;
+        selector <= j_kernel[1 : 0];
+    end
+
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
         i_kernel_limit <= 'd0;
