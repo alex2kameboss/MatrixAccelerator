@@ -14,7 +14,8 @@ module matrix_addr_gen #(
     input   ma_pkg::register_file_line_t                        r_k     ,
     output  logic                        [PRF_LOG_N - 1 : 0]    i_out   ,
     output  logic                        [PRF_LOG_M - 1 : 0]    j_out   ,
-    output  logic                                               done    
+    output  logic                                               done    ,
+    output  logic                        [1 : 0]                selector    
 );
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
@@ -35,6 +36,7 @@ logic i_done, j_done, i_kernel_done, j_kernel_done, kernel_done;
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign i_out = r.prf_x[PRF_LOG_N - 1 : 0] + i_out_internal;
 assign j_out = r.prf_y[PRF_LOG_M - 1 : 0] + j_out_internal_mux;
+assign selector = j_out_internal[1 : 0];
 
 always_comb begin
     if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin

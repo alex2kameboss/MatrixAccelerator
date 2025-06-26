@@ -58,6 +58,7 @@ sources:
     # convolution unit
     - src/rtl/convolution_unit/matrix_addr_gen.sv
     - src/rtl/convolution_unit/kernel_addr_gen.sv
+    - src/rtl/convolution_unit/cnv_data_splitter.sv
     # matrix accelerator components
     - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv

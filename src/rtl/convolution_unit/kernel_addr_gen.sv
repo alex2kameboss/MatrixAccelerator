@@ -11,7 +11,8 @@ module kernel_addr_gen #(
     input   logic                                               incr    ,
     input   ma_pkg::register_file_line_t                        r       ,
     output  logic                        [PRF_LOG_N - 1 : 0]    i_out   ,
-    output  logic                        [PRF_LOG_M - 1 : 0]    j_out   
+    output  logic                        [PRF_LOG_M - 1 : 0]    j_out   ,
+    output  logic                        [1 : 0]                selector    
 );
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
@@ -29,6 +30,7 @@ logic   i_kernel_done, j_kernel_done, kernel_done;
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign i_out = r.prf_x[PRF_LOG_N - 1 : 0] + i_kernel;
 assign j_out = r.prf_y[PRF_LOG_M - 1 : 0] + j_kernel_mux;
+assign selector = j_kernel[1 : 0];
 assign iteration_done = &iteration;
 
 always_comb begin
