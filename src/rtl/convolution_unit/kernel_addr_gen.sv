@@ -2,17 +2,21 @@ module kernel_addr_gen #(
     parameter   PRF_LOG_P   =   1   ,
     parameter   PRF_LOG_Q   =   2   ,
     parameter   PRF_LOG_N   =   10  ,
-    parameter   PRF_LOG_M   =   10  
+    parameter   PRF_LOG_M   =   10  ,
+    localparam  PRF_P       =   2 ** PRF_LOG_P  ,
+    localparam  PRF_Q       =   2 ** PRF_LOG_Q  
 ) (
-    input   logic                                               clk     ,
-    input   logic                                               rst_n   ,
-    input   logic                                               en      ,
-    input   logic                                               start   ,
-    input   logic                                               incr    ,
-    input   ma_pkg::register_file_line_t                        r       ,
-    output  logic                        [PRF_LOG_N - 1 : 0]    i_out   ,
-    output  logic                        [PRF_LOG_M - 1 : 0]    j_out   ,
-    output  logic                        [1 : 0]                selector    
+    input   logic                                               clk         ,
+    input   logic                                               rst_n       ,
+    input   logic                                               en          ,
+    input   logic                                               start       ,
+    input   logic                                               incr        ,
+    input   ma_pkg::register_file_line_t                        r           ,
+    output  logic                           [PRF_LOG_N - 1 : 0] i_out       ,
+    output  logic                           [PRF_LOG_M - 1 : 0] j_out       ,
+    output  logic                               [PRF_P - 1 : 0] row_mask    , // 1 clk after addr
+    output  logic                               [PRF_Q - 1 : 0] col_mask    , // 1 clk after addr
+    output  logic                                       [1 : 0] selector    
 );
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
@@ -22,6 +26,10 @@ localparam PRF_N_LANES  = 2 ** (PRF_LOG_P + PRF_LOG_Q);
 // Wires Definition ------------------------------------------------------------------------------------------
 logic   [PRF_LOG_P + PRF_LOG_Q - 1 : 0] iteration;
 logic                                   iteration_done;
+
+logic   [PRF_LOG_P - 1 : 0] row_mask_value;
+logic   [PRF_LOG_Q - 1 : 0] col_mask_value;
+
 logic   [PRF_LOG_N : 0]    i_kernel, i_kernel_next, i_kernel_limit;
 logic   [PRF_LOG_M : 0]    j_kernel, j_kernel_next, j_kernel_limit, j_kernel_mux;
 logic   i_kernel_done, j_kernel_done, kernel_done;
@@ -93,8 +101,36 @@ always_ff @( posedge clk, negedge rst_n )
         if ( incr )                 iteration <= iteration + 1'b1;
     end
 
-// Modules Instances -----------------------------------------------------------------------------------------
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
+        row_mask_value <= 'd0;
+        col_mask_value <= 'd0;
+    end else if ( en ) begin
+        row_mask_value <= i_kernel_next < r.height ? 'd0 : r.height[PRF_LOG_P - 1 : 0];
+        col_mask_value <= j_kernel_next < r.width ? 'd0 : r.width[PRF_LOG_Q - 1 : 0];
+    end
 
+
+// Modules Instances -----------------------------------------------------------------------------------------
+mask_generator #(
+    .PRF_LOG_PARAM  ( PRF_LOG_P )
+) i_row_mask_generator (
+    .clk    ( clk           ),
+    .rst_n  ( rst_n         ),
+    .en     ( en            ),
+    .value  ( row_mask_value),
+    .mask   ( row_mask      )
+);
+
+mask_generator #(
+    .PRF_LOG_PARAM  ( PRF_LOG_Q )
+) i_col_mask_generator (
+    .clk    ( clk           ),
+    .rst_n  ( rst_n         ),
+    .en     ( en            ),
+    .value  ( col_mask_value),
+    .mask   ( col_mask      )
+);
 
 
 endmodule

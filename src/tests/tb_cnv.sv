@@ -5,7 +5,9 @@ module tb_cnv();
 localparam PRF_LOG_N = 10;
 localparam PRF_LOG_M = 10;
 localparam PRF_LOG_P = 1;
-localparam PRF_LOG_Q = 1;
+localparam PRF_LOG_Q = 2;
+localparam PRF_P = 2 ** PRF_LOG_P;
+localparam PRF_Q = 2 ** PRF_LOG_Q;
 
 logic                                               clk  ;
 logic                                               rst_n;
@@ -18,22 +20,29 @@ logic                        [PRF_LOG_N - 1 : 0]    i_out, i_out_k;
 logic                        [PRF_LOG_M - 1 : 0]    j_out, j_out_k;
 logic                                               done ;
 
+logic   [PRF_LOG_P - 1 : 0] matrix_row_mask_value, kernel_row_mask_value;
+logic   [PRF_LOG_Q - 1 : 0] matrix_col_mask_value, kernel_col_mask_value;
+logic   [PRF_P - 1 : 0] matrix_row_mask, kernel_row_mask;
+logic   [PRF_Q - 1 : 0] matrix_col_mask, kernel_col_mask;
+
 matrix_addr_gen #(
     .PRF_LOG_P  ( PRF_LOG_P ),
     .PRF_LOG_Q  ( PRF_LOG_Q ),
     .PRF_LOG_N  ( PRF_LOG_N ),
     .PRF_LOG_M  ( PRF_LOG_M )
 ) i_dut (
-    .clk     ,
-    .rst_n   ,
-    .en      ,
-    .start   ,
-    .incr    ,
-    .r       ,
-    .r_k     ,
-    .i_out   ,
-    .j_out   ,
-    .done    
+    .clk                        ,
+    .rst_n                      ,
+    .en                         ,
+    .start                      ,
+    .incr                       ,
+    .r                          ,
+    .r_k                        ,
+    .i_out                      ,
+    .j_out                      ,
+    .row_mask( matrix_row_mask ),
+    .col_mask( matrix_col_mask ),
+    .done                       
 );
 
 kernel_addr_gen #(
@@ -42,14 +51,16 @@ kernel_addr_gen #(
     .PRF_LOG_N  ( PRF_LOG_N ),
     .PRF_LOG_M  ( PRF_LOG_M )
 ) i_dut_kernel (
-    .clk    ( clk       ),
-    .rst_n  ( rst_n     ),
-    .en     ( en        ),
-    .start  ( start     ),
-    .incr   ( incr      ),
-    .r      ( r_k       ),
-    .i_out  ( i_out_k   ),
-    .j_out  ( j_out_k   )
+    .clk        ( clk               ),
+    .rst_n      ( rst_n             ),
+    .en         ( en                ),
+    .start      ( start             ),
+    .incr       ( incr              ),
+    .r          ( r_k               ),
+    .i_out      ( i_out_k           ),
+    .j_out      ( j_out_k           ),
+    .row_mask   ( kernel_row_mask   ),
+    .col_mask   ( kernel_col_mask   )
 );
 
 initial begin
@@ -112,7 +123,7 @@ initial begin
     r.width = 8;
     r.height = 4;
     r.dtype = ma_pkg::INT16;
-    r.prf_x = 1;
+    r.prf_x = 0;
     r.prf_y = 0;
 
     r_k.width = 2;
@@ -149,8 +160,8 @@ initial begin
     r.width = 8;
     r.height = 4;
     r.dtype = ma_pkg::INT8;
-    r.prf_x = 4;
-    r.prf_y = 5;
+    r.prf_x = 0;
+    r.prf_y = 0;
 
     r_k.width = 2;
     r_k.height = 2;
