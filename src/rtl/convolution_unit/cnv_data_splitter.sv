@@ -2,7 +2,7 @@ module cnv_data_splitter #(
     parameter   PRF_LOG_P       =   1   ,
     parameter   PRF_LOG_Q       =   2   ,
     parameter   OUT_DATA_WIDTH  =   32  ,
-    parameter   NUMBER_OF_ALU   =   2 ** (PRF_LOG_P + PRF_LOG_Q)    ,
+    localparam  NUMBER_OF_ALU   =   2 ** (PRF_LOG_P + PRF_LOG_Q)    ,
     localparam  IN_DATA_WIDTH   =   NUMBER_OF_ALU * OUT_DATA_WIDTH  
 ) (
     input   logic                               clk                             ,

@@ -24,14 +24,22 @@ module matrix_accelerator #(
 );
 
 localparam ALU_WIDTH = 32;
-localparam NUMBER_OF_UNITS = 3;
+
+enum logic [2 : 0] {
+    MEMORY          ,
+    DMA             ,
+    VECTOR          ,
+    MATRIX          ,
+    CNV             ,
+    NUMBER_OF_UNITS
+} units_t;
 
 // interfaces
 ma_config_bus #(
     .ALU_WIDTH  ( ALU_WIDTH )
 ) config_intf();
 
-ma_rsp_intf rsp_intf[NUMBER_OF_UNITS : 0](); // one for every units + 1 for control unit
+ma_rsp_intf rsp_intf[NUMBER_OF_UNITS - 1 : 0]();
 
 ma_data_bus #(
     .PRF_LOG_P  ( PRF_LOG_P ),
@@ -39,7 +47,7 @@ ma_data_bus #(
     .PRF_LOG_N  ( PRF_LOG_N ),
     .PRF_LOG_M  ( PRF_LOG_M ),
     .SRAM_WIDTH ( ALU_WIDTH )
-) data_intf[NUMBER_OF_UNITS : 0] ( 
+) data_intf[NUMBER_OF_UNITS - 1 : 0] ( 
     .clk    ( clk   ),
     .rst_n  ( rst_n )
 ); // one for every units + 1 for memory
@@ -88,64 +96,65 @@ ma_control_unit #(
     .ADDR_WIDTH         ( ADDR_WIDTH        ),
     .REGISTER_NUMBERS   ( REGISTER_NUMBERS  )
 ) i_control_unit (
-    .clk            ( clk                       ),
-    .rst_n          ( rst_n                     ),
-    .config_intf    ( config_intf               ),
-    .rsp_intf       ( rsp_intf[NUMBER_OF_UNITS] ),
-    .valid          ( valid                     ),
-    .ready          ( ready                     ),
-    .funct3         ( funct3                    ),
-    .op             ( op                        ),
-    .addr           ( addr                      ),
-    .scalar         ( scalar                    ),
-    .rd             ( rd                        ),
-    .rs1            ( rs1                       ),
-    .rs2            ( rs2                       ),
-    .reg1           ( reg1                      ),
-    .reg2           ( reg2                      ),
-    .funct7         ( funct7                    )          
+    .clk            ( clk               ),
+    .rst_n          ( rst_n             ),
+    .config_intf    ( config_intf       ),
+    .rsp_intf       ( rsp_intf[MEMORY]  ),
+    .valid          ( valid             ),
+    .ready          ( ready             ),
+    .funct3         ( funct3            ),
+    .op             ( op                ),
+    .addr           ( addr              ),
+    .scalar         ( scalar            ),
+    .rd             ( rd                ),
+    .rs1            ( rs1               ),
+    .rs2            ( rs2               ),
+    .reg1           ( reg1              ),
+    .reg2           ( reg2              ),
+    .funct7         ( funct7            )          
 );
 
 ma_dma i_dma_unit (
-    .config_intf ( config_intf  ),
-    .data_intf   ( data_intf[0] ),
-    .rsp_intf    ( rsp_intf[0]  ),
-    .aclk        ( aclk         ),
-    .arst_n      ( arst_n       ),
-    .axi         ( axi          )
+    .config_intf ( config_intf      ),
+    .data_intf   ( data_intf[DMA]   ),
+    .rsp_intf    ( rsp_intf[DMA]    ),
+    .aclk        ( aclk             ),
+    .arst_n      ( arst_n           ),
+    .axi         ( axi              )
 );
 
 ma_vectorial_unit i_vectorial_unit (
-    .config_intf ( config_intf  ),
-    .data_intf   ( data_intf[1] ),
-    .rsp_intf    ( rsp_intf[1]  )
+    .config_intf ( config_intf          ),
+    .data_intf   ( data_intf[VECTOR]    ),
+    .rsp_intf    ( rsp_intf[VECTOR]     )
 );
 
 ma_matrix_unit i_matrix_unit (
-    .config_intf ( config_intf  ),
-    .data_intf   ( data_intf[2] ),
-    .rsp_intf    ( rsp_intf[2]  )
+    .config_intf ( config_intf          ),
+    .data_intf   ( data_intf[MATRIX]    ),
+    .rsp_intf    ( rsp_intf[MATRIX]     )
 );
 
 ma_memory i_memory (
-    .clk_2x ( clk_2x                    ),
-    .intf   ( data_intf[NUMBER_OF_UNITS])
+    .clk_2x ( clk_2x            ),
+    .intf   ( data_intf[MEMORY] )
 );
 
 ma_data_bus_arbiter i_memory_arbiter (
-    .control    ( config_intf               ),
-    .mem_intf   ( data_intf[NUMBER_OF_UNITS]),
-    .dma_intf   ( data_intf[0]              ),
-    .vu_intf    ( data_intf[1]              ),
-    .mu_intf    ( data_intf[2]              )
+    .control    ( config_intf       ),
+    .mem_intf   ( data_intf[MEMORY] ),
+    .dma_intf   ( data_intf[DMA]    ),
+    .vu_intf    ( data_intf[VECTOR] ),
+    .mu_intf    ( data_intf[MATRIX] ),
+    .cu_intf    ( data_intf[CNV]    )
 );
 
 ma_rsp_intf_arbiter #(
-    .NUMBER_OF_UNITS    ( NUMBER_OF_UNITS )
+    .NUMBER_OF_UNITS    ( NUMBER_OF_UNITS - 1   )
 ) i_rsp_arbiter (
     .config_intf    ( config_intf                       ),
-    .rsp_intf_out   ( rsp_intf[NUMBER_OF_UNITS]         ),
-    .rsp_intf_in    ( rsp_intf[NUMBER_OF_UNITS - 1 : 0] )
+    .rsp_intf_out   ( rsp_intf[MEMORY]                  ),
+    .rsp_intf_in    ( rsp_intf[NUMBER_OF_UNITS - 2 : 0] )
 );
 
 endmodule

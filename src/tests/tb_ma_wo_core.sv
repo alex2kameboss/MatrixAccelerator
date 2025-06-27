@@ -20,7 +20,7 @@ core_v_xif #(
 ) xif ();
 
 localparam PRF_LOG_P    =   1   ;
-localparam PRF_LOG_Q    =   2   ;
+localparam PRF_LOG_Q    =   1   ;
 localparam PRF_LOG_N    =   10  ;
 localparam PRF_LOG_M    =   10  ;
 localparam ADDR_WIDTH   = 32'd32;
@@ -55,7 +55,7 @@ function void init_mem();
   const int len = 64;
   for ( i = 0; i < len; i = i + 1 )
     for ( j = 0; j < len; j = j + 1 )
-        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = j;
+        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = i * 1024 + j;
 endfunction
 
 AXI_BUS #(
@@ -719,6 +719,89 @@ begin
 end
 endtask
 
+task convolution_operation_test;
+    input register      rr      ;
+    input int           rr_prf_x;
+    input int           rr_prf_y;
+    input register      r1      ;
+    input int           r1_prf_x;
+    input int           r1_prf_y;
+    input register      r2      ;
+    input int           r2_prf_x;
+    input int           r2_prf_y;
+    input dtype_t       dt      ;
+    input int           w       ;
+    input int           h       ;
+    input int           w_k     ;
+    input int           h_k     ;
+    input int           rr_addr ;
+    input int           r1_addr ;
+    input int           r2_addr ;
+begin
+    int bytes;
+    int i;
+    $display("Convolution operation test");
+    define_register_one_step(
+        .r    ( rr          ),
+        .w    ( w - w_k + 1 ),
+        .h    ( h - h_k + 1 ),
+        .dt   ( dt          ),
+        .prf_x( rr_prf_x    ),
+        .prf_y( rr_prf_y    ),
+        .org  ( RECT        )
+    );
+    define_register_one_step(
+        .r    ( r1      ),
+        .w    ( w       ),
+        .h    ( h       ),
+        .dt   ( dt      ),
+        .prf_x( r1_prf_x),
+        .prf_y( r1_prf_y),
+        .org  ( RECT    )
+    );
+    define_register_one_step(
+        .r    ( r2      ),
+        .w    ( w_k     ),
+        .h    ( h_k     ),
+        .dt   ( dt      ),
+        .prf_x( r2_prf_x),
+        .prf_y( r2_prf_y),
+        .org  ( RECT    )
+    );
+
+    load_register(
+        .r   ( r1       ), 
+        .addr( r1_addr  )
+    );
+    load_register(
+        .r   ( r2       ), 
+        .addr( r2_addr  )
+    );
+
+    vector_vector_operation(
+        .rr ( rr ), 
+        .r1 ( r1 ), 
+        .r2 ( r2 ), 
+        .o  ( CNV)
+    );
+
+    store_register(
+        .r   ( rr       ), 
+        .addr( rr_addr  )
+    );
+
+    // check result
+    bytes = 1;
+
+    if ( dt == INT16 | dt == UINT16 )
+        bytes = 2;
+    else if ( dt == INT32 | dt == UINT32 )
+        bytes = 4;
+
+    $display("------------------------------------------------------");
+end
+endtask
+
 task vector_scalar_operation_test;
     input register      rr      ;
     input int           rr_prf_x;
@@ -829,6 +912,29 @@ initial begin
     init_mem();
 
     
+    // --- cnv test ---
+    convolution_operation_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd0      ),
+        .rr_prf_y( 'd64     ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd32     ),
+        .dt      ( INT32    ),
+        .w       ( 'd32     ),
+        .h       ( 'd32     ),
+        .w_k     ( 'd4      ),
+        .h_k     ( 'd4      ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+
+    $finish();
+
     // ------- test register definition -------
     $display("Define register test");
     for ( int ridx = 0; ridx < NUMBER_OF_REGISTERS; ridx = ridx + 1 ) begin

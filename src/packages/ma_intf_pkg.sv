@@ -6,6 +6,7 @@ typedef enum logic[2 : 0] {
     DMA_UNIT        ,
     VECTORIAL_UNIT  ,
     MATRIX_UNIT     ,
+    CNV_UNIT        ,
     NONE_MODULE               
 } unit_id_t;
 

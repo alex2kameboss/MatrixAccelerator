@@ -60,6 +60,7 @@ sources:
     - src/rtl/convolution_unit/kernel_addr_gen.sv
     - src/rtl/convolution_unit/cnv_data_splitter.sv
     - src/rtl/convolution_unit/mask_generator.sv
+    - src/rtl/convolution_unit/parallel_to_serial.sv
     # matrix accelerator components
     - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv
@@ -67,6 +68,7 @@ sources:
     - src/rtl/matrix_accelerator/ma_dma.sv
     - src/rtl/matrix_accelerator/ma_matrix_unit.sv
     - src/rtl/matrix_accelerator/ma_vectorial_unit.sv
+    - src/rtl/matrix_accelerator/ma_convolution_unit.sv
     # bus arbiter
     - src/rtl/bus_arbiters/ma_data_bus_arbiter.sv
     - src/rtl/bus_arbiters/ma_rsp_intf_arbiter.sv

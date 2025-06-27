@@ -83,7 +83,7 @@ always_comb begin
             end
             ma_pkg::CNV : begin 
                 internal_op = ma_intf_pkg::CNV_VV;
-                dst_unit = ma_intf_pkg::MATRIX_UNIT;
+                dst_unit = ma_intf_pkg::CNV_UNIT;
             end
             default     : begin 
                 internal_op = ma_intf_pkg::NOP;
