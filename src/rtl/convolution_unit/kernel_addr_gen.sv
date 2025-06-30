@@ -16,7 +16,8 @@ module kernel_addr_gen #(
     output  logic                           [PRF_LOG_M - 1 : 0] j_out       ,
     output  logic                               [PRF_P - 1 : 0] row_mask    , // 1 clk after addr
     output  logic                               [PRF_Q - 1 : 0] col_mask    , // 1 clk after addr
-    output  logic                                       [1 : 0] selector    
+    output  logic                                       [1 : 0] selector    ,
+    output  logic                                               done        
 );
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
@@ -37,6 +38,7 @@ logic   i_kernel_done, j_kernel_done, kernel_done;
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign iteration_done = &iteration;
+assign done = kernel_done & iteration_done;
 
 always_comb begin
     if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin

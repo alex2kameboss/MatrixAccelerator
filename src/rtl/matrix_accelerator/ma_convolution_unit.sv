@@ -15,13 +15,19 @@ localparam PRF_Q = 2 ** data_intf.PRF_LOG_Q;
 // Wires Definition ------------------------------------------------------------------------------------------
 logic   en, start_1, start_2, start_3;
 logic   splitter_en, addr_gen_en, addr_gen_en_q, addr_gen_done;
+logic   sa_en;
+logic   kernel_done;
+logic   [SA_HEIGHT - 1 : 0] kernel_done_delay;
+logic   [1 : 0] done_bits;
 
-logic                                       array_reset_n   [SA_HEIGHT - 1 : 0];
-logic   [config_intf.ALU_WIDTH - 1 : 0]     matrix_data     [SA_HEIGHT - 1 : 0], matrix_mask     [SA_HEIGHT - 1 : 0];
-logic   [config_intf.ALU_WIDTH - 1 : 0]     kernel_data     [SA_HEIGHT - 1 : 0], kernel_mask     [SA_HEIGHT - 1 : 0];
-logic   [config_intf.ALU_WIDTH - 1 : 0]     matrix_data_sa  [SA_HEIGHT - 1 : 0], matrix_data_shifter  [SA_HEIGHT - 1 : 0], matrix_mask_shifter  [SA_HEIGHT - 1 : 0];
-logic   [config_intf.ALU_WIDTH - 1 : 0]     kernel_data_sa, kernel_data_shifter;                          ;
-logic   [config_intf.ALU_WIDTH - 1 : 0]     res_sa          [SA_HEIGHT - 1 : 0];
+logic                                       array_reset_n   [SA_HEIGHT - 1 : 0][0 : 0];
+logic   [config_intf.ALU_WIDTH - 1 : 0]     matrix_data     [SA_HEIGHT - 1 : 0];
+logic   [0 : 0]                             matrix_mask     [SA_HEIGHT - 1 : 0], matrix_mask_shifter  [SA_HEIGHT - 1 : 0];
+logic   [config_intf.ALU_WIDTH - 1 : 0]     kernel_data     [SA_HEIGHT - 1 : 0];
+logic   [0 : 0]                             kernel_mask     [SA_HEIGHT - 1 : 0];
+logic   [config_intf.ALU_WIDTH - 1 : 0]     matrix_data_sa  [SA_HEIGHT - 1 : 0], matrix_data_shifter  [SA_HEIGHT - 1 : 0];
+logic   [config_intf.ALU_WIDTH - 1 : 0]     kernel_data_sa[0 : 0], kernel_data_shifter;
+logic   [config_intf.ALU_WIDTH - 1 : 0]     res_sa          [SA_HEIGHT - 1 : 0][0 : 0];
 logic kernel_mask_shifter;
 
 logic   [PRF_P - 1 : 0] matrix_mask_row, kernel_mask_row;
@@ -39,9 +45,12 @@ assign data_intf.op1.scheme = prf_dtypes::RECT;
 assign data_intf.op2.scheme = prf_dtypes::RECT;
 assign data_intf.rez.lane_valid = {data_intf.PRF_N_LANES{1'b1}};
 assign en = config_intf.dst_unit == data_intf.unit_id;
+assign data_intf.op2.valid = data_intf.op1.valid;
+assign rsp_intf.unit_id = data_intf.unit_id;
+assign rsp_intf.done = &done_bits;
 
 genvar data_selector_idx;
-assign kernel_data_sa = kernel_mask_shifter ? kernel_data_shifter : 'd0;
+assign kernel_data_sa[0] = kernel_mask_shifter ? kernel_data_shifter : 'd0;
 generate;
     for ( data_selector_idx = 0; data_selector_idx < SA_HEIGHT; data_selector_idx = data_selector_idx + 1 ) begin : systolic_array_data_selector
 assign matrix_data_sa[data_selector_idx] = matrix_mask_shifter[data_selector_idx] ? matrix_data_shifter[data_selector_idx] : 'd0;
@@ -56,6 +65,14 @@ assign addr_gen_en = (config_intf.start | addr_gen_en_q) & en;
 
 
 // Sequential Logic ------------------------------------------------------------------------------------------
+always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )         done_bits <= 'd0;                       else
+    if ( en ) begin
+        if ( rsp_intf.done )        done_bits <= 'd0;                       else
+        if ( addr_gen_done )        done_bits <= 'd1;                       else
+                                    done_bits[1] <= kernel_done_delay[SA_HEIGHT - 1];
+    end
+
 genvar mask_row_idx, mask_col_idx;
 generate;
     for ( mask_row_idx = 0; mask_row_idx < PRF_P; mask_row_idx = mask_row_idx + 1 ) begin : mask_generation_row
@@ -75,9 +92,13 @@ endgenerate
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         addr_gen_en_q <= 1'b0;                  else
     if ( en ) begin
-        if ( data_intf.start )      addr_gen_en_q <= 1'b1;                  else
+        if ( config_intf.start )    addr_gen_en_q <= 1'b1;                  else
         if ( addr_gen_done )        addr_gen_en_q <= 1'b0;
     end
+
+always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )         sa_en <= 'd0;                           else
+    if ( en )                       sa_en <= kernel_shifter_en;
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         start_1 <= 'd0;                         else
@@ -89,18 +110,13 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         start_3 <= 'd0;                         else
-    if ( en )                       start_3 <= start_3;
+    if ( en )                       start_3 <= start_2;
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         data_intf.op1.valid <= 1'b0;            else
     if ( en ) begin
-        if (start_1)                data_intf.op1.valid <= 1'b1;            
-    end
-
-always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
-    if ( ~data_intf.rst_n )         data_intf.op2.valid <= 1'b0;            else
-    if ( en ) begin
-        if (start_1)                data_intf.op2.valid <= 1'b1;            
+        if (start_1)                data_intf.op1.valid <= 1'b1;            else
+        if ( addr_gen_done )        data_intf.op1.valid <= 1'b0;
     end
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
@@ -122,6 +138,7 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         matrix_shifter_load[0] <= 1'b0;         else
+    if ( rsp_intf.done )            matrix_shifter_load[0] <= 1'b0;         else
     if ( en ) begin
         if ( start_3 )              matrix_shifter_load[0] <= 1'b1;         else
                                     matrix_shifter_load[0] <= matrix_shifter_load[SA_HEIGHT - 1];
@@ -140,11 +157,30 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         matrix_shifter_load[shifter_ctrl_idx] <= 1'b0;  else
+    if ( rsp_intf.done )            matrix_shifter_load[shifter_ctrl_idx] <= 1'b0;  else
     if ( en )                       matrix_shifter_load[shifter_ctrl_idx] <= matrix_shifter_load[shifter_ctrl_idx - 1];
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
-    if ( ~data_intf.rst_n )         matrix_shifter_shift[shifter_ctrl_idx] <= 1'b0;    else
+    if ( ~data_intf.rst_n )         matrix_shifter_shift[shifter_ctrl_idx] <= 1'b0; else
     if ( en )                       matrix_shifter_shift[shifter_ctrl_idx] <= matrix_shifter_shift[shifter_ctrl_idx - 1];
+    end
+endgenerate
+
+// sa array reset controller
+always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )         kernel_done_delay <= 'd0;                           else
+    if ( en )                       kernel_done_delay <= {kernel_done_delay[SA_HEIGHT - 2 : 0], kernel_done};
+
+always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )         array_reset_n[0][0] <= 1'b1;                        else
+    if ( en )                       array_reset_n[0][0] <= ~kernel_done_delay[SA_HEIGHT - 1]; 
+
+genvar sa_reset_idx;
+generate;
+    for ( sa_reset_idx = 1 ; sa_reset_idx < SA_HEIGHT; sa_reset_idx = sa_reset_idx + 1 ) begin : sa_reset_generator
+always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )         array_reset_n[sa_reset_idx][0] <= 1'b1;             else
+    if ( en )                       array_reset_n[sa_reset_idx][0] <= array_reset_n[sa_reset_idx - 1][0];                       
     end
 endgenerate
 
@@ -184,11 +220,12 @@ kernel_addr_gen #(
     .start      ( config_intf.start ),
     .incr       ( 1'b1              ),
     .r          ( config_intf.rs2   ),
-    .i_out      ( data_intf.op1.i   ),
-    .j_out      ( data_intf.op1.j   ),
+    .i_out      ( data_intf.op2.i   ),
+    .j_out      ( data_intf.op2.j   ),
     .row_mask   ( kernel_mask_row   ),
     .col_mask   ( kernel_mask_col   ),
-    .selector   ( kernel_selector   )
+    .selector   ( kernel_selector   ),
+    .done       ( kernel_done       )
 );
 
 cnv_data_splitter #(
@@ -227,10 +264,10 @@ systolic_array #(
     .DATA_WIDTH  ( config_intf.ALU_WIDTH)
 ) array (
     .clk            ( data_intf.clk     ),
-    .reset_n        ( config_intf.start ),
+    .reset_n        ( data_intf.rst_n & ~config_intf.start  ),
     .array_reset_n  ( array_reset_n     ),
-    .en             (                   ),
-    .dtype          ( ma_pkg::INT32     ),
+    .en             ( sa_en             ),
+    .dtype          ( ma_pkg::INT8      ),
     .a_array_input  ( matrix_data_sa    ),
     .b_array_input  ( kernel_data_sa    ),
     .c_array_output ( res_sa            )
@@ -255,9 +292,9 @@ parallel_to_serial #(
 );
 
 parallel_to_serial #(
-    .SERIAL_DATA_WIDTH  ( config_intf.ALU_WIDTH ),
-    .DEPTH              ( SA_HEIGHT             )
-) i_mask_data_shifter (
+    .SERIAL_DATA_WIDTH  ( 1         ),
+    .DEPTH              ( SA_HEIGHT )
+) i_matrix_mask_data_shifter (
     .clk    ( data_intf.clk                     ),
     .rst_n  ( data_intf.rst_n                   ),
     .en     ( matrix_shifter_en[shifter_idx]    ),
@@ -285,9 +322,9 @@ parallel_to_serial #(
 );
 
 parallel_to_serial #(
-    .SERIAL_DATA_WIDTH  ( config_intf.ALU_WIDTH ),
-    .DEPTH              ( SA_HEIGHT             )
-) i_mask_data_shifter (
+    .SERIAL_DATA_WIDTH  ( 1         ),
+    .DEPTH              ( SA_HEIGHT )
+) i_kernel_mask_data_shifter (
     .clk    ( data_intf.clk         ),
     .rst_n  ( data_intf.rst_n       ),
     .en     ( kernel_shifter_en     ),

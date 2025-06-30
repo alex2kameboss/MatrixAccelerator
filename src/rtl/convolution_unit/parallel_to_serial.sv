@@ -1,6 +1,6 @@
 module parallel_to_serial #(
     parameter   SERIAL_DATA_WIDTH   =   32  ,
-    parameter   DEPTH               =   8   
+    parameter   DEPTH               =   4   
 ) (
     input   logic                               clk                     ,
     input   logic                               rst_n                   ,
@@ -26,9 +26,9 @@ assign data_o = data[0];
 
 // Sequential Logic ------------------------------------------------------------------------------------------
 always_ff @( posedge clk, negedge rst_n )
-    if ( rst_n )                        data <= '{default: 'd0};          else
+    if ( ~rst_n )                       data <= '{default: 'd0};          else
+    if ( clear )                        data <= '{default: 'd0};          else
     if ( en ) begin
-        if ( clear )                    data <= '{default: 'd0};          else
         if ( load )                     data <= data_i;                   else
         if ( shift )                    data[DEPTH - 2 : 0] <= data[DEPTH - 1 : 1];
     end

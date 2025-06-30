@@ -55,7 +55,7 @@ function void init_mem();
   const int len = 64;
   for ( i = 0; i < len; i = i + 1 )
     for ( j = 0; j < len; j = j + 1 )
-        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = i * 1024 + j;
+        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = 1;
 endfunction
 
 AXI_BUS #(

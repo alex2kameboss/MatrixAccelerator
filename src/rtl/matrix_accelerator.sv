@@ -135,6 +135,12 @@ ma_matrix_unit i_matrix_unit (
     .rsp_intf    ( rsp_intf[MATRIX]     )
 );
 
+ma_convolution_unit i_convolution_unit (
+    .config_intf    ( config_intf   ),
+    .data_intf      ( data_intf[CNV]),
+    .rsp_intf       ( rsp_intf[CNV] )
+);
+
 ma_memory i_memory (
     .clk_2x ( clk_2x            ),
     .intf   ( data_intf[MEMORY] )
@@ -154,7 +160,7 @@ ma_rsp_intf_arbiter #(
 ) i_rsp_arbiter (
     .config_intf    ( config_intf                       ),
     .rsp_intf_out   ( rsp_intf[MEMORY]                  ),
-    .rsp_intf_in    ( rsp_intf[NUMBER_OF_UNITS - 2 : 0] )
+    .rsp_intf_in    ( rsp_intf[NUMBER_OF_UNITS - 1 : 1] )
 );
 
 endmodule
