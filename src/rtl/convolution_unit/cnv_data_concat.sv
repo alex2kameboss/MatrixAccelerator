@@ -41,12 +41,14 @@ logic   [ 32 - 1 : 0 ]  res_in_32b;
 logic   [ 16 - 1 : 0 ]  res_in_16b;
 logic    [ 8 - 1 : 0 ]  res_in_8b;
 
+logic   [PRF_LOG_N - 1 : 0]    i_out_before;
+logic   [PRF_LOG_M - 1 : 0]    j_out_before;
+
 logic [1 : 0]   cnt;
 logic           valid_8b, valid_16b, valid_32b;
 
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
-assign done = en & incr & iteration_done & i_done & j_done;
 assign iteration_done = &iteration;
 
 assign res_in = j_done ? 'd0 : res_sa[iteration][0];
@@ -54,8 +56,8 @@ assign res_in_32b = res_in[32 - 1 : 0];
 assign res_in_16b = res_in[16 - 1 : 0];
 assign res_in_8b = res_in[8 - 1 : 0];
 
-assign i_out_next = i_out + 1'b1;
-assign j_out_next = j_out + PRF_N_LANES;
+assign i_out_next = i_out_before + 1'b1;
+assign j_out_next = j_out_before + PRF_N_LANES;
 assign j_out_internal_next = j_out_internal + 1'b1;
 assign i_done = i_out_next - r.prf_x[PRF_LOG_N - 1 : 0] >= r.height[PRF_LOG_N : 0];
 assign j_done = j_out_internal >= r.width[PRF_LOG_M : 0];
@@ -129,26 +131,39 @@ always_ff @( posedge clk, negedge rst_n )
     end
 
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   i_out <= 'd0;                       else
-    if ( reset )                    i_out <= r.prf_x[PRF_LOG_N - 1 : 0];else
+    if ( ~rst_n )                   i_out_before <= 'd0;                       else
+    if ( reset )                    i_out_before <= r.prf_x[PRF_LOG_N - 1 : 0];else
     if ( en ) begin
         if ( incr & iteration_done ) begin
             if ( j_done ) 
-                i_out <= i_out_next[PRF_LOG_N - 1 : 0];
+                i_out_before <= i_out_next[PRF_LOG_N - 1 : 0];
         end
     end
 
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   j_out <= 'd0;                       else
-    if ( reset )                    j_out <= r.prf_x[PRF_LOG_M - 1 : 0];else
+    if ( ~rst_n )                   j_out_before <= 'd0;                       else
+    if ( reset )                    j_out_before <= r.prf_y[PRF_LOG_M - 1 : 0];else
     if ( en ) begin
         if ( incr & iteration_done ) begin
             if ( j_done ) 
-                j_out <= r.prf_y[PRF_LOG_M - 1 : 0];
+                j_out_before <= r.prf_y[PRF_LOG_M - 1 : 0];
             else
-                j_out <= j_out_next[PRF_LOG_M - 1 : 0];
+                j_out_before <= j_out_next[PRF_LOG_M - 1 : 0];
         end
     end
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   i_out <= 'd0;                       else
+    if ( en )                       i_out <= i_out_before;
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   j_out <= 'd0;                       else
+    if ( en )                       j_out <= j_out_before;
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   done <= 'd0;                        else
+    if ( reset )                    done <= 'd0;                        else
+    if ( en )                       done <= incr & iteration_done & i_done & j_done;      
 
 
 // Modules Instances -----------------------------------------------------------------------------------------

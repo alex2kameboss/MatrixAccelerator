@@ -916,7 +916,7 @@ initial begin
     convolution_operation_test(
         .rr      ( 'd2      ),
         .rr_prf_x( 'd32     ),
-        .rr_prf_y( 'd64     ),
+        .rr_prf_y( 'd62     ),
         .r1      ( 'd0      ),
         .r1_prf_x( 'd0      ),
         .r1_prf_y( 'd0      ),
