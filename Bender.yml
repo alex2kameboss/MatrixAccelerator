@@ -69,6 +69,7 @@ sources:
     - src/rtl/matrix_accelerator/ma_matrix_unit.sv
     - src/rtl/matrix_accelerator/ma_vectorial_unit.sv
     - src/rtl/matrix_accelerator/ma_convolution_unit.sv
+    - src/rtl/convolution_unit/cnv_data_concat.sv
     # bus arbiter
     - src/rtl/bus_arbiters/ma_data_bus_arbiter.sv
     - src/rtl/bus_arbiters/ma_rsp_intf_arbiter.sv

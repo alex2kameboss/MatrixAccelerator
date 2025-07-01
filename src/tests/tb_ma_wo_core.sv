@@ -915,7 +915,7 @@ initial begin
     // --- cnv test ---
     convolution_operation_test(
         .rr      ( 'd2      ),
-        .rr_prf_x( 'd0      ),
+        .rr_prf_x( 'd32     ),
         .rr_prf_y( 'd64     ),
         .r1      ( 'd0      ),
         .r1_prf_x( 'd0      ),

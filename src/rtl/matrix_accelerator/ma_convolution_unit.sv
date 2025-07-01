@@ -43,11 +43,11 @@ logic kernel_shifter_load;
 assign data_intf.unit_id = ma_intf_pkg::CNV_UNIT;
 assign data_intf.op1.scheme = prf_dtypes::RECT;
 assign data_intf.op2.scheme = prf_dtypes::RECT;
-assign data_intf.rez.lane_valid = {data_intf.PRF_N_LANES{1'b1}};
+assign data_intf.rez.scheme = prf_dtypes::ROW;
 assign en = config_intf.dst_unit == data_intf.unit_id;
 assign data_intf.op2.valid = data_intf.op1.valid;
 assign rsp_intf.unit_id = data_intf.unit_id;
-assign rsp_intf.done = &done_bits;
+//assign rsp_intf.done = &done_bits;
 
 genvar data_selector_idx;
 assign kernel_data_sa[0] = kernel_mask_shifter ? kernel_data_shifter : 'd0;
@@ -333,6 +333,27 @@ parallel_to_serial #(
     .shift  ( kernel_shifter_shift  ),
     .data_i ( kernel_mask           ),
     .data_o ( kernel_mask_shifter   )
+);
+
+cnv_data_concat #(
+    .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
+    .IN_DATA_WIDTH  ( config_intf.ALU_WIDTH ),
+    .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
+    .PRF_LOG_M      ( data_intf.PRF_LOG_M   )
+) i_result_concat (
+    .clk            ( data_intf.clk             ),
+    .rst_n          ( data_intf.rst_n           ),
+    .reset          ( config_intf.start         ),
+    .en             ( en                        ),
+    .r              ( config_intf.rd            ),
+    .array_rst_n    ( array_reset_n             ),
+    .res_sa         ( res_sa                    ),
+    .res_out        ( data_intf.rez_data        ),
+    .valid          ( data_intf.rez.valid       ),
+    .i_out          ( data_intf.rez.i           ),
+    .j_out          ( data_intf.rez.j           ),
+    .lane_valid     ( data_intf.rez.lane_valid  ),
+    .done           ( rsp_intf.done             )
 );
 
 endmodule
