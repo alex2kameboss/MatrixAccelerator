@@ -195,7 +195,7 @@ matrix_addr_gen #(
 ) i_matrix_addr_gen (
     .clk        ( data_intf.clk     ),
     .rst_n      ( data_intf.rst_n   ),
-    .en         ( addr_gen_en       ),
+    .en         ( addr_gen_en | config_intf.start   ),
     .start      ( config_intf.start ),
     .incr       ( 1'b1              ),
     .r          ( config_intf.rs1   ),
@@ -216,7 +216,7 @@ kernel_addr_gen #(
 ) i_kernel_addr_gen (
     .clk        ( data_intf.clk     ),
     .rst_n      ( data_intf.rst_n   ),
-    .en         ( addr_gen_en       ),
+    .en         ( addr_gen_en | config_intf.start   ),
     .start      ( config_intf.start ),
     .incr       ( 1'b1              ),
     .r          ( config_intf.rs2   ),
@@ -244,8 +244,8 @@ cnv_data_splitter #(
 );
 
 cnv_data_splitter #(
-    .PRF_LOG_P      ( data_intf.PRF_LOG_P ),
-    .PRF_LOG_Q      ( data_intf.PRF_LOG_Q ),
+    .PRF_LOG_P      ( data_intf.PRF_LOG_P   ),
+    .PRF_LOG_Q      ( data_intf.PRF_LOG_Q   ),
     .OUT_DATA_WIDTH ( config_intf.ALU_WIDTH )
 ) i_kernel_data_splitter (
     .clk        ( data_intf.clk         ),

@@ -913,6 +913,26 @@ initial begin
 
     
     // --- cnv test ---
+        convolution_operation_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd0      ),
+        .rr_prf_y( 'd0      ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd32     ),
+        .r1_prf_y( 'd32     ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd32     ),
+        .dt      ( INT32    ),
+        .w       ( 'd32     ),
+        .h       ( 'd32     ),
+        .w_k     ( 'd4      ),
+        .h_k     ( 'd4      ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+
     convolution_operation_test(
         .rr      ( 'd2      ),
         .rr_prf_x( 'd32     ),

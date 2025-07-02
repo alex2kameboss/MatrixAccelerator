@@ -94,34 +94,36 @@ end
 // Sequential Logic ------------------------------------------------------------------------------------------
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   iteration <= 'd0;                   else
-    if ( reset )                    iteration <= 'd0;                   else
     if ( en ) begin
+        if ( reset )                iteration <= 'd0;                   else
         if ( incr )                 iteration <= iteration + 1'b1;
     end
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   lane_valid_q <= 'd0;                else
-    if ( reset )                    lane_valid_q <= 'd0;                else
     if ( en ) begin
+        if ( reset )                lane_valid_q <= 'd0;                else
         if ( incr )                 lane_valid_q <= lane_valid_d;
     end
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   res_out <= 'd0;                     else
-    if ( reset )                    res_out <= 'd0;                     else
     if ( en ) begin
+        if ( reset )                res_out <= 'd0;                     else
         if ( incr )                 res_out <= res_out_d;
     end
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   valid <= 'd0;                       else
-    if ( reset )                    valid <= 'd0;                       else
-    if ( en )                       valid <= &iteration;
+    if ( en ) begin
+        if ( reset )                valid <= 'd0;                       else
+                                    valid <= &iteration;
+    end
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   j_out_internal <= 'd0;              else
-    if ( reset )                    j_out_internal <= 'd0;              else
     if ( en ) begin
+        if ( reset )                j_out_internal <= 'd0;              else
         if ( incr ) begin
             if ( j_done & iteration_done ) 
                 j_out_internal <= 'd0;
@@ -132,8 +134,8 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   i_out_before <= 'd0;                       else
-    if ( reset )                    i_out_before <= r.prf_x[PRF_LOG_N - 1 : 0];else
     if ( en ) begin
+        if ( reset )                i_out_before <= r.prf_x[PRF_LOG_N - 1 : 0];else
         if ( incr & iteration_done ) begin
             if ( j_done ) 
                 i_out_before <= i_out_next[PRF_LOG_N - 1 : 0];
@@ -142,8 +144,8 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   j_out_before <= 'd0;                       else
-    if ( reset )                    j_out_before <= r.prf_y[PRF_LOG_M - 1 : 0];else
     if ( en ) begin
+        if ( reset )                j_out_before <= r.prf_y[PRF_LOG_M - 1 : 0];else
         if ( incr & iteration_done ) begin
             if ( j_done ) 
                 j_out_before <= r.prf_y[PRF_LOG_M - 1 : 0];
@@ -162,8 +164,10 @@ always_ff @( posedge clk, negedge rst_n )
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   done <= 'd0;                        else
-    if ( reset )                    done <= 'd0;                        else
-    if ( en )                       done <= incr & iteration_done & i_done & j_done;      
+    if ( en ) begin
+        if ( reset )                done <= 'd0;                        else
+                                    done <= incr & iteration_done & i_done & j_done;      
+    end
 
 
 // Modules Instances -----------------------------------------------------------------------------------------
