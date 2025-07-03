@@ -26,6 +26,8 @@ localparam PRF_LOG_N_LANES  =   $clog2(PRF_N_LANES);
 
 // Wires Definition ------------------------------------------------------------------------------------------
 logic   [PRF_LOG_N_LANES - 1 : 0]   iteration;
+logic   [PRF_LOG_N_LANES + 0 : 0]   iteration_16b;
+logic   [PRF_LOG_N_LANES + 1 : 0]   iteration_8b;
 logic   iteration_done;
 wor     incr;
 logic   [PRF_LOG_N : 0] i_out_next;
@@ -50,8 +52,6 @@ logic           valid_8b, valid_16b, valid_32b;
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign iteration_done = &iteration;
-assign valid_16b = cnt[0] & valid_32b;
-assign valid_8b = &cnt & valid_32b;
 
 assign res_in = j_done ? 'd0 : res_sa[iteration][0];
 assign res_in_32b = res_in[32 - 1 : 0];
@@ -112,6 +112,20 @@ always_ff @( posedge clk, negedge rst_n )
     end
 
 always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   iteration_16b <= 'd0;               else
+    if ( en ) begin
+        if ( reset )                iteration_16b <= 'd0;               else
+        if ( incr )                 iteration_16b <= iteration_16b + 1'b1;
+    end
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   iteration_8b <= 'd0;                else
+    if ( en ) begin
+        if ( reset )                iteration_8b <= 'd0;                else
+        if ( incr )                 iteration_8b <= iteration_8b + 1'b1;
+    end
+
+always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   lane_valid_q <= 'd0;                else
     if ( en ) begin
         if ( reset )                lane_valid_q <= 'd0;                else
@@ -130,6 +144,20 @@ always_ff @( posedge clk, negedge rst_n )
     if ( en ) begin
         if ( reset )                valid_32b <= 'd0;                   else
                                     valid_32b <= &iteration;
+    end
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   valid_16b <= 'd0;                   else
+    if ( en ) begin
+        if ( reset )                valid_16b <= 'd0;                   else
+                                    valid_16b <= &iteration_16b;
+    end
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   valid_8b <= 'd0;                    else
+    if ( en ) begin
+        if ( reset )                valid_8b <= 'd0;                    else
+                                    valid_8b <= &iteration_8b;
     end
 
 always_ff @( posedge clk, negedge rst_n )

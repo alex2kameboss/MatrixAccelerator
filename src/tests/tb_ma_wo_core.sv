@@ -21,8 +21,8 @@ core_v_xif #(
 
 localparam PRF_LOG_P    =   1   ;
 localparam PRF_LOG_Q    =   1   ;
-localparam PRF_LOG_N    =   6  ;
-localparam PRF_LOG_M    =   6  ;
+localparam PRF_LOG_N    =   10  ;
+localparam PRF_LOG_M    =   10  ;
 localparam ADDR_WIDTH   = 32'd32;
 localparam DATA_WIDTH   = 32'd32 * 2 ** (PRF_LOG_P + PRF_LOG_Q);
 localparam DATA_BYTES   = DATA_WIDTH / 8;
@@ -52,11 +52,11 @@ localparam MEM_SIZE = 1024 * 1024; // 1 MB
 
 function void init_mem();
   int i, j;
-  const int len = 16;
+  const int len = 64;
   for ( i = 0; i < len; i = i + 1 )
     for ( j = 0; j < len; j = j + 1 )
-        // {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = 1;
-        i_sim_mem.i_sim_mem.mem[i * len + j] = i * 16 + j;
+        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = 1;
+        //i_sim_mem.i_sim_mem.mem[i * len + j] = i * 16 + j;
 endfunction
 
 AXI_BUS #(
@@ -997,7 +997,7 @@ initial begin
     convolution_operation_test(
         .rr      ( 'd2      ),
         .rr_prf_x( 'd32     ),
-        .rr_prf_y( 'd62     ),
+        .rr_prf_y( 'd64     ),
         .rr_dt   ( INT32    ),
         .r1      ( 'd0      ),
         .r1_prf_x( 'd0      ),

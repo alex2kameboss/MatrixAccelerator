@@ -189,8 +189,8 @@ endgenerate
 
 // Modules Instances -----------------------------------------------------------------------------------------
 matrix_addr_gen #(
-    .PRF_LOG_P  ( 1  ),
-    .PRF_LOG_Q  ( data_intf.PRF_N_LANES   ),
+    .PRF_LOG_P  ( PRF_LOG_P             ),
+    .PRF_LOG_Q  ( PRF_LOG_Q             ),
     .PRF_LOG_N  ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M  ( data_intf.PRF_LOG_M   ),
     .SRAM_WIDTH ( data_intf.SRAM_WIDTH  )
