@@ -25,10 +25,10 @@ localparam PRF_LOG_N_LANES  =   $clog2(PRF_N_LANES);
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
-logic   [PRF_LOG_N_LANES - 1 : 0]   iteration;
+logic   [PRF_LOG_N_LANES - 1 : 0]   iteration_32b;
 logic   [PRF_LOG_N_LANES + 0 : 0]   iteration_16b;
 logic   [PRF_LOG_N_LANES + 1 : 0]   iteration_8b;
-logic   iteration_done;
+logic   iteration_done, iteration_32b_done, iteration_16b_done, iteration_8b_done;
 wor     incr;
 logic   [PRF_LOG_N : 0] i_out_next;
 logic   [PRF_LOG_M : 0] j_out_next, j_out_internal_next;
@@ -51,9 +51,21 @@ logic           valid_8b, valid_16b, valid_32b;
 
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
-assign iteration_done = &iteration;
+assign iteration_32b_done = &iteration_32b;
+assign iteration_16b_done = &iteration_16b;
+assign iteration_8b_done = &iteration_8b;
 
-assign res_in = j_done ? 'd0 : res_sa[iteration][0];
+always_comb begin
+    if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin
+        iteration_done = iteration_32b_done;
+    end else if ( r.dtype == ma_pkg::UINT16 || r.dtype == ma_pkg::INT16 ) begin
+        iteration_done = iteration_16b_done;
+    end else begin
+        iteration_done = iteration_8b_done;
+    end
+end
+
+assign res_in = j_done ? 'd0 : res_sa[iteration_32b][0];
 assign res_in_32b = res_in[32 - 1 : 0];
 assign res_in_16b = res_in[16 - 1 : 0];
 assign res_in_8b = res_in[8 - 1 : 0];
@@ -105,10 +117,10 @@ end
 
 // Sequential Logic ------------------------------------------------------------------------------------------
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   iteration <= 'd0;                   else
+    if ( ~rst_n )                   iteration_32b <= 'd0;               else
     if ( en ) begin
-        if ( reset )                iteration <= 'd0;                   else
-        if ( incr )                 iteration <= iteration + 1'b1;
+        if ( reset )                iteration_32b <= 'd0;               else
+        if ( incr )                 iteration_32b <= iteration_32b + 1'b1;
     end
 
 always_ff @( posedge clk, negedge rst_n )
@@ -143,28 +155,21 @@ always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   valid_32b <= 'd0;                   else
     if ( en ) begin
         if ( reset )                valid_32b <= 'd0;                   else
-                                    valid_32b <= &iteration;
+                                    valid_32b <= iteration_32b_done;
     end
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   valid_16b <= 'd0;                   else
     if ( en ) begin
         if ( reset )                valid_16b <= 'd0;                   else
-                                    valid_16b <= &iteration_16b;
+                                    valid_16b <= iteration_16b_done;
     end
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   valid_8b <= 'd0;                    else
     if ( en ) begin
         if ( reset )                valid_8b <= 'd0;                    else
-                                    valid_8b <= &iteration_8b;
-    end
-
-always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   cnt <= 'd0;                         else
-    if ( en ) begin
-        if ( reset )                cnt <= 'd0;                         else
-        if ( &iteration )           cnt <= cnt + 1'b1;
+                                    valid_8b <= iteration_8b_done;
     end
 
 always_ff @( posedge clk, negedge rst_n )

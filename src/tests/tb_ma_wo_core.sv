@@ -55,8 +55,7 @@ function void init_mem();
   const int len = 64;
   for ( i = 0; i < len; i = i + 1 )
     for ( j = 0; j < len; j = j + 1 )
-        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = 1;
-        //i_sim_mem.i_sim_mem.mem[i * len + j] = i * 16 + j;
+        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = i * len + j;
 endfunction
 
 AXI_BUS #(
@@ -212,8 +211,6 @@ begin
     assert (i_dut.i_control_unit.rft[r].height == h);
     assert (i_dut.i_control_unit.rft[r].dtype == dt);
     assert (i_dut.i_control_unit.rft[r].valid);
-    assert (~i_dut.i_control_unit.rft[r].prf_valid);
-    assert (~i_dut.i_control_unit.rft[r].in_mem);
 end
 endtask
 
@@ -253,7 +250,6 @@ begin
     assert (i_dut.i_control_unit.rft[r].prf_y == prf_y);
     assert (i_dut.i_control_unit.rft[r].prf_org == org);
     assert (i_dut.i_control_unit.rft[r].prf_valid);
-    assert (~i_dut.i_control_unit.rft[r].in_mem);
 end
 endtask
 
@@ -789,6 +785,14 @@ begin
         .r1 ( r1 ), 
         .r2 ( r2 ), 
         .o  ( CNV)
+    );
+
+    // round rd to near multiple of n lanes
+    define_register(
+        .r  ( rr    ),
+        .w  ( w     ),
+        .h  ( h     ),
+        .dt ( rr_dt )
     );
 
     store_register(

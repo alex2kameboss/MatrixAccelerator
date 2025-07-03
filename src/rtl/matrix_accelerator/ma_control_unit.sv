@@ -105,14 +105,11 @@ always_ff @( posedge clk, negedge rst_n )
         rft[rd].width       <= reg2[31 : 0];
         rft[rd].dtype       <= ma_pkg::dtype_t'(funct7);
         rft[rd].valid       <= 1'b1;
-        rft[rd].prf_valid   <= 1'b0;
-        rft[rd].in_mem      <= 1'b0;
     end else if ( valid & ready & funct3 == ma_pkg::DEFINE_POLY ) begin
         rft[rd].prf_x       <= reg1[31 : 0];
         rft[rd].prf_y       <= reg2[31 : 0];
         rft[rd].prf_org     <= ma_pkg::organization_t'(funct7);
         rft[rd].prf_valid   <= 1'b1;
-        rft[rd].in_mem      <= 1'b0;
     end else if ( valid & ready & (funct3 == ma_pkg::LOAD | funct3 == ma_pkg::VV | funct3 == ma_pkg::VS ) ) begin
         rft[rd].in_mem  <= 1'b1;
     end
