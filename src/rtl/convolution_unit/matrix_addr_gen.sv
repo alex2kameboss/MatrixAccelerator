@@ -200,12 +200,26 @@ always_ff @( posedge clk, negedge rst_n )
         j_kernel_next_q <= j_kernel_next;
     end
 
+generate;
+    if ( PRF_LOG_P != 0 ) begin
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
         row_mask_value <= 'd0;
-        col_mask_value <= 'd0;
     end else if ( en ) begin
         row_mask_value <= i_kernel_next_q < r_k.height ? 'd0 : r_k.height[PRF_LOG_P - 1 : 0];
+    end
+    end else begin
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
+        row_mask_value <= 'd0;
+    end
+    end
+endgenerate
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
+        col_mask_value <= 'd0;
+    end else if ( en ) begin
         col_mask_value <= j_kernel_next_q < r_k.width ? 'd0 : r_k.width[PRF_LOG_Q - 1 : 0];
     end
 

@@ -50,6 +50,8 @@ logic           valid_8b, valid_16b, valid_32b;
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign iteration_done = &iteration;
+assign valid_16b = cnt[0] & valid_32b;
+assign valid_8b = &cnt & valid_32b;
 
 assign res_in = j_done ? 'd0 : res_sa[iteration][0];
 assign res_in_32b = res_in[32 - 1 : 0];
@@ -90,6 +92,16 @@ always_comb begin
     end
 end
 
+always_comb begin
+    if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin
+        valid = valid_32b;
+    end else if ( r.dtype == ma_pkg::UINT16 || r.dtype == ma_pkg::INT16 ) begin
+        valid = valid_16b;
+    end else begin
+        valid = valid_8b;
+    end
+end
+
 
 // Sequential Logic ------------------------------------------------------------------------------------------
 always_ff @( posedge clk, negedge rst_n )
@@ -114,10 +126,17 @@ always_ff @( posedge clk, negedge rst_n )
     end
 
 always_ff @( posedge clk, negedge rst_n )
-    if ( ~rst_n )                   valid <= 'd0;                       else
+    if ( ~rst_n )                   valid_32b <= 'd0;                   else
     if ( en ) begin
-        if ( reset )                valid <= 'd0;                       else
-                                    valid <= &iteration;
+        if ( reset )                valid_32b <= 'd0;                   else
+                                    valid_32b <= &iteration;
+    end
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )                   cnt <= 'd0;                         else
+    if ( en ) begin
+        if ( reset )                cnt <= 'd0;                         else
+        if ( &iteration )           cnt <= cnt + 1'b1;
     end
 
 always_ff @( posedge clk, negedge rst_n )

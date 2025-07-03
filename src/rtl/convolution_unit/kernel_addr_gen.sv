@@ -103,12 +103,26 @@ always_ff @( posedge clk, negedge rst_n )
         if ( incr )                 iteration <= iteration + 1'b1;
     end
 
+generate;
+    if ( PRF_LOG_P != 0 ) begin
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
         row_mask_value <= 'd0;
-        col_mask_value <= 'd0;
     end else if ( en ) begin
         row_mask_value <= i_kernel_next < r.height ? 'd0 : r.height[PRF_LOG_P - 1 : 0];
+    end
+    end else begin
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
+        row_mask_value <= 'd0;
+    end
+    end
+endgenerate
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n ) begin
+        col_mask_value <= 'd0;
+    end else if ( en ) begin
         col_mask_value <= j_kernel_next < r.width ? 'd0 : r.width[PRF_LOG_Q - 1 : 0];
     end
 

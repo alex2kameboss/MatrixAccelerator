@@ -4,8 +4,8 @@ module tb_cnv();
 
 localparam PRF_LOG_N = 10;
 localparam PRF_LOG_M = 10;
-localparam PRF_LOG_P = 1;
-localparam PRF_LOG_Q = 2;
+localparam PRF_LOG_P = 0;
+localparam PRF_LOG_Q = 1 + 1;
 localparam PRF_P = 2 ** PRF_LOG_P;
 localparam PRF_Q = 2 ** PRF_LOG_Q;
 

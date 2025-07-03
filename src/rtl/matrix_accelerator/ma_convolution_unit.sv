@@ -8,8 +8,10 @@ module ma_convolution_unit (
 localparam NUMBER_OF_ALU = data_intf.DATA_WIDTH / config_intf.ALU_WIDTH;
 localparam SA_HEIGHT = data_intf.PRF_N_LANES;
 localparam SA_WIDTH = 1;
-localparam PRF_P = 2 ** data_intf.PRF_LOG_P;
-localparam PRF_Q = 2 ** data_intf.PRF_LOG_Q;
+localparam PRF_LOG_P = 0;
+localparam PRF_LOG_Q = data_intf.PRF_LOG_P + data_intf.PRF_LOG_Q;
+localparam PRF_P = 2 ** PRF_LOG_P;
+localparam PRF_Q = 2 ** PRF_LOG_Q;
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
@@ -41,8 +43,8 @@ logic kernel_shifter_load;
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign data_intf.unit_id = ma_intf_pkg::CNV_UNIT;
-assign data_intf.op1.scheme = prf_dtypes::RECT;
-assign data_intf.op2.scheme = prf_dtypes::RECT;
+assign data_intf.op1.scheme = prf_dtypes::ROW;
+assign data_intf.op2.scheme = prf_dtypes::ROW;
 assign data_intf.rez.scheme = prf_dtypes::ROW;
 assign en = config_intf.dst_unit == data_intf.unit_id;
 assign data_intf.op2.valid = data_intf.op1.valid;
@@ -187,8 +189,8 @@ endgenerate
 
 // Modules Instances -----------------------------------------------------------------------------------------
 matrix_addr_gen #(
-    .PRF_LOG_P  ( data_intf.PRF_LOG_P   ),
-    .PRF_LOG_Q  ( data_intf.PRF_LOG_Q   ),
+    .PRF_LOG_P  ( 1  ),
+    .PRF_LOG_Q  ( data_intf.PRF_N_LANES   ),
     .PRF_LOG_N  ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M  ( data_intf.PRF_LOG_M   ),
     .SRAM_WIDTH ( data_intf.SRAM_WIDTH  )
@@ -209,8 +211,8 @@ matrix_addr_gen #(
 );
 
 kernel_addr_gen #(
-    .PRF_LOG_P  ( data_intf.PRF_LOG_P   ),
-    .PRF_LOG_Q  ( data_intf.PRF_LOG_Q   ),
+    .PRF_LOG_P  ( PRF_LOG_P   ),
+    .PRF_LOG_Q  ( PRF_LOG_Q   ),
     .PRF_LOG_N  ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M  ( data_intf.PRF_LOG_M   )
 ) i_kernel_addr_gen (
@@ -229,8 +231,8 @@ kernel_addr_gen #(
 );
 
 cnv_data_splitter #(
-    .PRF_LOG_P      ( data_intf.PRF_LOG_P ),
-    .PRF_LOG_Q      ( data_intf.PRF_LOG_Q ),
+    .PRF_LOG_P      ( PRF_LOG_P ),
+    .PRF_LOG_Q      ( PRF_LOG_Q ),
     .OUT_DATA_WIDTH ( config_intf.ALU_WIDTH )
 ) i_matrix_data_splitter (
     .clk        ( data_intf.clk         ),
@@ -244,8 +246,8 @@ cnv_data_splitter #(
 );
 
 cnv_data_splitter #(
-    .PRF_LOG_P      ( data_intf.PRF_LOG_P   ),
-    .PRF_LOG_Q      ( data_intf.PRF_LOG_Q   ),
+    .PRF_LOG_P      ( PRF_LOG_P   ),
+    .PRF_LOG_Q      ( PRF_LOG_Q   ),
     .OUT_DATA_WIDTH ( config_intf.ALU_WIDTH )
 ) i_kernel_data_splitter (
     .clk        ( data_intf.clk         ),

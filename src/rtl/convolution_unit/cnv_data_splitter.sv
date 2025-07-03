@@ -57,12 +57,15 @@ generate
     for ( i = 0; i < PRF_P; i = i + 1 ) begin : row_loop
         for ( j = 0; j < PRF_Q; j = j + 1 ) begin : column_loop
 
-logic   [ 8 - 1 : 0]    win_data_8b ;
-logic   [16 - 1 : 0]    win_data_16b;
+logic   [ 8 - 1 : 0]    win_data_8b, row_data_8b [3 : 0];
+logic   [16 - 1 : 0]    win_data_16b, row_data_16b [1 : 0];
 logic   [32 - 1 : 0]    win_data_32b;
 
-assign win_data_8b  = data_8b [i * PRF_Q + j + selector[1 : 0]];
-assign win_data_16b = data_16b[i * PRF_Q + j + selector[0]];
+assign row_data_8b = data_8b[i * PRF_Q * 4 + j +: 4];
+assign row_data_16b = data_16b[i * PRF_Q * 2 + j +: 2];
+
+assign win_data_8b  = row_data_8b[selector[1 : 0]];
+assign win_data_16b = row_data_16b[selector[0]];
 assign win_data_32b = data_32b[i * PRF_Q + j];
 
 logic   [OUT_DATA_WIDTH - 1 : 0]    out;

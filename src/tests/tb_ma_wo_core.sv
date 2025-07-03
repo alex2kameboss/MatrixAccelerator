@@ -21,8 +21,8 @@ core_v_xif #(
 
 localparam PRF_LOG_P    =   1   ;
 localparam PRF_LOG_Q    =   1   ;
-localparam PRF_LOG_N    =   10  ;
-localparam PRF_LOG_M    =   10  ;
+localparam PRF_LOG_N    =   6  ;
+localparam PRF_LOG_M    =   6  ;
 localparam ADDR_WIDTH   = 32'd32;
 localparam DATA_WIDTH   = 32'd32 * 2 ** (PRF_LOG_P + PRF_LOG_Q);
 localparam DATA_BYTES   = DATA_WIDTH / 8;
@@ -52,10 +52,11 @@ localparam MEM_SIZE = 1024 * 1024; // 1 MB
 
 function void init_mem();
   int i, j;
-  const int len = 64;
+  const int len = 16;
   for ( i = 0; i < len; i = i + 1 )
     for ( j = 0; j < len; j = j + 1 )
-        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = 1;
+        // {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = 1;
+        i_sim_mem.i_sim_mem.mem[i * len + j] = i * 16 + j;
 endfunction
 
 AXI_BUS #(
@@ -336,7 +337,10 @@ begin
         assert(i_dut.i_control_unit.rft[rr].height == i_dut.i_control_unit.rft[r1].height &
                 i_dut.i_control_unit.rft[rr].width == i_dut.i_control_unit.rft[r2].width &
                 i_dut.i_control_unit.rft[r1].width == i_dut.i_control_unit.rft[r2].height);
-    end else begin 
+    end else if ( o == CNV ) begin 
+        assert(i_dut.i_control_unit.rft[rr].width == i_dut.i_control_unit.rft[r1].width - i_dut.i_control_unit.rft[r2].width  + 1);
+        assert(i_dut.i_control_unit.rft[rr].height == i_dut.i_control_unit.rft[r1].height - i_dut.i_control_unit.rft[r2].height + 1);
+    end else begin
         assert(i_dut.i_control_unit.rft[r1].width == i_dut.i_control_unit.rft[r2].width &
                 i_dut.i_control_unit.rft[r1].height == i_dut.i_control_unit.rft[r2].height);
         assert(i_dut.i_control_unit.rft[rr].width == i_dut.i_control_unit.rft[r2].width &
@@ -723,13 +727,15 @@ task convolution_operation_test;
     input register      rr      ;
     input int           rr_prf_x;
     input int           rr_prf_y;
+    input dtype_t       rr_dt   ;
     input register      r1      ;
     input int           r1_prf_x;
     input int           r1_prf_y;
+    input dtype_t       r1_dt   ;
     input register      r2      ;
     input int           r2_prf_x;
     input int           r2_prf_y;
-    input dtype_t       dt      ;
+    input dtype_t       r2_dt   ;
     input int           w       ;
     input int           h       ;
     input int           w_k     ;
@@ -738,14 +744,14 @@ task convolution_operation_test;
     input int           r1_addr ;
     input int           r2_addr ;
 begin
-    int bytes;
-    int i;
+    int bytes_rr, bytes_r1, bytes_r2, el;
+    int i, j, ii, jj;
     $display("Convolution operation test");
     define_register_one_step(
         .r    ( rr          ),
         .w    ( w - w_k + 1 ),
         .h    ( h - h_k + 1 ),
-        .dt   ( dt          ),
+        .dt   ( rr_dt       ),
         .prf_x( rr_prf_x    ),
         .prf_y( rr_prf_y    ),
         .org  ( RECT        )
@@ -754,7 +760,7 @@ begin
         .r    ( r1      ),
         .w    ( w       ),
         .h    ( h       ),
-        .dt   ( dt      ),
+        .dt   ( r1_dt   ),
         .prf_x( r1_prf_x),
         .prf_y( r1_prf_y),
         .org  ( RECT    )
@@ -763,7 +769,7 @@ begin
         .r    ( r2      ),
         .w    ( w_k     ),
         .h    ( h_k     ),
-        .dt   ( dt      ),
+        .dt   ( r2_dt   ),
         .prf_x( r2_prf_x),
         .prf_y( r2_prf_y),
         .org  ( RECT    )
@@ -791,12 +797,43 @@ begin
     );
 
     // check result
-    bytes = 1;
+    bytes_rr = 1;
+    if ( rr_dt == INT16 | rr_dt == UINT16 )
+        bytes_rr = 2;
+    else if ( rr_dt == INT32 | rr_dt == UINT32 )
+        bytes_rr = 4;
 
-    if ( dt == INT16 | dt == UINT16 )
-        bytes = 2;
-    else if ( dt == INT32 | dt == UINT32 )
-        bytes = 4;
+    bytes_r1 = 1;
+    if ( r1_dt == INT16 | r1_dt == UINT16 )
+        bytes_r1 = 2;
+    else if ( r1_dt == INT32 | r1_dt == UINT32 )
+        bytes_r1 = 4;
+    
+    bytes_r2 = 1;
+    if ( r2_dt == INT16 | r2_dt == UINT16 )
+        bytes_r2 = 2;
+    else if ( r2_dt == INT32 | r2_dt == UINT32 )
+        bytes_r2 = 4;
+
+    for ( i = 0; i + h_k < h; i = i + 1 )
+        for ( j = 0; j + w_k < w; j = j +1 ) begin
+            el = 0;
+            for ( ii = 0; ii < h_k; ii = ii + 1 )
+                for ( jj = 0; jj < w_k; jj = jj + 1 )
+                    el = el + data_concat(r1_addr + ( (i + ii) * w + j + jj ) * bytes_r1, r1_dt) * data_concat(r2_addr + ( ii * w_k + jj ) * bytes_r2, r2_dt);
+            if ( rr_dt == INT32 | rr_dt == UINT32 ) begin
+                assert(el == data_concat(rr_addr + ( i * w + j ) * bytes_rr, rr_dt)) else
+                $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * w + j ) * bytes_rr, rr_dt));
+            end
+            else if ( rr_dt == INT16 | rr_dt == UINT16 ) begin
+                assert(el[15 : 0] == data_concat(rr_addr + ( i * w + j ) * bytes_rr, rr_dt)[15 : 0]) else
+                $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * w + j ) * bytes_rr, rr_dt));
+            end
+            else if ( rr_dt == INT8 | rr_dt == UINT8 ) begin
+                assert(el[7 : 0] == data_concat(rr_addr + ( i * w + j ) * bytes_rr, rr_dt)[7 : 0]) else
+                $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * w + j ) * bytes_rr, rr_dt));
+            end
+        end
 
     $display("------------------------------------------------------");
 end
@@ -913,17 +950,41 @@ initial begin
 
     
     // --- cnv test ---
-        convolution_operation_test(
+    convolution_operation_test(
         .rr      ( 'd2      ),
-        .rr_prf_x( 'd0      ),
-        .rr_prf_y( 'd0      ),
+        .rr_prf_x( 'd32     ),
+        .rr_prf_y( 'd32     ),
+        .rr_dt   ( INT8     ),
         .r1      ( 'd0      ),
-        .r1_prf_x( 'd32     ),
-        .r1_prf_y( 'd32     ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT8     ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
         .r2_prf_y( 'd32     ),
-        .dt      ( INT32    ),
+        .r2_dt   ( INT32    ),
+        .w       ( 'd16     ),
+        .h       ( 'd16     ),
+        .w_k     ( 'd4      ),
+        .h_k     ( 'd4      ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+
+    convolution_operation_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd32     ),
+        .rr_prf_y( 'd32     ),
+        .rr_dt   ( INT16    ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT16    ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd32     ),
+        .r2_dt   ( INT32    ),
         .w       ( 'd32     ),
         .h       ( 'd32     ),
         .w_k     ( 'd4      ),
@@ -937,13 +998,15 @@ initial begin
         .rr      ( 'd2      ),
         .rr_prf_x( 'd32     ),
         .rr_prf_y( 'd62     ),
+        .rr_dt   ( INT32    ),
         .r1      ( 'd0      ),
         .r1_prf_x( 'd0      ),
         .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT32    ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
         .r2_prf_y( 'd32     ),
-        .dt      ( INT32    ),
+        .r2_dt   ( INT32    ),
         .w       ( 'd32     ),
         .h       ( 'd32     ),
         .w_k     ( 'd4      ),
