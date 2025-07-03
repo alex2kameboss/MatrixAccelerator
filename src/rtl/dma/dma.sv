@@ -1,6 +1,7 @@
 module dma #(
-    parameter ADDR_WIDTH = 32   ,
-    parameter DATA_WIDTH = 128   // data size inside the core
+    parameter   ADDR_WIDTH = 32   ,
+    parameter   DATA_WIDTH = 128  , // data size inside the core
+    localparam  MASK_WIDTH = DATA_WIDTH / 8
 ) (
     // generic signals
     input   logic                           clk                         ,
@@ -20,6 +21,7 @@ module dma #(
     // data fifos
     // write fifo
     input   logic   [DATA_WIDTH - 1 : 0]    write_data_i                ,
+    input   logic   [MASK_WIDTH - 1 : 0]    write_data_mask_i           ,
     input   logic                           write_data_valid_i          ,
     output  logic                           write_data_ready_o          ,
     // read fifo

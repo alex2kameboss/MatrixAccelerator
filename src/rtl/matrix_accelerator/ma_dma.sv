@@ -34,7 +34,8 @@ logic                                   dma_read_done   ;
 logic   [data_intf.DATA_WIDTH - 1 : 0]  dma_read_data       ;          
 logic                                   dma_read_data_valid ;          
 logic                                   dma_read_data_ready ;       
-logic   [data_intf.DATA_WIDTH - 1 : 0]  dma_write_data      ;          
+logic   [data_intf.DATA_WIDTH - 1 : 0]  dma_write_data      ;
+logic[data_intf.DATA_WIDTH / 8 - 1 : 0] dma_write_mask      ;         
 logic                                   dma_write_data_valid;          
 logic                                   dma_write_data_ready;   
 
@@ -191,6 +192,7 @@ dma #(
     // data fifos
     // write fifo
     .write_data_i       ( dma_write_data        ),
+    .write_data_mask_i  ( dma_write_mask        ),
     .write_data_valid_i ( dma_write_data_valid  ),
     .write_data_ready_o ( dma_write_data_ready  ),
     // read fifo
@@ -231,6 +233,21 @@ posedge_detector i_read_done (
     .rst_n  ( data_intf.rst_n       ),
     .signal ( dma_read_done         ),
     .flag   ( dma_read_done_edge    ) 
+);
+
+prf_mask_gen #(
+    .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
+    .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
+    .PRF_LOG_M      ( data_intf.PRF_LOG_M   ),
+    .SRAM_WIDTH     ( data_intf.SRAM_WIDTH  )
+) i_write_mask_generator (
+    .clk    ( data_intf.clk     ),
+    .rst_n  ( data_intf.rst_n   ),
+    .en     ( dma_addr_gen_en   ),
+    .start  ( config_intf.start ),
+    .incr   ( dma_write_incr    ),
+    .r      ( config_intf.rd    ),
+    .mask   ( dma_write_mask    )
 );
 
 endmodule

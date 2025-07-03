@@ -1,5 +1,6 @@
 module mask_generator #(
     parameter   PRF_LOG_PARAM   =   2   ,
+    parameter   FF_OUT          =   1   ,
     localparam  PRF_PARAM       =   2 ** PRF_LOG_PARAM
 ) (
     input   logic                           clk     ,
@@ -28,12 +29,21 @@ assign mask_internal[i] = is_zero | value >= (i + 1);
     end
 endgenerate
 
+generate;
+    if ( FF_OUT != 1 ) begin
+assign mask = mask_internal;
+    end 
+endgenerate
+
 
 // Sequential Logic ------------------------------------------------------------------------------------------
+generate;
+    if ( FF_OUT == 1 ) begin
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )           mask <= 'd0;            else
     if ( en )               mask <= mask_internal;  
-
+    end
+endgenerate
 
 // Modules Instances -----------------------------------------------------------------------------------------
 

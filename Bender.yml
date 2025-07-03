@@ -37,6 +37,7 @@ sources:
     - src/rtl/dma/dma.sv
     - src/rtl/dma/write_concat.sv
     - src/rtl/dma/strobe_generator.sv
+    - src/rtl/dma/prf_mask_gen.sv
     # vectorial unit
     - src/rtl/vectorial_unit/ma_alu.sv
     - src/rtl/vectorial_unit/vectorial_splitter.sv
