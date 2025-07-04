@@ -52,10 +52,10 @@ localparam MEM_SIZE = 1024 * 1024; // 1 MB
 
 function void init_mem();
   int i, j;
-  const int len = 64;
+  const int len = 128;
   for ( i = 0; i < len; i = i + 1 )
     for ( j = 0; j < len; j = j + 1 )
-        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = i * len + j;
+        {i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[(i * len + j) * 4]} = j;
 endfunction
 
 AXI_BUS #(
@@ -952,76 +952,6 @@ initial begin
 
     init_mem();
 
-    
-    // --- cnv test ---
-    convolution_operation_test(
-        .rr      ( 'd2      ),
-        .rr_prf_x( 'd32     ),
-        .rr_prf_y( 'd32     ),
-        .rr_dt   ( INT8     ),
-        .r1      ( 'd0      ),
-        .r1_prf_x( 'd0      ),
-        .r1_prf_y( 'd0      ),
-        .r1_dt   ( INT8     ),
-        .r2      ( 'd1      ),
-        .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
-        .r2_dt   ( INT32    ),
-        .w       ( 'd16     ),
-        .h       ( 'd16     ),
-        .w_k     ( 'd4      ),
-        .h_k     ( 'd4      ),
-        .rr_addr ( MEM_SIZE ),
-        .r1_addr ( 'd0      ),
-        .r2_addr ( 'd0      )
-    );
-
-    convolution_operation_test(
-        .rr      ( 'd2      ),
-        .rr_prf_x( 'd32     ),
-        .rr_prf_y( 'd32     ),
-        .rr_dt   ( INT16    ),
-        .r1      ( 'd0      ),
-        .r1_prf_x( 'd0      ),
-        .r1_prf_y( 'd0      ),
-        .r1_dt   ( INT16    ),
-        .r2      ( 'd1      ),
-        .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
-        .r2_dt   ( INT32    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
-        .w_k     ( 'd4      ),
-        .h_k     ( 'd4      ),
-        .rr_addr ( MEM_SIZE ),
-        .r1_addr ( 'd0      ),
-        .r2_addr ( 'd0      )
-    );
-
-    convolution_operation_test(
-        .rr      ( 'd2      ),
-        .rr_prf_x( 'd32     ),
-        .rr_prf_y( 'd64     ),
-        .rr_dt   ( INT32    ),
-        .r1      ( 'd0      ),
-        .r1_prf_x( 'd0      ),
-        .r1_prf_y( 'd0      ),
-        .r1_dt   ( INT32    ),
-        .r2      ( 'd1      ),
-        .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
-        .r2_dt   ( INT32    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
-        .w_k     ( 'd4      ),
-        .h_k     ( 'd4      ),
-        .rr_addr ( MEM_SIZE ),
-        .r1_addr ( 'd0      ),
-        .r2_addr ( 'd0      )
-    );
-
-    $finish();
-
     // ------- test register definition -------
     $display("Define register test");
     for ( int ridx = 0; ridx < NUMBER_OF_REGISTERS; ridx = ridx + 1 ) begin
@@ -1291,10 +1221,78 @@ initial begin
         .r2_addr ( 'd0      )
     );
 
+
+    // convolution tests
+    convolution_operation_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd32     ),
+        .rr_prf_y( 'd32     ),
+        .rr_dt   ( INT8     ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT8     ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd32     ),
+        .r2_dt   ( INT32    ),
+        .w       ( 'd16     ),
+        .h       ( 'd16     ),
+        .w_k     ( 'd4      ),
+        .h_k     ( 'd4      ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+
+    convolution_operation_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd32     ),
+        .rr_prf_y( 'd32     ),
+        .rr_dt   ( INT16    ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT16    ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd32     ),
+        .r2_dt   ( INT32    ),
+        .w       ( 'd32     ),
+        .h       ( 'd32     ),
+        .w_k     ( 'd4      ),
+        .h_k     ( 'd4      ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+
+    convolution_operation_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd32     ),
+        .rr_prf_y( 'd64     ),
+        .rr_dt   ( INT32    ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT32    ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd32     ),
+        .r2_dt   ( INT32    ),
+        .w       ( 'd32     ),
+        .h       ( 'd32     ),
+        .w_k     ( 'd4      ),
+        .h_k     ( 'd4      ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+
     @(posedge clk);
     @(posedge clk);
 
-    $stop;
+    $finish();
 end
 
 endmodule
