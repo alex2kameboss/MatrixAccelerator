@@ -38,9 +38,9 @@ always_comb
     unique case( vectorial_op )
         ma_pkg::V_SUB : rez_comb = op1 - op2;
 //        ma_pkg::V_DIV : rez_comb = div;
-        ma_pkg::V_SLL : rez = data_left_shifter;
-        ma_pkg::V_SRL : rez = data_right_shifter;
-        ma_pkg::V_SRA : rez = data_right_shifter;
+        ma_pkg::V_SLL : rez_comb = data_left_shifter;
+        ma_pkg::V_SRL : rez_comb = data_right_shifter;
+        ma_pkg::V_SRA : rez_comb = data_right_shifter;
         ma_pkg::V_MUL : rez_comb = op1 * op2;
         ma_pkg::V_ADD : rez_comb = op1 + op2;
         ma_pkg::V_NOP : rez_comb = 'd0;
