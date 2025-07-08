@@ -43,6 +43,9 @@ assign en = config_intf.dst_unit == data_intf.unit_id;
 assign scalar_op =  config_intf.internal_op == ma_intf_pkg::ADD_VS | 
                     config_intf.internal_op == ma_intf_pkg::SUB_VS |
                     config_intf.internal_op == ma_intf_pkg::DIV_VS |
+                    config_intf.internal_op == ma_intf_pkg::SLL_VS |
+                    config_intf.internal_op == ma_intf_pkg::SRL_VS |
+                    config_intf.internal_op == ma_intf_pkg::SRA_VS |
                     config_intf.internal_op == ma_intf_pkg::MUL_VS ; 
 
 assign scalar_line = config_intf.rd.dtype == ma_pkg::INT32 | config_intf.rd.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {config_intf.scalar}} :
@@ -64,7 +67,8 @@ assign data_intf.op2.valid = ( ~fast_rs2 ? rs2_incr_1 : rs2_incr ) | start_delay
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             rs_addr_en <= 1'b0;         else
     if ( config_intf.start & en )       rs_addr_en <= 1'b1;         else
-    if ( rs1_done & rs2_done )          rs_addr_en <= 1'b0;  
+    if ( rs1_done & 
+       (rs2_done | scalar_op) )         rs_addr_en <= 1'b0;  
 
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             start_delayed <= 1'b0;      else
@@ -142,7 +146,7 @@ vectorial_splitter #(
     .rst_n      ( data_intf.rst_n       ),
     .reset      ( config_intf.start     ),
     .en         ( splitter_en           ),
-    .dtype      ( config_intf.rs2.dtype ),
+    .dtype      ( scalar_op ? config_intf.rs1.dtype : config_intf.rs2.dtype ),
     .op_in      ( op2                   ),
     .op_out     ( op2_alu               ),
     .next       ( rs2_incr              )
@@ -154,12 +158,13 @@ generate
 ma_alu #(
     .DATA_WIDTH( config_intf.ALU_WIDTH  )
 ) i_vectorial_alu (
-    .clk ( data_intf.clk    ),
-    .en  ( splitter_en      ),
-    .op  ( config_intf.op   ),
-    .op1 ( op1_alu[j]       ),
-    .op2 ( op2_alu[j]       ),
-    .rez ( res_alu[j]       )
+    .clk    ( data_intf.clk         ),
+    .en     ( splitter_en           ),
+    .op     ( config_intf.op        ),
+    .dtype  ( config_intf.rs1.dtype ),
+    .op1    ( op1_alu[j]            ),
+    .op2    ( op2_alu[j]            ),
+    .rez    ( res_alu[j]            )
 );
     end
 endgenerate

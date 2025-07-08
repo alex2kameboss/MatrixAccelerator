@@ -110,6 +110,9 @@ always_comb begin : validate_instr // TODO: when add new instruction, update her
             instr.r_type.func7 == ma_pkg::SUB    |
             instr.r_type.func7 == ma_pkg::CNV    |
             instr.r_type.func7 == ma_pkg::DIV    |
+            instr.r_type.func7 == ma_pkg::SLL    |
+            instr.r_type.func7 == ma_pkg::SRL    |
+            instr.r_type.func7 == ma_pkg::SRA    |
             instr.r_type.func7 == ma_pkg::MUL    |
             instr.r_type.func7 == ma_pkg::SMUL   );
 end

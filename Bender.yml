@@ -43,6 +43,8 @@ sources:
     - src/rtl/vectorial_unit/vectorial_splitter.sv
     - src/rtl/vectorial_unit/vectorial_concat.sv
     - src/rtl/vectorial_unit/prf_addr_gen_seq.sv
+    - src/rtl/vectorial_unit/left_shifter.sv
+    - src/rtl/vectorial_unit/right_shifter.sv
     # matrix unit
     - src/rtl/matrix_unit/row_addr_gen_seq.sv
     - src/rtl/matrix_unit/systolic_array
@@ -81,6 +83,7 @@ sources:
       defines:
         TARGET_VIVADO: ~
       files:
+        - src/tests/tb_shifter.sv
         - src/tests/tb_cnv.sv
         - src/tests/clk_rstn.sv
         - src/tests/tb_ma_wo_core.sv

@@ -22,6 +22,9 @@ typedef enum logic[3 : 0] {
     ADD_VS  ,
     SUB_VS  ,
     DIV_VS  ,
+    SLL_VS  ,
+    SRL_VS  ,
+    SRA_VS  ,
     MUL_VS  ,
     // MEMORY
     LOAD    ,

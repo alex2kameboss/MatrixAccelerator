@@ -56,6 +56,9 @@ always_comb begin
             ma_pkg::ADD : internal_op = ma_intf_pkg::ADD_VS;
             ma_pkg::SUB : internal_op = ma_intf_pkg::SUB_VS;
             ma_pkg::DIV : internal_op = ma_intf_pkg::DIV_VS;
+            ma_pkg::SLL : internal_op = ma_intf_pkg::SLL_VS;
+            ma_pkg::SRL : internal_op = ma_intf_pkg::SRL_VS;
+            ma_pkg::SRA : internal_op = ma_intf_pkg::SRA_VS;
             ma_pkg::MUL : internal_op = ma_intf_pkg::MUL_VS;
             default     : internal_op = ma_intf_pkg::NOP;
         endcase

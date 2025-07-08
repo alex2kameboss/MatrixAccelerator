@@ -5,14 +5,20 @@ typedef enum logic [6:0] {
     SUB = 2,
     CNV = 4,
     DIV = 8,
+    SLL = 9, // shift left logic
+    SRL = 10, // shift right logic
+    SRA = 11, // shift right arithmetic
     MUL = 16,
     SMUL = 48,
     NOP = {7{1'b1}}
 } operation_t;
 
-typedef enum logic [2:0] {
+typedef enum logic [3:0] {
     V_ADD,
     V_SUB,
+    V_SLL,
+    V_SRL,
+    V_SRA,
     // V_DIV, - to much for fpga
     V_MUL,
     V_NOP
