@@ -59,8 +59,11 @@ assign op2_addr_gen_incr = rs2_incr | fast_rs2 & start_delayed;
 assign fast_rs1 = config_intf.rs1.dtype == ma_pkg::INT32 | config_intf.rs1.dtype == ma_pkg::UINT32;
 assign fast_rs2 = config_intf.rs2.dtype == ma_pkg::INT32 | config_intf.rs2.dtype == ma_pkg::UINT32;
 
-assign data_intf.op1.valid = ( ~fast_rs1 ? rs1_incr_1 : rs1_incr ) | start_delayed;
-assign data_intf.op2.valid = ( ~fast_rs2 ? rs2_incr_1 : rs2_incr ) | start_delayed;
+//assign data_intf.op1.valid = ( ~fast_rs1 ? rs1_incr_1 : rs1_incr ) | start_delayed;
+//assign data_intf.op2.valid = ( ~fast_rs2 ? rs2_incr_1 : rs2_incr ) | start_delayed;
+assign data_intf.op1.valid = en;
+assign data_intf.op2.valid = en;
+
 
 
 // Sequential Logic ------------------------------------------------------------------------------------------
