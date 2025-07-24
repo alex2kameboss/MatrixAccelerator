@@ -20,7 +20,8 @@ core_v_xif #(
 ) xif ();
 
 localparam PRF_LOG_P    =   1   ;
-localparam PRF_LOG_Q    =   1   ;
+localparam PRF_LOG_Q    =   2   ;
+localparam PRF_N_LANES  =   2 ** (PRF_LOG_P + PRF_LOG_Q);
 localparam PRF_LOG_N    =   10  ;
 localparam PRF_LOG_M    =   10  ;
 localparam ADDR_WIDTH   = 32'd32;
@@ -196,8 +197,8 @@ begin
     inst.opcode   = OPCODE;
     inst.rd       = r;
     inst.funct3   = DEFINE;
-    inst.rs1      = width_r;
-    inst.rs2      = height_r;
+    inst.rs1      = height_r;
+    inst.rs2      = width_r;
     inst.func7    = dt;
 
     do_xif(
@@ -744,7 +745,16 @@ task convolution_operation_test;
     input int           r2_addr ;
 begin
     int bytes_rr, bytes_r1, bytes_r2, el;
+    int kernel_w;
     int i, j, ii, jj;
+
+    bytes_r2 = 1;
+    if ( r2_dt == INT16 | r2_dt == UINT16 )
+        bytes_r2 = 2;
+    else if ( r2_dt == INT32 | r2_dt == UINT32 )
+        bytes_r2 = 4;
+    kernel_w = PRF_N_LANES * 4 / bytes_r2;
+
     $display("Convolution operation test");
     define_register_one_step(
         .r    ( rr          ),
@@ -766,7 +776,7 @@ begin
     );
     define_register_one_step(
         .r    ( r2      ),
-        .w    ( w_k     ),
+        .w    ( kernel_w),
         .h    ( h_k     ),
         .dt   ( r2_dt   ),
         .prf_x( r2_prf_x),
@@ -783,6 +793,13 @@ begin
         .addr( r2_addr  )
     );
 
+    define_register(
+        .r  ( r2    ),
+        .w  ( w_k   ),
+        .h  ( h_k   ),
+        .dt ( r2_dt )
+    );
+
     vector_vector_operation(
         .rr ( rr ), 
         .r1 ( r1 ), 
@@ -794,7 +811,7 @@ begin
     define_register(
         .r  ( rr    ),
         .w  ( w     ),
-        .h  ( h     ),
+        .h  ( h - h_k + 1     ),
         .dt ( rr_dt )
     );
 
@@ -816,18 +833,12 @@ begin
     else if ( r1_dt == INT32 | r1_dt == UINT32 )
         bytes_r1 = 4;
     
-    bytes_r2 = 1;
-    if ( r2_dt == INT16 | r2_dt == UINT16 )
-        bytes_r2 = 2;
-    else if ( r2_dt == INT32 | r2_dt == UINT32 )
-        bytes_r2 = 4;
-
-    for ( i = 0; i + h_k < h; i = i + 1 )
-        for ( j = 0; j + w_k < w; j = j +1 ) begin
+    for ( i = 0; i < h - h_k + 1; i = i + 1 )
+        for ( j = 0; j < w - w_k + 1; j = j +1 ) begin
             el = 0;
             for ( ii = 0; ii < h_k; ii = ii + 1 )
                 for ( jj = 0; jj < w_k; jj = jj + 1 )
-                    el = el + data_concat(r1_addr + ( (i + ii) * w + j + jj ) * bytes_r1, r1_dt) * data_concat(r2_addr + ( ii * w_k + jj ) * bytes_r2, r2_dt);
+                    el = el + data_concat(r1_addr + ( (i + ii) * w + j + jj ) * bytes_r1, r1_dt) * data_concat(r2_addr + ( ii * kernel_w + jj ) * bytes_r2, r2_dt);
             if ( rr_dt == INT32 | rr_dt == UINT32 ) begin
                 assert(el == data_concat(rr_addr + ( i * w + j ) * bytes_rr, rr_dt)) else
                 $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * w + j ) * bytes_rr, rr_dt));
@@ -960,7 +971,6 @@ initial begin
     @(posedge clk);
 
     init_mem();
-
     // ------- test register definition -------
     $display("Define register test");
     for ( int ridx = 0; ridx < NUMBER_OF_REGISTERS; ridx = ridx + 1 ) begin
@@ -1016,11 +1026,11 @@ initial begin
         .r1_prf_y( 'd0      ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
+        .r2_prf_y( 'd64     ),
         .o       ( SUB      ),
         .dt      ( INT8     ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE ),
         .r1_addr ( 'd0      ),
         .r2_addr ( 'd0      )
@@ -1034,11 +1044,11 @@ initial begin
         .r1_prf_y( 'd0      ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
+        .r2_prf_y( 'd64     ),
         .o       ( ADD      ),
         .dt      ( INT8     ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( MEM_SIZE ),
         .r2_addr ( 'd0      )
@@ -1054,11 +1064,11 @@ initial begin
         .r1_prf_y( 'd0      ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
+        .r2_prf_y( 'd64     ),
         .o       ( SUB      ),
         .dt      ( INT16    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE ),
         .r1_addr ( 'd0      ),
         .r2_addr ( 'd0      )
@@ -1072,11 +1082,11 @@ initial begin
         .r1_prf_y( 'd0      ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
+        .r2_prf_y( 'd64     ),
         .o       ( ADD      ),
         .dt      ( INT16    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( MEM_SIZE ),
         .r2_addr ( 'd0      )
@@ -1091,11 +1101,11 @@ initial begin
         .r1_prf_y( 'd0      ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
+        .r2_prf_y( 'd64     ),
         .o       ( SUB      ),
         .dt      ( INT32    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE ),
         .r1_addr ( 'd0      ),
         .r2_addr ( 'd0      )
@@ -1109,11 +1119,11 @@ initial begin
         .r1_prf_y( 'd0      ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
+        .r2_prf_y( 'd64     ),
         .o       ( ADD      ),
         .dt      ( INT32    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( MEM_SIZE ),
         .r2_addr ( 'd0      )
@@ -1131,8 +1141,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( ADD      ),
         .dt      ( INT8     ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1146,8 +1156,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( ADD      ),
         .dt      ( INT16    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1161,8 +1171,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( ADD      ),
         .dt      ( INT32    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1234,8 +1244,8 @@ initial begin
     // convolution tests
     convolution_operation_test(
         .rr      ( 'd2      ),
-        .rr_prf_x( 'd32     ),
-        .rr_prf_y( 'd32     ),
+        .rr_prf_x( 'd64     ),
+        .rr_prf_y( 'd64     ),
         .rr_dt   ( INT8     ),
         .r1      ( 'd0      ),
         .r1_prf_x( 'd0      ),
@@ -1243,29 +1253,7 @@ initial begin
         .r1_dt   ( INT8     ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
-        .r2_dt   ( INT32    ),
-        .w       ( 'd16     ),
-        .h       ( 'd16     ),
-        .w_k     ( 'd4      ),
-        .h_k     ( 'd4      ),
-        .rr_addr ( MEM_SIZE ),
-        .r1_addr ( 'd0      ),
-        .r2_addr ( 'd0      )
-    );
-
-    convolution_operation_test(
-        .rr      ( 'd2      ),
-        .rr_prf_x( 'd32     ),
-        .rr_prf_y( 'd32     ),
-        .rr_dt   ( INT16    ),
-        .r1      ( 'd0      ),
-        .r1_prf_x( 'd0      ),
-        .r1_prf_y( 'd0      ),
-        .r1_dt   ( INT16    ),
-        .r2      ( 'd1      ),
-        .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
+        .r2_prf_y( 'd64     ),
         .r2_dt   ( INT32    ),
         .w       ( 'd32     ),
         .h       ( 'd32     ),
@@ -1275,10 +1263,30 @@ initial begin
         .r1_addr ( 'd0      ),
         .r2_addr ( 'd0      )
     );
-
     convolution_operation_test(
         .rr      ( 'd2      ),
-        .rr_prf_x( 'd32     ),
+        .rr_prf_x( 'd64     ),
+        .rr_prf_y( 'd64     ),
+        .rr_dt   ( INT16    ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT16    ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd64     ),
+        .r2_dt   ( INT32    ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
+        .w_k     ( 'd4      ),
+        .h_k     ( 'd4      ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+    convolution_operation_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd64     ),
         .rr_prf_y( 'd64     ),
         .rr_dt   ( INT32    ),
         .r1      ( 'd0      ),
@@ -1287,12 +1295,12 @@ initial begin
         .r1_dt   ( INT32    ),
         .r2      ( 'd1      ),
         .r2_prf_x( 'd0      ),
-        .r2_prf_y( 'd32     ),
+        .r2_prf_y( 'd64     ),
         .r2_dt   ( INT32    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
-        .w_k     ( 'd4      ),
-        .h_k     ( 'd4      ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
+        .w_k     (PRF_N_LANES),
+        .h_k     (PRF_N_LANES),
         .rr_addr ( MEM_SIZE ),
         .r1_addr ( 'd0      ),
         .r2_addr ( 'd0      )
@@ -1310,8 +1318,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( SLL      ),
         .dt      ( INT8     ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1325,8 +1333,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( SLL      ),
         .dt      ( INT16    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1340,8 +1348,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( SLL      ),
         .dt      ( INT32    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1356,8 +1364,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( SRL      ),
         .dt      ( INT8     ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1371,8 +1379,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( SRL      ),
         .dt      ( INT16    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1386,8 +1394,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( SRL      ),
         .dt      ( INT32    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1402,8 +1410,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( SRA      ),
         .dt      ( INT8     ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1417,8 +1425,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( SRA      ),
         .dt      ( INT16    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );
@@ -1432,8 +1440,8 @@ initial begin
         .r2      ( 'd1      ),
         .o       ( SRA      ),
         .dt      ( INT32    ),
-        .w       ( 'd32     ),
-        .h       ( 'd32     ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
     );

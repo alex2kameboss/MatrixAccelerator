@@ -12,6 +12,7 @@ localparam PRF_LOG_P = 0;
 localparam PRF_LOG_Q = data_intf.PRF_LOG_P + data_intf.PRF_LOG_Q;
 localparam PRF_P = 2 ** PRF_LOG_P;
 localparam PRF_Q = 2 ** PRF_LOG_Q;
+localparam KERNEL_DONE_DELAY = 4;
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
@@ -19,7 +20,7 @@ logic   en, start_1, start_2, start_3;
 logic   splitter_en, addr_gen_en, addr_gen_en_q, addr_gen_done;
 logic   sa_en;
 logic   kernel_done;
-logic   [SA_HEIGHT - 1 : 0] kernel_done_delay;
+logic   [KERNEL_DONE_DELAY - 1 : 0] kernel_done_delay;
 logic   [1 : 0] done_bits;
 
 logic                                       array_reset_n   [SA_HEIGHT - 1 : 0][0 : 0];
@@ -72,7 +73,7 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( en ) begin
         if ( rsp_intf.done )        done_bits <= 'd0;                       else
         if ( addr_gen_done )        done_bits <= 'd1;                       else
-                                    done_bits[1] <= kernel_done_delay[SA_HEIGHT - 1];
+                                    done_bits[1] <= kernel_done_delay[KERNEL_DONE_DELAY - 1];
     end
 
 genvar mask_row_idx, mask_col_idx;
@@ -117,7 +118,7 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         data_intf.op1.valid <= 1'b0;            else
     if ( en ) begin
-        if (start_1)                data_intf.op1.valid <= 1'b1;            else
+        if ( start_1 )              data_intf.op1.valid <= 1'b1;            else
         if ( addr_gen_done )        data_intf.op1.valid <= 1'b0;
     end
 
@@ -171,18 +172,18 @@ endgenerate
 // sa array reset controller
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         kernel_done_delay <= 'd0;                           else
-    if ( en )                       kernel_done_delay <= {kernel_done_delay[SA_HEIGHT - 2 : 0], kernel_done};
+    if ( en )                       kernel_done_delay <= {kernel_done_delay[KERNEL_DONE_DELAY - 2 : 0], kernel_done};
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         array_reset_n[0][0] <= 1'b1;                        else
-    if ( en )                       array_reset_n[0][0] <= ~kernel_done_delay[SA_HEIGHT - 1]; 
+    if ( en )                       array_reset_n[0][0] <= ~kernel_done_delay[KERNEL_DONE_DELAY - 1]; 
 
 genvar sa_reset_idx;
 generate;
     for ( sa_reset_idx = 1 ; sa_reset_idx < SA_HEIGHT; sa_reset_idx = sa_reset_idx + 1 ) begin : sa_reset_generator
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )         array_reset_n[sa_reset_idx][0] <= 1'b1;             else
-    if ( en )                       array_reset_n[sa_reset_idx][0] <= array_reset_n[sa_reset_idx - 1][0];                       
+    if ( en )                       array_reset_n[sa_reset_idx][0] <= array_reset_n[sa_reset_idx - 1][0];    
     end
 endgenerate
 
