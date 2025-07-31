@@ -1,4 +1,4 @@
-module ma_mult #(
+(* DONT_TOUCH = "true" *) module ma_mult #(
     parameter DATA_WIDTH = 8
 ) (
     input   [DATA_WIDTH - 1 : 0]    a   ,
@@ -6,6 +6,6 @@ module ma_mult #(
     output  [DATA_WIDTH - 1 : 0]    c   
 );
 
-assign c = a * b;
+(* use_dsp = "yes" *) assign c = a * b;
 
 endmodule

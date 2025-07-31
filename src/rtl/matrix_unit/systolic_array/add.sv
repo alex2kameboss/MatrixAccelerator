@@ -1,4 +1,4 @@
-module add #(
+(* DONT_TOUCH = "true" *) module add #(
     parameter DATA_WIDTH = 16
 ) (
     input   [DATA_WIDTH - 1 : 0]    a   ,
@@ -6,6 +6,6 @@ module add #(
     output  [DATA_WIDTH - 1 : 0]    c   
 );
 
-assign c = a + b;
+(* use_dsp = "yes" *) assign c = a + b;
 
 endmodule

@@ -21,11 +21,11 @@ localparam COUNT_WIDTH = $clog2(FIFO_DEPTH) + 1;
 
 xpm_fifo_async #(
     .FIFO_WRITE_DEPTH   ( FIFO_DEPTH    ),  // DECIMAL
-    .RD_DATA_COUNT_WIDTH( 1             ),  // DECIMAL
+    .RD_DATA_COUNT_WIDTH( COUNT_WIDTH   ),  // DECIMAL
     .READ_DATA_WIDTH    ( DATA_WIDTH    ),  // DECIMAL
-    .READ_MODE          ( "std"         ),  // String
-    .RELATED_CLOCKS     ( COUNT_WIDTH   ),  // DECIMAL
-    .SIM_ASSERT_CHK     ( 1             ),  // DECIMAL; 0=disable simulation messages, 1=enable simulation messages
+    .READ_MODE          ( "fwft"        ),  // String
+    .RELATED_CLOCKS     ( 1             ),  // DECIMAL
+    .SIM_ASSERT_CHK     ( 0             ),  // DECIMAL; 0=disable simulation messages, 1=enable simulation messages
     .USE_ADV_FEATURES   ( "0000"        ),  // String
     .WRITE_DATA_WIDTH   ( DATA_WIDTH    ),  // DECIMAL
     .WR_DATA_COUNT_WIDTH( COUNT_WIDTH   )   // DECIMAL
@@ -95,10 +95,10 @@ xpm_fifo_async_inst (
     .din            ( w_data                ),  // WRITE_DATA_WIDTH-bit input: Write Data: The input data bus used when
                                                 // writing the FIFO.
 
-    .injectdbiterr  ( /* NOT CONNECTED */   ),  // 1-bit input: Double Bit Error Injection: Injects a double bit error if
+    .injectdbiterr  ( 1'b0                  ),  // 1-bit input: Double Bit Error Injection: Injects a double bit error if
                                                 // the ECC feature is used on block RAMs or UltraRAM macros.
 
-    .injectsbiterr  ( /* NOT CONNECTED */   ),  // 1-bit input: Single Bit Error Injection: Injects a single bit error if
+    .injectsbiterr  ( 1'b0                  ),  // 1-bit input: Single Bit Error Injection: Injects a single bit error if
                                                 // the ECC feature is used on block RAMs or UltraRAM macros.
 
     .rd_clk         ( r_clk                 ),  // 1-bit input: Read clock: Used for read operation. rd_clk must be a free

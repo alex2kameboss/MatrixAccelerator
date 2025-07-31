@@ -1,4 +1,4 @@
-module ma_alu #(
+(* keep_hierarchy = "yes" *) module ma_alu #(
     parameter DATA_WIDTH    =   32
 ) (
     input                                               clk     ,

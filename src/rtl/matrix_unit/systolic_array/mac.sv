@@ -1,4 +1,4 @@
-module mac #(
+(* DONT_TOUCH = "true" *) module mac #(
     parameter DATA_WIDTH = 8
 ) (
     input                               clk         ,
