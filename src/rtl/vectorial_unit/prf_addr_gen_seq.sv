@@ -15,12 +15,12 @@ module prf_addr_gen_seq #(
     output  logic                                               done    
 );
     
-logic   [PRF_LOG_N : 0]    i_out_next, i_limit;
-logic   [PRF_LOG_M : 0]    j_out_next, j_limit;
+logic   [PRF_LOG_N + 1 : 0]    i_out_next, i_limit;
+logic   [PRF_LOG_M + 1 : 0]    j_out_next, j_limit;
 logic i_done, j_done;
 
-assign i_done = i_out_next - r.prf_x[PRF_LOG_N - 1 : 0] >= i_limit;
-assign j_done = j_out_next - r.prf_y[PRF_LOG_M - 1 : 0] >= j_limit;
+assign i_done = $signed(i_out_next - r.prf_x[PRF_LOG_N - 1 : 0]) >= $signed(i_limit);
+assign j_done = $signed(j_out_next - r.prf_y[PRF_LOG_M - 1 : 0]) >= $signed(j_limit);
 assign done = en & incr & i_done & j_done;
 
 generate
@@ -40,13 +40,13 @@ always_ff @( posedge clk, negedge rst_n )
         i_limit <= 'd0;
         j_limit <= 'd0;
     end else if ( en & start ) begin
-        i_limit <= r.height[PRF_LOG_N : 0];
+        i_limit <= r.height[PRF_LOG_N + 1 : 0];
         if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin
-            j_limit <= r.width[PRF_LOG_M : 0];
+            j_limit <= r.width[PRF_LOG_M + 1 : 0];
         end else if ( r.dtype == ma_pkg::UINT16 || r.dtype == ma_pkg::INT16 ) begin
-            j_limit <= r.width[PRF_LOG_M + 1 : 1];
+            j_limit <= r.width[PRF_LOG_M + 2 : 1];
         end else begin
-            j_limit <= r.width[PRF_LOG_M + 2 : 2];
+            j_limit <= r.width[PRF_LOG_M + 3 : 2];
         end
     end
 
