@@ -1,4 +1,4 @@
-module vectorial_concat #(
+module gemm_vectorial_concat #(
     parameter   OUT_DATA_WIDTH  =   128  ,
     parameter   IN_DATA_WIDTH   =   32   ,
     localparam  NUMBER_OF_ALU   = OUT_DATA_WIDTH / IN_DATA_WIDTH
@@ -16,10 +16,6 @@ module vectorial_concat #(
 localparam IN_BYTES = IN_DATA_WIDTH / 8;
 logic   [$clog2(IN_BYTES) - 1 : 0]      cnt;
 logic                                   next;
-
-logic   [OUT_DATA_WIDTH / 1 - 1 : 0]    rez_32b;
-logic   [OUT_DATA_WIDTH / 2 - 1 : 0]    rez_16b;
-logic   [OUT_DATA_WIDTH / 4 - 1 : 0]    rez_8b;
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                       valid <= 'd0;       else
@@ -40,30 +36,35 @@ always_ff @( posedge clk, negedge rst_n )
             cnt <= cnt + 1'b1;
     end
 
-genvar i;
-generate;
-    for ( i = 0; i < NUMBER_OF_ALU; i = i + 1 ) begin : generate_batch
-assign rez_32b[(i + 1) * 32 - 1 -: 32] = rez_in[i];
-assign rez_16b[(i + 1) * 16 - 1 -: 16] = rez_in[i][16 - 1 : 0];
-assign rez_8b[(i + 1) * 8 - 1 -: 8] = rez_in[i][8 - 1 : 0];
+logic [7 : 0] rez_in_byte [NUMBER_OF_ALU - 1 : 0][IN_BYTES - 1 : 0];
+
+genvar i_split, j_split;
+generate
+    for ( i_split = 0 ; i_split < NUMBER_OF_ALU; i_split = i_split + 1 ) begin : splitter_outer_loop
+        for ( j_split = 0; j_split < IN_BYTES; j_split = j_split + 1 ) begin : splitter_inner_loop
+assign rez_in_byte[i_split][j_split] = rez_in[i_split][(j_split + 1) * 8 - 1 -: 8];
+        end
     end
 endgenerate
 
-genvar j;
-generate;
-    for ( j = 0; j < 4; j = j + 1 ) begin : reg_concat
+genvar i_reg, j_reg;
+generate
+    for ( i_reg = NUMBER_OF_ALU - 1; i_reg >= 0 ; i_reg  = i_reg - 1 ) begin : dtype_selection_outer
+        for ( j_reg = IN_BYTES - 1; j_reg >= 0; j_reg = j_reg - 1 ) begin : dtype_selection_inner
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )
-        rez_out[(j + 1) * (OUT_DATA_WIDTH / 4) - 1 -: (OUT_DATA_WIDTH / 4)] <= 'd0;
+        rez_out[(i_reg * IN_BYTES + j_reg + 1) * 8 - 1 -: 8] <= 'd0;
     else if ( en ) begin
         if (dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32)
-            rez_out[(j + 1) * (OUT_DATA_WIDTH / 4) - 1 -: (OUT_DATA_WIDTH / 4)] <= rez_32b[(j + 1) * (OUT_DATA_WIDTH / 4) - 1 -: (OUT_DATA_WIDTH / 4)];
-        else if ((dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) & (j / 2) == cnt)
-            rez_out[(j + 1) * (OUT_DATA_WIDTH / 4) - 1 -: (OUT_DATA_WIDTH / 4)] <= rez_16b[(j % 2 + 1) * (OUT_DATA_WIDTH / 4) - 1 -: (OUT_DATA_WIDTH / 4)];
-        else if ((dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8) & j == cnt)
-            rez_out[(j + 1) * (OUT_DATA_WIDTH / 4) - 1 -: (OUT_DATA_WIDTH / 4)] <= rez_8b;
+            rez_out[(i_reg * IN_BYTES + j_reg + 1) * 8 - 1 -: 8] <= rez_in_byte[i_reg][j_reg];
+        else if ((dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16) & (j_reg / 2) == cnt)
+            rez_out[(i_reg * IN_BYTES + j_reg + 1) * 8 - 1 -: 8] <= rez_in_byte[i_reg][j_reg % 2];
+        else if ((dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8) & (j_reg == cnt))
+            rez_out[(i_reg * IN_BYTES + j_reg + 1) * 8 - 1 -: 8] <= rez_in_byte[i_reg][0];
     end
+        end
     end
+
 endgenerate
 
 endmodule

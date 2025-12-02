@@ -1,6 +1,4 @@
-// TODO: update for one operand
-
-module vectorial_splitter #(
+module gemm_vectorial_splitter #(
     parameter   IN_DATA_WIDTH  =   128  ,
     parameter   OUT_DATA_WIDTH =    32  
 ) (
@@ -23,9 +21,9 @@ logic   [$clog2(IN_BYTES / 2) - 1 : 0]  cnt_16b;
 logic                                   cnt_32b;
 logic                                   limit;
 
-logic   [ 8 - 1 : 0]    batch_data_8b [4 - 1 : 0][NUMBER_OF_ALU - 1 : 0];
-logic   [16 - 1 : 0]    batch_data_16b[2 - 1 : 0][NUMBER_OF_ALU - 1 : 0];
-logic   [32 - 1 : 0]    batch_data_32b[1 - 1 : 0][NUMBER_OF_ALU - 1 : 0];
+logic   [ 8 - 1 : 0]    data_8b  [IN_DATA_WIDTH / 8 - 1 : 0];
+logic   [16 - 1 : 0]    data_16b[IN_DATA_WIDTH / 16 - 1 : 0];
+logic   [32 - 1 : 0]    data_32b[IN_DATA_WIDTH / 32 - 1 : 0];
 
 logic is_signed;
 
@@ -44,19 +42,19 @@ genvar i_8b, i_16b, i_32b;
 
 generate
     for ( i_32b = 0; i_32b < IN_DATA_WIDTH / 32; i_32b = i_32b + 1 ) begin : loop_32b_data
-assign batch_data_32b[i_32b / NUMBER_OF_ALU][i_32b % NUMBER_OF_ALU] = op_in[(i_32b + 1) * 32 - 1 -: 32];
+assign data_32b[i_32b] = op_in[(i_32b + 1) * 32 - 1 -: 32];
     end
 endgenerate
 
 generate
     for ( i_16b = 0; i_16b < IN_DATA_WIDTH / 16; i_16b = i_16b + 1 ) begin : loop_16b_data
-assign batch_data_16b[i_16b / NUMBER_OF_ALU][i_16b % NUMBER_OF_ALU] = op_in[(i_16b + 1) * 16 - 1 -: 16];
+assign data_16b[i_16b] = op_in[(i_16b + 1) * 16 - 1 -: 16];
     end
 endgenerate
 
 generate
     for ( i_8b = 0; i_8b < IN_DATA_WIDTH / 8; i_8b = i_8b + 1 ) begin : loop_8b_data
-assign batch_data_8b[i_8b / NUMBER_OF_ALU][i_8b % NUMBER_OF_ALU] = op_in[(i_8b + 1) * 8 - 1 -: 8];
+assign data_8b[i_8b] = op_in[(i_8b + 1) * 8 - 1 -: 8];
     end
 endgenerate
 
@@ -76,13 +74,22 @@ genvar i;
 
 generate
     for ( i = 0; i < NUMBER_OF_ALU; i = i + 1 ) begin : dtype_selection
+
+logic   [ 8 - 1 : 0]    mux_data_8b [OUT_DATA_WIDTH / 8  - 1 : 0];
+logic   [16 - 1 : 0]    mux_data_16b[OUT_DATA_WIDTH / 16 - 1 : 0];
+logic   [32 - 1 : 0]    mux_data_32b[OUT_DATA_WIDTH / 32 - 1 : 0];
+
+assign mux_data_8b  = data_8b [(i + 1) * OUT_DATA_WIDTH / 8  - 1 -: OUT_DATA_WIDTH / 8 ];
+assign mux_data_16b = data_16b[(i + 1) * OUT_DATA_WIDTH / 16 - 1 -: OUT_DATA_WIDTH / 16];
+assign mux_data_32b = data_32b[(i + 1) * OUT_DATA_WIDTH / 32 - 1 -: OUT_DATA_WIDTH / 32];
+
 logic   [ 8 - 1 : 0]    win_data_8b ;
 logic   [16 - 1 : 0]    win_data_16b;
 logic   [32 - 1 : 0]    win_data_32b;
 
-assign win_data_8b  = batch_data_8b [ cnt_8b][i];
-assign win_data_16b = batch_data_16b[cnt_16b][i];
-assign win_data_32b = batch_data_32b[cnt_32b][i];
+assign win_data_8b  = mux_data_8b [cnt_8b];
+assign win_data_16b = mux_data_16b[cnt_16b];
+assign win_data_32b = mux_data_32b[cnt_32b];
 
 logic   [OUT_DATA_WIDTH - 1 : 0]    out;
 

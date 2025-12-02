@@ -111,7 +111,7 @@ col_addr_gen_seq #(
     .done    ( rs2_done             )
 );
 
-vectorial_splitter #(
+gemm_vectorial_splitter #(
     .IN_DATA_WIDTH  ( data_intf.DATA_WIDTH  ),
     .OUT_DATA_WIDTH ( config_intf.ALU_WIDTH )
 ) i_row_splitter (
@@ -197,7 +197,7 @@ array_results_controller #(
     .valid_o        ( sa_valid              )
 );
 
-vectorial_concat #(
+gemm_vectorial_concat #(
     .OUT_DATA_WIDTH ( data_intf.DATA_WIDTH  ),
     .IN_DATA_WIDTH  ( config_intf.ALU_WIDTH )
 ) i_vectorial_concat (

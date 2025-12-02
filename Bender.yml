@@ -47,6 +47,8 @@ sources:
     - src/rtl/vectorial_unit/right_shifter.sv
     # matrix unit
     - src/rtl/matrix_unit/row_addr_gen_seq.sv
+    - src/rtl/matrix_unit/gemm_vectorial_splitter.sv
+    - src/rtl/matrix_unit/gemm_vectorial_concat.sv
     - src/rtl/matrix_unit/systolic_array
     - src/rtl/matrix_unit/systolic_array/mac.sv
     - src/rtl/matrix_unit/systolic_array/auto_shift_register.sv
