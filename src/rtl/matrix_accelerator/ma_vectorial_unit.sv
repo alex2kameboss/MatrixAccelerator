@@ -48,7 +48,7 @@ assign scalar_op =  config_intf.internal_op == ma_intf_pkg::ADD_VS |
                     config_intf.internal_op == ma_intf_pkg::SRA_VS |
                     config_intf.internal_op == ma_intf_pkg::MUL_VS ; 
 
-assign scalar_line = config_intf.rd.dtype == ma_pkg::INT32 | config_intf.rd.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {config_intf.scalar}} :
+assign scalar_line = config_intf.rd.dtype == ma_pkg::INT32 | config_intf.rd.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {config_intf.scalar[31 : 0]}} :
                      config_intf.rd.dtype == ma_pkg::INT16 | config_intf.rd.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {config_intf.scalar[15 : 0]}} :
                                                                                                       {NUMBER_OF_ALU * 4 {config_intf.scalar[7 : 0]}};
 assign op2 = scalar_op ? scalar_line : data_intf.op2_data;                                                                                      

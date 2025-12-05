@@ -8,15 +8,15 @@ import riscv_pkg::*;
 core_v_xif #(
     .X_NUM_RS              ( 2  ),
     .X_ID_WIDTH            ( 4  ),
-    .X_RFR_WIDTH           ( 32 ),
-    .X_RFW_WIDTH           ( 32 ),
+    .X_RFR_WIDTH           ( 64 ),
+    .X_RFW_WIDTH           ( 64 ),
     .X_NUM_HARTS           ( 1  ),
     .X_HARTID_WIDTH        ( 1  ),
     .X_MISA                ( '0 ),
     .X_DUALREAD            ( 0  ),
     .X_DUALWRITE           ( 0  ),
     .X_ISSUE_REGISTER_SPLIT( 0  ),
-    .X_MEM_WIDTH           ( 32 ) 
+    .X_MEM_WIDTH           ( 64 ) 
 ) xif ();
 
 localparam PRF_LOG_P    =   1   ;
@@ -24,13 +24,15 @@ localparam PRF_LOG_Q    =   2   ;
 localparam PRF_N_LANES  =   2 ** (PRF_LOG_P + PRF_LOG_Q);
 localparam PRF_LOG_N    =   10  ;
 localparam PRF_LOG_M    =   10  ;
-localparam ADDR_WIDTH   = 32'd32;
+localparam ADDR_WIDTH   =   64  ;
 localparam DATA_WIDTH   = 32'd32 * 2 ** (PRF_LOG_P + PRF_LOG_Q);
 localparam DATA_BYTES   = DATA_WIDTH / 8;
 
+typedef logic [ADDR_WIDTH - 1 : 0] xif_t;
+
 localparam int unsigned TbAxiIdWidth        = 32'd5;
 localparam int unsigned TbAxiDataWidth      = 64;
-localparam int unsigned TbAxiAddrWidth      = 32'd32;
+localparam int unsigned TbAxiAddrWidth      = 64;
 localparam int unsigned TbAxiStrbWidth      = TbAxiDataWidth / 8;
 localparam int unsigned TbAxiUserWidth      = 5;
 localparam              NUMBER_OF_REGISTERS = 32;
@@ -47,7 +49,7 @@ assign xif.register.id = opId;
 assign xif.commit.hartid = hartId;
 assign xif.commit.id = opId;
 
-logic [31 : 0] rf [31 : 0];
+xif_t rf [31 : 0];
 
 localparam MEM_SIZE = 1024 * 1024; // 1 MB
 
@@ -96,7 +98,6 @@ axi_sim_mem_intf #(
 
 matrix_accelerator #(
     .OPCODE             ( OPCODE                ),
-    .ADDR_WIDTH         ( ADDR_WIDTH            ),
     .REGISTER_NUMBERS   ( NUMBER_OF_REGISTERS   ),
     .PRF_LOG_P          ( PRF_LOG_P             ),
     .PRF_LOG_Q          ( PRF_LOG_Q             ),
@@ -180,8 +181,8 @@ endtask //automatic
 
 task define_register;
     input register  r   ;
-    input int       w   ;
-    input int       h   ;
+    input xif_t     w   ;
+    input xif_t     h   ;
     input dtype_t   dt  ;
 begin
     riscv_r_t inst;
@@ -217,8 +218,8 @@ endtask
 
 task define_prf_register;
     input register          r       ;
-    input int               prf_x   ;
-    input int               prf_y   ;
+    input xif_t             prf_x   ;
+    input xif_t             prf_y   ;
     input organization_t    org     ;
 begin
     riscv_r_t inst;
@@ -256,11 +257,11 @@ endtask
 
 task define_register_one_step;
   input register        r       ;
-  input int             w       ;
-  input int             h       ;
+  input xif_t           w       ;
+  input xif_t           h       ;
   input dtype_t         dt      ;
-  input int             prf_x   ;
-  input int             prf_y   ;
+  input xif_t           prf_x   ;
+  input xif_t           prf_y   ;
   input organization_t  org     ;
 begin
 
@@ -282,7 +283,7 @@ endtask
 
 task load_register;
     input register  r   ;
-    input int       addr;
+    input xif_t     addr;
 begin
     riscv_i_t inst;
     int addr_r;
@@ -375,7 +376,7 @@ endfunction
 
 task store_register;
     input register  r   ;
-    input int       addr;
+    input xif_t     addr;
 begin
     riscv_i_t inst;
     int addr_r;
@@ -407,7 +408,7 @@ endtask
 task vector_scalar_operation;
     input register    rr  ;
     input register    r1  ;
-    input int         r2  ;
+    input xif_t       r2  ;
     input operation_t o   ;
 begin
     riscv_r_t inst;
@@ -446,12 +447,12 @@ endtask
 
 task load_store_test;
     input register  r       ;
-    input int       w       ;
-    input int       h       ;
-    input int       prf_x   ;
-    input int       prf_y   ;
+    input xif_t     w       ;
+    input xif_t     h       ;
+    input xif_t     prf_x   ;
+    input xif_t     prf_y   ;
     input dtype_t   dt      ;
-    input int       addr    ;
+    input xif_t     addr    ;
 begin
     int bytes;
     int i;
@@ -503,21 +504,21 @@ endfunction
 
 task vector_vector_operation_test;
     input register      rr      ;
-    input int           rr_prf_x;
-    input int           rr_prf_y;
+    input xif_t         rr_prf_x;
+    input xif_t         rr_prf_y;
     input register      r1      ;
-    input int           r1_prf_x;
-    input int           r1_prf_y;
+    input xif_t         r1_prf_x;
+    input xif_t         r1_prf_y;
     input register      r2      ;
-    input int           r2_prf_x;
-    input int           r2_prf_y;
+    input xif_t         r2_prf_x;
+    input xif_t         r2_prf_y;
     input operation_t   o       ;
     input dtype_t       dt      ;
-    input int           w       ;
-    input int           h       ;
-    input int           rr_addr ;
-    input int           r1_addr ;
-    input int           r2_addr ;
+    input xif_t         w       ;
+    input xif_t         h       ;
+    input xif_t         rr_addr ;
+    input xif_t         r1_addr ;
+    input xif_t         r2_addr ;
 begin
     int bytes;
     int i;
@@ -610,23 +611,23 @@ endtask
 
 task gemm_test;
     input register      rr      ;
-    input int           rr_prf_x;
-    input int           rr_prf_y;
+    input xif_t         rr_prf_x;
+    input xif_t         rr_prf_y;
     input dtype_t       rr_dt   ;
     input register      r1      ;
-    input int           r1_prf_x;
-    input int           r1_prf_y;
+    input xif_t         r1_prf_x;
+    input xif_t         r1_prf_y;
     input dtype_t       r1_dt   ;
     input register      r2      ;
-    input int           r2_prf_x;
-    input int           r2_prf_y;
+    input xif_t         r2_prf_x;
+    input xif_t         r2_prf_y;
     input dtype_t       r2_dt   ;
-    input int           m       ;
-    input int           n       ;
-    input int           p       ;
-    input int           rr_addr ;
-    input int           r1_addr ;
-    input int           r2_addr ;
+    input xif_t         m       ;
+    input xif_t         n       ;
+    input xif_t         p       ;
+    input xif_t         rr_addr ;
+    input xif_t         r1_addr ;
+    input xif_t         r2_addr ;
 begin
     int bytes_rr, bytes_r1, bytes_r2, el;
     int i, j, k;
@@ -725,24 +726,24 @@ endtask
 
 task convolution_operation_test;
     input register      rr      ;
-    input int           rr_prf_x;
-    input int           rr_prf_y;
+    input xif_t         rr_prf_x;
+    input xif_t         rr_prf_y;
     input dtype_t       rr_dt   ;
     input register      r1      ;
-    input int           r1_prf_x;
-    input int           r1_prf_y;
+    input xif_t         r1_prf_x;
+    input xif_t         r1_prf_y;
     input dtype_t       r1_dt   ;
     input register      r2      ;
-    input int           r2_prf_x;
-    input int           r2_prf_y;
+    input xif_t         r2_prf_x;
+    input xif_t         r2_prf_y;
     input dtype_t       r2_dt   ;
-    input int           w       ;
-    input int           h       ;
-    input int           w_k     ;
-    input int           h_k     ;
-    input int           rr_addr ;
-    input int           r1_addr ;
-    input int           r2_addr ;
+    input xif_t         w       ;
+    input xif_t         h       ;
+    input xif_t         w_k     ;
+    input xif_t         h_k     ;
+    input xif_t         rr_addr ;
+    input xif_t         r1_addr ;
+    input xif_t         r2_addr ;
 begin
     int bytes_rr, bytes_r1, bytes_r2, el;
     int kernel_w;
@@ -859,18 +860,18 @@ endtask
 
 task vector_scalar_operation_test;
     input register      rr      ;
-    input int           rr_prf_x;
-    input int           rr_prf_y;
+    input xif_t         rr_prf_x;
+    input xif_t         rr_prf_y;
     input register      r1      ;
-    input int           r1_prf_x;
-    input int           r1_prf_y;
-    input int           r2      ;
+    input xif_t         r1_prf_x;
+    input xif_t         r1_prf_y;
+    input xif_t         r2      ;
     input operation_t   o       ;
     input dtype_t       dt      ;
-    input int           w       ;
-    input int           h       ;
-    input int           rr_addr ;
-    input int           r1_addr ;
+    input xif_t         w       ;
+    input xif_t         h       ;
+    input xif_t         rr_addr ;
+    input xif_t         r1_addr ;
 begin
     int bytes;
     int i;

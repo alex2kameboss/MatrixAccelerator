@@ -1,7 +1,5 @@
 module matrix_accelerator #(
     parameter OPCODE            =   7'h2B   ,
-    parameter DMA_DATA_WIDTH    =   64      ,
-    parameter ADDR_WIDTH        =   32      ,
     parameter REGISTER_NUMBERS  =   32      ,
     parameter PRF_LOG_P         =   1       ,
     parameter PRF_LOG_Q         =   2       ,
@@ -24,6 +22,7 @@ module matrix_accelerator #(
 );
 
 localparam ALU_WIDTH = 32;
+localparam ADDR_WIDTH = instr_if.X_MEM_WIDTH;
 
 enum logic [2 : 0] {
     MEMORY          ,

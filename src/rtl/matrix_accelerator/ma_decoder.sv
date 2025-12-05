@@ -215,7 +215,7 @@ always_ff @ ( posedge clk, negedge rst_n )
 
 always_ff @ ( posedge clk, negedge rst_n )
     if ( ~rst_n )           addr <= 'd0;                              else
-    if ( issue_response )   addr <= {{20{instr.i_type.imm[11]}}, instr.i_type.imm}; else
+    if ( issue_response )   addr <= {{(ADDR_WIDTH - 12){instr.i_type.imm[11]}}, instr.i_type.imm}; else
     if ( accept_rs1 )       addr <= addr + registers_if.register.rs[0]; else
     if ( clean )            addr <= 'd0;
 
