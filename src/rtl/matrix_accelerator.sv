@@ -35,7 +35,8 @@ enum logic [2 : 0] {
 
 // interfaces
 ma_config_bus #(
-    .ALU_WIDTH  ( ALU_WIDTH )
+    .ALU_WIDTH  ( ALU_WIDTH ),
+    .XLEN       ( ADDR_WIDTH)
 ) config_intf();
 
 ma_rsp_intf rsp_intf[NUMBER_OF_UNITS - 1 : 0]();
