@@ -64,6 +64,24 @@ sources:
     - src/rtl/convolution_unit/cnv_data_splitter.sv
     - src/rtl/convolution_unit/mask_generator.sv
     - src/rtl/convolution_unit/parallel_to_serial.sv
+    # fft unit
+    - src/rtl/fft/butterfly_type1.sv
+    - src/rtl/fft/butterfly_type2.sv
+    - src/rtl/fft/butterfly_type3.sv
+    - src/rtl/fft/butterfly_type4.sv
+    - src/rtl/fft/column_multipliers_16.sv
+    - src/rtl/fft/delay_commutator.sv
+    - src/rtl/fft/FFT16a.sv
+    - src/rtl/fft/FFT256.sv
+    - src/rtl/fft/mult_complex_3DSP.sv
+    - src/rtl/fft/shift_complex.sv
+    - src/rtl/fft/shift.sv
+    - src/rtl/fft/stage1to0.sv
+    - src/rtl/fft/stage2to1.sv
+    - src/rtl/fft/stage3to2.sv
+    - src/rtl/fft/stage4to3.sv
+    - src/rtl/fft/transpose_16.sv
+    - src/rtl/fft/twiddle_256.sv
     # matrix accelerator components
     - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv
