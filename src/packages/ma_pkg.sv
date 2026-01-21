@@ -8,6 +8,8 @@ typedef enum logic [6:0] {
     SLL = 9, // shift left logic
     SRL = 10, // shift right logic
     SRA = 11, // shift right arithmetic
+    FFT = 12,
+    IFFT = 13,
     MUL = 16,
     SMUL = 48,
     NOP = {7{1'b1}}

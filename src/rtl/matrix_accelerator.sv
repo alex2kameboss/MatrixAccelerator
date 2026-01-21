@@ -30,6 +30,7 @@ enum logic [2 : 0] {
     VECTOR          ,
     MATRIX          ,
     CNV             ,
+    FFT             ,
     NUMBER_OF_UNITS
 } units_t;
 
@@ -141,6 +142,12 @@ ma_convolution_unit i_convolution_unit (
     .rsp_intf       ( rsp_intf[CNV] )
 );
 
+ma_fft_unit i_fft_unit (
+    .config_intf    ( config_intf   ),
+    .data_intf      ( data_intf[FFT]),
+    .rsp_intf       ( rsp_intf[FFT] )
+);
+
 ma_memory i_memory (
     .clk_2x ( clk_2x            ),
     .intf   ( data_intf[MEMORY] )
@@ -152,7 +159,8 @@ ma_data_bus_arbiter i_memory_arbiter (
     .dma_intf   ( data_intf[DMA]    ),
     .vu_intf    ( data_intf[VECTOR] ),
     .mu_intf    ( data_intf[MATRIX] ),
-    .cu_intf    ( data_intf[CNV]    )
+    .cu_intf    ( data_intf[CNV]    ),
+    .fft_intf   ( data_intf[FFT]    )
 );
 
 ma_rsp_intf_arbiter #(

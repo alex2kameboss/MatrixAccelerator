@@ -7,6 +7,7 @@ typedef enum logic[2 : 0] {
     VECTORIAL_UNIT  ,
     MATRIX_UNIT     ,
     CNV_UNIT        ,
+    FFT_UNIT        ,
     NONE_MODULE               
 } unit_id_t;
 
@@ -29,6 +30,9 @@ typedef enum logic[3 : 0] {
     // MEMORY
     LOAD    ,
     STORE   ,
+    // FFT
+    FFT     ,
+    IFFT    ,
     NOP     
 } internal_op_t;
 
