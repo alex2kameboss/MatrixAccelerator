@@ -9,10 +9,11 @@ module ma_fft_unit (
 
 // Wires Definition ------------------------------------------------------------------------------------------
 logic   en;
+logic   isIfft;
 
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
-assign data_intf.unit_id = ma_intf_pkg::VECTORIAL_UNIT;
+assign data_intf.unit_id = ma_intf_pkg::FFT_UNIT;
 assign data_intf.op1.scheme = prf_dtypes::ROW;
 assign data_intf.op2.scheme = prf_dtypes::ROW;
 assign data_intf.rez.scheme = prf_dtypes::ROW;
@@ -21,6 +22,8 @@ assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;
 assign data_intf.op1.valid = en;
 assign data_intf.op2.valid = en;
+assign isIfft = config_intf.internal_op == ma_intf_pkg::IFFT;
+assign rsp_intf.done = en; // TODO: Fix that!
 
 
 // Sequential Logic ------------------------------------------------------------------------------------------
