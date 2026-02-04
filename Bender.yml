@@ -15,8 +15,6 @@ workspace:
 sources:
   include_dirs:
     - src/includes
-  defines:
-    PRF_DOUBLE_FREQ: ~
   files:
     # packages
     - src/packages/ma_pkg.sv
