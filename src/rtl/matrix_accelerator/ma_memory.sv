@@ -5,7 +5,11 @@ module ma_memory (
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
 localparam PRF_N_RPORTS  = 2 ;
+`ifdef PRF_DOUBLE_FREQ
 localparam PRF_N_WPORTS  = 2 ;
+`else
+localparam PRF_N_WPORTS  = 1 ;
+`endif
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
@@ -13,7 +17,7 @@ logic                                               r_en, w_en;
 logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_in     [0 : PRF_N_WPORTS - 1][0 : intf.PRF_N_LANES - 1]    ;
 logic                                               prf_mask_in     [0 : PRF_N_WPORTS - 1][0 : intf.PRF_N_LANES - 1]    ;
 logic                                               prf_read        [0 : PRF_N_RPORTS - 1]                              ;
-logic                                               prf_write       [0 : PRF_N_RPORTS - 1]                              ;
+logic                                               prf_write       [0 : PRF_N_WPORTS - 1]                              ;
 logic                   [intf.PRF_LOG_N - 1 : 0]    read_i          [0 : PRF_N_RPORTS - 1]                              ;
 logic                   [intf.PRF_LOG_M - 1 : 0]    read_j          [0 : PRF_N_RPORTS - 1]                              ;
 logic                   [intf.PRF_LOG_N - 1 : 0]    write_i         [0 : PRF_N_WPORTS - 1]                              ;
@@ -30,18 +34,30 @@ logic                   [intf.SRAM_WIDTH - 1 : 0]   prf_data_out_w  [0 : PRF_N_R
 assign dscheme = prf_dtypes::ROW_COL;
 // rez
 assign taccess_write[0] = intf.rez.scheme;
-assign prf_write[0] = ~(intf.rez.valid & w_en);
+`ifdef PRF_DOUBLE_FREQ
+assign prf_write[0] = ~(intf.rez.valid & w_en); 
+`else
+assign prf_write[0] = ~intf.rez.valid;
+`endif
 assign prf_write[1] = 1'b1;
 assign write_i[0] = intf.rez.i;
 assign write_j[0] = intf.rez.j;
 // op1
 assign taccess_read[0] = intf.op1.scheme;
+`ifdef PRF_DOUBLE_FREQ
 assign prf_read[0] = ~(intf.op1.valid & r_en);
+`else
+assign prf_read[0] = ~intf.op1.valid;
+`endif
 assign read_i[0] = intf.op1.i;
 assign read_j[0] = intf.op1.j;
 // op2
 assign taccess_read[1] = intf.op2.scheme;
+`ifdef PRF_DOUBLE_FREQ
 assign prf_read[1] = ~(intf.op2.valid & r_en);
+`else
+assign prf_read[1] = ~intf.op2.valid;
+`endif
 assign read_i[1] = intf.op2.i;
 assign read_j[1] = intf.op2.j;
 
@@ -57,6 +73,7 @@ endgenerate
 
 
 // Sequential Logic ------------------------------------------------------------------------------------------
+`ifdef PRF_DOUBLE_FREQ
 always_ff @(posedge clk_2x, negedge intf.rst_n)
     if ( ~intf.rst_n )          r_en <= 'd0;                            else
                                 r_en <= intf.clk;
@@ -68,7 +85,7 @@ always_ff @(posedge clk_2x, negedge intf.rst_n)
 always_ff @(posedge clk_2x, negedge intf.rst_n)
     if ( ~intf.rst_n )          prf_data_out_r <= '{default: '0};       else
     if ( w_en )                 prf_data_out_r <= prf_data_out_r_q;
-
+`endif
 
 // Modules Instances -----------------------------------------------------------------------------------------
 prf2d_wrapper #(
@@ -81,7 +98,11 @@ prf2d_wrapper #(
     .prf_log_m     ( intf.PRF_LOG_M ),
     .write_select  ( 1              )
 ) i_mem (
+`ifdef PRF_DOUBLE_FREQ
     .clk            ( clk_2x         ),  
+`else
+    .clk            ( intf.clk       ),
+`endif
     .prf_data_in    ( prf_data_in    ),
     .prf_mask_in    ( prf_mask_in    ),
     .prf_read       ( prf_read       ),
@@ -93,7 +114,11 @@ prf2d_wrapper #(
     .dscheme        ( dscheme        ),
     .taccess_read   ( taccess_read   ),
     .taccess_write  ( taccess_write  ),
-    .prf_data_out_r (prf_data_out_r_q),
+`ifdef PRF_DOUBLE_FREQ
+    .prf_data_out_r (prf_data_out_r_q), 
+`else
+    .prf_data_out_r ( prf_data_out_r ),
+`endif
     .prf_data_out_w ( prf_data_out_w ) 
 );
 
