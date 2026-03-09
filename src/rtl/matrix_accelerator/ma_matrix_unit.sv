@@ -6,7 +6,7 @@ module ma_matrix_unit (
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
 localparam SA_HEIGHT = data_intf.PRF_N_LANES;
-localparam SA_WIDTH = data_intf.PRF_N_LANES * 4;
+localparam SA_WIDTH = data_intf.PRF_N_LANES;
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
@@ -19,6 +19,8 @@ logic   [config_intf.ALU_WIDTH - 1 : 0]     res_alu         [data_intf.PRF_N_LAN
 logic   [config_intf.ALU_WIDTH - 1 : 0]     op1_sa          [SA_HEIGHT - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]     op2_sa          [SA_WIDTH - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]     res_sa          [SA_HEIGHT - 1 : 0][SA_WIDTH - 1 : 0];
+
+logic [1 : 0] g_sel;
 
 logic   rs_addr_en, start_delayed;
 logic   operands_addr_gen_en;
@@ -44,7 +46,8 @@ assign data_intf.rez.lane_valid = {data_intf.PRF_N_LANES{1'b1}};
 assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;
 
-assign operands_addr_gen_en = rs_addr_en | config_intf.start;
+assign operands_addr_gen_en = (rs_addr_en | config_intf.start) & en;
+
 assign op1_addr_gen_incr = rs1_incr | fast_rs1 & start_delayed;
 assign fast_rs1 = config_intf.rs1.dtype == ma_pkg::INT32 | config_intf.rs1.dtype == ma_pkg::UINT32;
 
@@ -64,7 +67,7 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
                                         rs1_incr_1 <= rs1_incr;
 
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
-    if ( ~data_intf.rst_n )             splitter_en <= 1'b0;         else
+    if ( ~data_intf.rst_n )             splitter_en <= 1'b0;        else
                                         splitter_en <= rs_addr_en;
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
@@ -108,7 +111,8 @@ col_addr_gen_seq #(
     .repeater(config_intf.rs1.height),
     .i_out   ( data_intf.op2.i      ),
     .j_out   ( data_intf.op2.j      ),
-    .done    ( rs2_done             )
+    .done    ( rs2_done             ),
+    .g_sel   ( g_sel                )
 );
 
 vectorial_splitter #(
@@ -127,7 +131,8 @@ vectorial_splitter #(
 
 sa_col_splitter #(
     .IN_DATA_WIDTH  ( data_intf.DATA_WIDTH  ),
-    .OUT_DATA_WIDTH ( config_intf.ALU_WIDTH )
+    .OUT_DATA_WIDTH ( config_intf.ALU_WIDTH ),
+    .NO_LANES       ( data_intf.PRF_N_LANES )
 ) i_col_splitter (
     .clk        ( data_intf.clk         ),
     .rst_n      ( data_intf.rst_n       ),
@@ -135,7 +140,8 @@ sa_col_splitter #(
     .en         ( splitter_en           ),
     .dtype      ( config_intf.rs2.dtype ),
     .op_in      ( data_intf.op2_data    ),
-    .op_out     ( op2_alu               )
+    .op_out     ( op2_alu               ),
+    .g_sel      ( g_sel                 )
 );
 
 crossbar #(
@@ -171,7 +177,6 @@ systolic_array #(
     .reset_n        ( data_intf.rst_n & ~rsp_intf.done  ),
     .array_reset_n  ( array_reset_n                     ),
     .en             ( concat_en                         ),
-    .dtype          ( config_intf.rs2.dtype             ),
     .a_array_input  ( op1_sa                            ),
     .b_array_input  ( op2_sa                            ),
     .c_array_output ( res_sa                            )
@@ -186,7 +191,6 @@ array_results_controller #(
     .reset_n        ( data_intf.rst_n       ),
     .en             ( concat_en             ),
     .soft_reset     ( rsp_intf.done         ),
-    .dtype          ( config_intf.rs2.dtype ),
     .start          ( config_intf.start     ),
     .rd             ( config_intf.rd        ),
     .rs1            ( config_intf.rs1       ),
@@ -200,7 +204,7 @@ array_results_controller #(
 vectorial_concat #(
     .OUT_DATA_WIDTH ( data_intf.DATA_WIDTH  ),
     .IN_DATA_WIDTH  ( config_intf.ALU_WIDTH )
-) i_vectorial_concat (
+) i_matrix_concat (
     .clk        ( data_intf.clk         ),
     .rst_n      ( data_intf.rst_n       ),
     .reset      ( config_intf.start     ),

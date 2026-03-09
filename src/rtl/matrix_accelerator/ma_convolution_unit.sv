@@ -270,7 +270,6 @@ systolic_array #(
     .reset_n        ( data_intf.rst_n & ~config_intf.start  ),
     .array_reset_n  ( array_reset_n     ),
     .en             ( sa_en             ),
-    .dtype          ( ma_pkg::INT8      ),
     .a_array_input  ( matrix_data_sa    ),
     .b_array_input  ( kernel_data_sa    ),
     .c_array_output ( res_sa            )

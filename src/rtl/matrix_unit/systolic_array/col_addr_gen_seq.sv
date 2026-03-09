@@ -13,22 +13,35 @@ module col_addr_gen_seq #(
     input   logic                        [31 : 0]               repeater,
     output  logic                        [PRF_LOG_N - 1 : 0]    i_out   ,
     output  logic                        [PRF_LOG_M - 1 : 0]    j_out   ,
-    output  logic                                               done    
+    output  logic                                               done    ,
+    output  logic                        [1 : 0]                g_sel   
 );
     
 logic   [PRF_LOG_N : 0]    i_out_next, i_limit;
 logic   [PRF_LOG_M : 0]    j_out_next, j_limit;
 logic   [31 : 0]           repeater_cnt, repeater_cnt_next, repeater_limit;
 logic i_done, j_done, repeater_done, matrix_done;
+logic   group_done;
 
+assign group_done = ((r.dtype == ma_pkg::INT32 | r.dtype == ma_pkg::UINT32) |
+                g_sel == 'd1 & (r.dtype == ma_pkg::INT16 | r.dtype == ma_pkg::UINT16) |
+                g_sel == 'd3 & (r.dtype == ma_pkg::INT8 | r.dtype == ma_pkg::UINT8)) & en;
 
 assign i_done = i_out_next - r.prf_x[PRF_LOG_N : 0] >= i_limit;
 assign j_done = j_out_next - r.prf_y[PRF_LOG_M : 0] >= j_limit;
 assign repeater_done = repeater_cnt_next >= repeater_limit;
-assign done = en & incr & i_done & j_done & repeater_done;
-assign matrix_done = en & incr & i_done & j_done;
+assign done = en & incr & i_done & j_done & repeater_done & group_done;
+assign matrix_done = en & incr & i_done & j_done & group_done;
 
 assign repeater_cnt_next = repeater_cnt + ARRAY_HEIGHT;
+
+always_ff @( posedge clk, negedge rst_n )
+    if ( ~rst_n )               g_sel <= 'd0;                   else
+    if ( en ) begin
+        if ( start )                g_sel <= 1'b0;              else
+        if ( i_done )
+            g_sel <= group_done ? 'd0 : g_sel + 1'b1;
+    end
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin
@@ -71,9 +84,9 @@ always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n )                   j_out <= 'd0;                       else
     if ( done )                     j_out <= 'd0;                       else
     if ( en & start )               j_out <= r.prf_y[PRF_LOG_M - 1 : 0];else
-    if ( en & incr & i_done) begin
+    if ( en & incr & i_done ) begin
         if ( matrix_done )          j_out <= r.prf_y[PRF_LOG_M - 1 : 0];else
-                                    j_out <= j_out_next[PRF_LOG_M - 1 : 0];
+        if ( group_done )           j_out <= j_out_next[PRF_LOG_M - 1 : 0];
     end
                                     
 endmodule

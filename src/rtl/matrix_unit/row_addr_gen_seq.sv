@@ -28,15 +28,7 @@ assign j_done = j_out_next - r.prf_y[PRF_LOG_M - 1 : 0] >= j_limit;
 assign repeater_done = repeater_cnt_next >= repeater_limit;
 assign done = en & incr & i_done & j_done & repeater_done;
 
-always_comb begin
-    if ( r2.dtype == ma_pkg::UINT32 || r2.dtype == ma_pkg::INT32 ) begin
-        repeater_cnt_next = repeater_cnt + ARRAY_WIDTH / 4;
-    end else if ( r2.dtype == ma_pkg::UINT16 || r2.dtype == ma_pkg::INT16 ) begin
-        repeater_cnt_next = repeater_cnt + ARRAY_WIDTH / 2;
-    end else begin
-        repeater_cnt_next = repeater_cnt + ARRAY_WIDTH;
-    end
-end
+assign repeater_cnt_next = repeater_cnt + ARRAY_WIDTH;
 
 always_ff @( posedge clk, negedge rst_n )
     if ( ~rst_n ) begin

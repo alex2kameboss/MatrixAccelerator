@@ -9,7 +9,6 @@ module array_results_controller #(
     input   logic                                                   reset_n                                                     ,
     input   logic                                                   en                                                          ,
     input   logic                                                   soft_reset                                                  ,
-    input   ma_pkg::dtype_t                                         dtype                                                       ,
     input   logic                                                   start                                                       ,
     input   ma_pkg::register_file_line_t                            rd                                                          ,
     input   ma_pkg::register_file_line_t                            rs1                                                         ,
@@ -20,7 +19,7 @@ module array_results_controller #(
     output  logic                                                   valid_o                                                     
 );
     
-localparam DIAGONAL_COUNTS  =   ARRAY_HEIGHT + ARRAY_WIDTH - 1;
+localparam DIAGONAL_COUNTS  =   ARRAY_HEIGHT == ARRAY_HEIGHT ? ARRAY_HEIGHT : ARRAY_HEIGHT + ARRAY_HEIGHT - 1;
 
 logic   [DATA_WIDTH - 1 : 0]    m, n, p;
 
@@ -37,23 +36,6 @@ always_ff @( posedge clk or negedge reset_n )
 
 logic                                       loop_done;
 
-genvar i_en;
-logic col_en [ARRAY_WIDTH - 1 : 0];
-
-generate
-    for ( i_en = 0; i_en < ARRAY_WIDTH / 4; i_en = i_en + 1 ) begin : b32_en
-        assign col_en[i_en] = en & ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 | dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
-    end
-
-    for ( i_en = ARRAY_WIDTH / 4; i_en < ARRAY_WIDTH / 2; i_en = i_en + 1 ) begin : b16_en
-        assign col_en[i_en] = en & ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 | dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
-    end
-
-    for ( i_en = ARRAY_WIDTH / 2; i_en < ARRAY_WIDTH; i_en = i_en + 1 ) begin : b8_en
-        assign col_en[i_en] = en & ( dtype == ma_pkg::INT8 | dtype == ma_pkg::UINT8 );
-    end
-endgenerate
-
 always_ff @( posedge clk or negedge reset_n )
     if ( ~reset_n ) begin
         for ( int ii = 0; ii < ARRAY_HEIGHT; ii = ii + 1 )
@@ -65,8 +47,7 @@ always_ff @( posedge clk or negedge reset_n )
                 array_reset_n[ii][jj] <= 1'b1;
     end else if ( en ) begin
         for ( int ii = 0; ii < ARRAY_HEIGHT; ii = ii + 1 )
-            for ( int jj = 0; jj < ARRAY_WIDTH; jj = jj + 1 )
-                if ( col_en[jj] ) begin
+            for ( int jj = 0; jj < ARRAY_WIDTH; jj = jj + 1 ) begin
                     if ( ii == 0 & jj == 0 )
                         array_reset_n[ii][jj] <= ~loop_done;
                     else if ( ii >= jj )
