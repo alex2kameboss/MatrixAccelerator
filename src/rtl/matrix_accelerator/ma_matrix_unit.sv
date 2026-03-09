@@ -20,7 +20,7 @@ logic   [config_intf.ALU_WIDTH - 1 : 0]     op1_sa          [SA_HEIGHT - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]     op2_sa          [SA_WIDTH - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]     res_sa          [SA_HEIGHT - 1 : 0][SA_WIDTH - 1 : 0];
 
-logic [1 : 0] g_sel;
+logic [1 : 0] g_sel_d, g_sel_q;
 
 logic   rs_addr_en, start_delayed;
 logic   operands_addr_gen_en;
@@ -73,7 +73,11 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             concat_en <= 'd0;           else
     if ( rsp_intf.done )                concat_en <= 'd0;           else
-    if ( splitter_en )                  concat_en <= 'd1;           
+    if ( splitter_en )                  concat_en <= 'd1;      
+
+always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )             g_sel_q <= 'd0;             else
+    if ( en )                           g_sel_q <= g_sel_d; 
 
 
 // Modules Instances -----------------------------------------------------------------------------------------
@@ -112,7 +116,7 @@ col_addr_gen_seq #(
     .i_out   ( data_intf.op2.i      ),
     .j_out   ( data_intf.op2.j      ),
     .done    ( rs2_done             ),
-    .g_sel   ( g_sel                )
+    .g_sel   ( g_sel_d              )
 );
 
 vectorial_splitter #(
@@ -141,7 +145,7 @@ sa_col_splitter #(
     .dtype      ( config_intf.rs2.dtype ),
     .op_in      ( data_intf.op2_data    ),
     .op_out     ( op2_alu               ),
-    .g_sel      ( g_sel                 )
+    .g_sel      ( g_sel_q               )
 );
 
 crossbar #(
