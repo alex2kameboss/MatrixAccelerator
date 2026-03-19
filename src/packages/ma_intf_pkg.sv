@@ -11,7 +11,7 @@ typedef enum logic[2 : 0] {
     NONE_MODULE               
 } unit_id_t;
 
-typedef enum logic[3 : 0] {
+typedef enum logic[4 : 0] {
     // VECTOR-VECTOR
     ADD_VV  ,
     SUB_VV  ,

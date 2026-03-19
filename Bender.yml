@@ -62,6 +62,8 @@ sources:
     - src/rtl/convolution_unit/cnv_data_splitter.sv
     - src/rtl/convolution_unit/mask_generator.sv
     - src/rtl/convolution_unit/parallel_to_serial.sv
+    # newton unit
+    - src/rtl/matrix_accelerator/ma_newton_unit.sv
     # matrix accelerator components
     - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv

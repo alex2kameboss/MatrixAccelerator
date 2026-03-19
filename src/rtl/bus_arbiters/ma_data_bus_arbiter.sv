@@ -4,6 +4,7 @@ module ma_data_bus_arbiter (
     ma_data_bus.memory      dma_intf    ,
     ma_data_bus.memory      vu_intf     ,
     ma_data_bus.memory      mu_intf     ,
+    ma_data_bus.memory      nu_intf     ,
     ma_data_bus.memory      cu_intf       
 );
 
@@ -33,6 +34,12 @@ always_comb begin
             mem_intf.op2       = cu_intf.op2     ;
             mem_intf.rez_data  = cu_intf.rez_data;
         end
+        ma_intf_pkg::NEWTON_UNIT : begin
+            mem_intf.rez       = nu_intf.rez     ;
+            mem_intf.op1       = nu_intf.op1     ;
+            mem_intf.op2       = nu_intf.op2     ;
+            mem_intf.rez_data  = nu_intf.rez_data;
+        end
         ma_intf_pkg::NONE_MODULE: begin
                 mem_intf.rez        = 'd0;
                 mem_intf.op1        = 'd0;
@@ -50,5 +57,7 @@ assign dma_intf.op1_data = mem_intf.op1_data;
 assign dma_intf.op2_data = mem_intf.op2_data;
 assign cu_intf.op1_data = mem_intf.op1_data;
 assign cu_intf.op2_data = mem_intf.op2_data;
+assign nu_intf.op1_data = mem_intf.op1_data;
+assign nu_intf.op2_data = mem_intf.op2_data;
 
 endmodule
