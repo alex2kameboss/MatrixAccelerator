@@ -31,22 +31,19 @@ logic   rs1_done, rs2_done;
 
 logic   concat_en;
 
+logic   au_input_valid;
+wor     au_output_valid;
+
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
-assign data_intf.unit_id = ma_intf_pkg::VECTORIAL_UNIT;
+assign data_intf.unit_id = ma_intf_pkg::NEWTON_UNIT;
 assign data_intf.op1.scheme = prf_dtypes::ROW;
 assign data_intf.op2.scheme = prf_dtypes::ROW;
 assign data_intf.rez.scheme = prf_dtypes::ROW;
 assign data_intf.rez.lane_valid = {data_intf.PRF_N_LANES{1'b1}};
 assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;
-assign scalar_op =  config_intf.internal_op == ma_intf_pkg::ADD_VS | 
-                    config_intf.internal_op == ma_intf_pkg::SUB_VS |
-                    config_intf.internal_op == ma_intf_pkg::DIV_VS |
-                    config_intf.internal_op == ma_intf_pkg::SLL_VS |
-                    config_intf.internal_op == ma_intf_pkg::SRL_VS |
-                    config_intf.internal_op == ma_intf_pkg::SRA_VS |
-                    config_intf.internal_op == ma_intf_pkg::MUL_VS ; 
+assign scalar_op =  config_intf.internal_op == ma_intf_pkg::NEWTON_VS;
 
 assign scalar_line = config_intf.rd.dtype == ma_pkg::INT32 | config_intf.rd.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {config_intf.scalar[31 : 0]}} :
                      config_intf.rd.dtype == ma_pkg::INT16 | config_intf.rd.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {config_intf.scalar[15 : 0]}} :
@@ -88,6 +85,11 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             splitter_en <= 1'b0;         else
                                         splitter_en <= rs_addr_en;
+
+always @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )             au_input_valid <= 1'b0;         else
+    if ( en )                           au_input_valid <= splitter_en;  else
+                                        au_input_valid <= 1'b0;
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )     concat_en <= 'd0;                    else
@@ -158,16 +160,20 @@ vectorial_splitter #(
 genvar j;
 generate
     for ( j = 0; j < NUMBER_OF_ALU; j = j + 1 ) begin : alu_generate
-ma_alu #(
-    .DATA_WIDTH( config_intf.ALU_WIDTH  )
-) i_vectorial_alu (
-    .clk    ( data_intf.clk         ),
-    .en     ( splitter_en           ),
-    .op     ( config_intf.op        ),
-    .dtype  ( config_intf.rs1.dtype ),
-    .op1    ( op1_alu[j]            ),
-    .op2    ( op2_alu[j]            ),
-    .rez    ( res_alu[j]            )
+au_inverse_top # (
+    .N          ( config_intf.ALU_WIDTH ),
+    .LOG_N      ( 4                     ),
+    .CONST_A    ( 347                   ),
+    .CONST_D    ( -3                    ),
+    .CONST_F    ( 1                     )  
+) i_au_inverse (
+    .clk        ( clk           ),
+    .rst_n      ( rst_n         ),
+    .valid_in   ( au_input_valid),
+    .x          ( op1_alu[j]    ),
+    .z          ( op2_alu[j]    ),
+    .valid_out  (au_output_valid),
+    .result     ( res_alu[j]    )   
 );
     end
 endgenerate
@@ -179,7 +185,7 @@ vectorial_concat #(
     .clk        ( data_intf.clk         ),
     .rst_n      ( data_intf.rst_n       ),
     .reset      ( config_intf.start     ),
-    .en         ( concat_en             ),
+    .en         ( au_output_valid       ),
     .dtype      ( config_intf.rd.dtype  ),
     .rez_in     ( res_alu               ),
     .rez_out    ( data_intf.rez_data    ),

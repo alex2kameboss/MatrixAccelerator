@@ -63,7 +63,7 @@ sources:
     - src/rtl/convolution_unit/mask_generator.sv
     - src/rtl/convolution_unit/parallel_to_serial.sv
     # newton unit
-    - src/rtl/matrix_accelerator/ma_newton_unit.sv
+    - src/rtl/newton_unit/au_inverse_top.sv
     # matrix accelerator components
     - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv
@@ -72,6 +72,7 @@ sources:
     - src/rtl/matrix_accelerator/ma_matrix_unit.sv
     - src/rtl/matrix_accelerator/ma_vectorial_unit.sv
     - src/rtl/matrix_accelerator/ma_convolution_unit.sv
+    - src/rtl/matrix_accelerator/ma_newton_unit.sv
     - src/rtl/convolution_unit/cnv_data_concat.sv
     # bus arbiter
     - src/rtl/bus_arbiters/ma_data_bus_arbiter.sv
