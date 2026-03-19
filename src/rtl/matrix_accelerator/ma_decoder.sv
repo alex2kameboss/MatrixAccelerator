@@ -114,7 +114,8 @@ always_comb begin : validate_instr // TODO: when add new instruction, update her
             instr.r_type.func7 == ma_pkg::SRL    |
             instr.r_type.func7 == ma_pkg::SRA    |
             instr.r_type.func7 == ma_pkg::MUL    |
-            instr.r_type.func7 == ma_pkg::SMUL   );
+            instr.r_type.func7 == ma_pkg::SMUL   |
+            instr.r_type.func7 == ma_pkg::NEWTON);
 end
 
 assign issue_accept = instr_if.issue_ready & instr_if.issue_valid;

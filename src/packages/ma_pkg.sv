@@ -10,6 +10,7 @@ typedef enum logic [6:0] {
     SRA = 11, // shift right arithmetic
     MUL = 16,
     SMUL = 48,
+    NEWTON  , // TODO
     NOP = {7{1'b1}}
 } operation_t;
 
@@ -21,6 +22,7 @@ typedef enum logic [3:0] {
     V_SRA,
     // V_DIV, - to much for fpga
     V_MUL,
+    V_NEWTON, // TODO
     V_NOP
 } vectorial_operation_t;
 

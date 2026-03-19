@@ -7,6 +7,7 @@ typedef enum logic[2 : 0] {
     VECTORIAL_UNIT  ,
     MATRIX_UNIT     ,
     CNV_UNIT        ,
+    NEWTON_UNIT     ,
     NONE_MODULE               
 } unit_id_t;
 
@@ -18,6 +19,7 @@ typedef enum logic[3 : 0] {
     DIV_VV  ,
     MUL_VV  ,
     SMUL_VV ,
+    NEWTON_VV,
     // VECTOR-SCALAR
     ADD_VS  ,
     SUB_VS  ,
@@ -26,6 +28,7 @@ typedef enum logic[3 : 0] {
     SRL_VS  ,
     SRA_VS  ,
     MUL_VS  ,
+    NEWTON_VS,
     // MEMORY
     LOAD    ,
     STORE   ,

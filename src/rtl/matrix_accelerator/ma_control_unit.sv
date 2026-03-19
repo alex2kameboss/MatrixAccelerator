@@ -50,6 +50,9 @@ always_comb begin
     end else if ( funct3 == ma_pkg::STORE ) begin
         dst_unit = ma_intf_pkg::DMA_UNIT;
         internal_op = ma_intf_pkg::STORE;
+    end else if ( op == ma_pkg::NEWTON ) begin
+        dst_unit = ma_intf_pkg::NEWTON_UNIT;
+        internal_op = funct3 == ma_pkg::VS ? ma_intf_pkg::NEWTON_VS : ma_intf_pkg::NEWTON_VV;
     end else if ( funct3 == ma_pkg::VS ) begin
         dst_unit = ma_intf_pkg::VECTORIAL_UNIT;
         case( op )
