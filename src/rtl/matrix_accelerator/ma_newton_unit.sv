@@ -6,6 +6,8 @@ module ma_newton_unit (
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
 localparam NUMBER_OF_ALU = data_intf.DATA_WIDTH / config_intf.ALU_WIDTH;
+localparam NEWTON_N      = 16;
+localparam NEWTON_LOG_N  = 4;
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
@@ -160,21 +162,25 @@ vectorial_splitter #(
 genvar j;
 generate
     for ( j = 0; j < NUMBER_OF_ALU; j = j + 1 ) begin : alu_generate
-au_inverse_top # (
-    .N          ( config_intf.ALU_WIDTH ),
-    .LOG_N      ( 4                     ),
-    .CONST_A    ( 347                   ),
-    .CONST_D    ( -3                    ),
-    .CONST_F    ( 1                     )  
-) i_au_inverse (
-    .clk        ( clk           ),
-    .rst_n      ( rst_n         ),
-    .valid_in   ( au_input_valid),
-    .x          ( op1_alu[j]    ),
-    .z          ( op2_alu[j]    ),
-    .valid_out  (au_output_valid),
-    .result     ( res_alu[j]    )   
-);
+        wire [NEWTON_N-1:0] newton_result;
+
+        au_inverse_pipe # (
+            .N          ( NEWTON_N               ),
+            .LOG_N      ( NEWTON_LOG_N           ),
+            .CONST_A    ( 347                    ),
+            .CONST_D    ( -3                     ),
+            .CONST_F    ( 1                      )
+        ) i_au_inverse (
+            .clk        ( data_intf.clk           ),
+            .rst_n      ( data_intf.rst_n         ),
+            .valid_in   ( au_input_valid          ),
+            .x          ( op1_alu[j][NEWTON_N-1:0]),
+            .z          ( op2_alu[j][NEWTON_N-1:0]),
+            .valid_out  ( au_output_valid         ),
+            .result     ( newton_result           )
+        );
+
+        assign res_alu[j] = {{(config_intf.ALU_WIDTH - NEWTON_N){1'b0}}, newton_result};
     end
 endgenerate
 

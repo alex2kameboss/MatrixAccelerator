@@ -374,6 +374,28 @@ function int alu (int x, y, operation_t o);
   endcase
 endfunction
 
+function automatic int unsigned newton_div_ref(int unsigned x_val, int unsigned z_val);
+    longint unsigned product;
+    product = longint'(unsigned'(x_val)) * 64'd65536;
+    newton_div_ref = product / longint'(unsigned'(z_val));
+endfunction
+
+function void init_newton_random_mem(int base_x, int base_z, int w, int h);
+    int i, j, addr_x, addr_z;
+    int unsigned x_val, z_val;
+    for (i = 0; i < h; i = i + 1)
+        for (j = 0; j < w; j = j + 1) begin
+            z_val = ($urandom % 65534) + 2;           
+            x_val = ($urandom % (z_val - 1)) + 1;    
+            addr_x = base_x + (i * w + j) * 2;
+            addr_z = base_z + (i * w + j) * 2;
+            i_sim_mem.i_sim_mem.mem[addr_x + 0] = x_val[7:0];
+            i_sim_mem.i_sim_mem.mem[addr_x + 1] = x_val[15:8];
+            i_sim_mem.i_sim_mem.mem[addr_z + 0] = z_val[7:0];
+            i_sim_mem.i_sim_mem.mem[addr_z + 1] = z_val[15:8];
+        end
+endfunction
+
 task store_register;
     input register  r   ;
     input xif_t     addr;
@@ -955,6 +977,75 @@ begin
 end
 endtask
 
+task newton_random_test;
+    input register      rr      ;
+    input xif_t         rr_prf_x;
+    input xif_t         rr_prf_y;
+    input register      r1      ;
+    input xif_t         r1_prf_x;
+    input xif_t         r1_prf_y;
+    input register      r2      ;
+    input xif_t         r2_prf_x;
+    input xif_t         r2_prf_y;
+    input xif_t         w       ;
+    input xif_t         h       ;
+    input xif_t         rr_addr ;
+    input xif_t         r1_addr ;
+    input xif_t         r2_addr ;
+begin
+    int i;
+    int unsigned x_val, z_v, result_val, expected;
+    int diff;
+    int err_count;
+
+    $display("Newton random VV test (w=%0d, h=%0d, %0d random pairs)", w, h, w * h);
+
+    define_register_one_step(
+        .r(rr), .w(w), .h(h), .dt(UINT16),
+        .prf_x(rr_prf_x), .prf_y(rr_prf_y), .org(RECT)
+    );
+    define_register_one_step(
+        .r(r1), .w(w), .h(h), .dt(UINT16),
+        .prf_x(r1_prf_x), .prf_y(r1_prf_y), .org(RECT)
+    );
+    define_register_one_step(
+        .r(r2), .w(w), .h(h), .dt(UINT16),
+        .prf_x(r2_prf_x), .prf_y(r2_prf_y), .org(RECT)
+    );
+
+    init_newton_random_mem(r1_addr, r2_addr, w, h);
+
+    load_register(.r(r1), .addr(r1_addr));
+    load_register(.r(r2), .addr(r2_addr));
+
+    vector_vector_operation(.rr(rr), .r1(r1), .r2(r2), .o(NEWTON));
+
+    store_register(.r(rr), .addr(rr_addr));
+
+    err_count = 0;
+    for (i = 0; i < w * h * 2; i = i + 2) begin
+        x_val    = {i_sim_mem.i_sim_mem.mem[r1_addr + i + 1],
+                    i_sim_mem.i_sim_mem.mem[r1_addr + i + 0]};
+        z_v      = {i_sim_mem.i_sim_mem.mem[r2_addr + i + 1],
+                    i_sim_mem.i_sim_mem.mem[r2_addr + i + 0]};
+        result_val = {i_sim_mem.i_sim_mem.mem[rr_addr + i + 1],
+                      i_sim_mem.i_sim_mem.mem[rr_addr + i + 0]};
+        expected = newton_div_ref(x_val, z_v);
+        diff     = $signed(result_val) - $signed(expected);
+
+        assert(diff >= -6 && diff <= 5) else begin
+            $error("Newton err element %0d: x=%0d z=%0d got=%0d exp=%0d diff=%0d",
+                    i/2, x_val, z_v, result_val, expected, diff);
+            err_count = err_count + 1;
+        end
+    end
+
+    if (err_count == 0) $display("  PASS — all %0d random elements within tolerance", w * h);
+    else                $display("  FAIL — %0d / %0d elements out of tolerance", err_count, w * h);
+    $display("------------------------------------------------------");
+end
+endtask
+
 initial begin
     hartId <= 'd0; 
     opId <= 'd0;
@@ -1445,6 +1536,23 @@ initial begin
         .h       ( 'd64     ),
         .rr_addr ( MEM_SIZE + MEM_SIZE / 4 ),
         .r1_addr ( 0 )
+    );
+
+    newton_random_test(
+        .rr      ( 'd2              ),
+        .rr_prf_x( 'd0              ),
+        .rr_prf_y( 'd64             ),
+        .r1      ( 'd0              ),
+        .r1_prf_x( 'd0              ),
+        .r1_prf_y( 'd0              ),
+        .r2      ( 'd1              ),
+        .r2_prf_x( 'd0              ),
+        .r2_prf_y( 'd64             ),
+        .w       ( 'd64             ),
+        .h       ( 'd16             ),
+        .rr_addr ( MEM_SIZE         ),
+        .r1_addr ( MEM_SIZE / 4     ),
+        .r2_addr ( MEM_SIZE / 4 + 'h4000 )
     );
 
     @(posedge clk);

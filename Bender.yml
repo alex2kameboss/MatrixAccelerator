@@ -63,7 +63,13 @@ sources:
     - src/rtl/convolution_unit/mask_generator.sv
     - src/rtl/convolution_unit/parallel_to_serial.sv
     # newton unit
+    - src/rtl/newton_unit/au_clz.sv
+    - src/rtl/newton_unit/au_initial_approx.sv
+    - src/rtl/newton_unit/au_newton_step1.sv
+    - src/rtl/newton_unit/au_newton_step2.sv
+    - src/rtl/newton_unit/au_final_multiply.sv
     - src/rtl/newton_unit/au_inverse_top.sv
+    - src/rtl/newton_unit/au_inverse_pipe.sv
     # matrix accelerator components
     - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv

@@ -3,7 +3,7 @@ bender:
 
 vsim_simple: bender
 	cd runs/sim ; \
-	vsim -c -l log.log -do "vlib work; source compile.tcl; vsim work.tb_ma_wo_core -suppress vsim-8315 +acc; run -all"
+	vsim -c -l log.log -do "vlib work; source compile.tcl; vsim work.tb_ma_wo_core -suppress vsim-8315 -suppress vsim-3009 +acc; run -all"
 
 vsim: ARGS=-D PRF_DOUBLE_FREQ
 vsim: vsim_simple
