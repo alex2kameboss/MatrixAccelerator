@@ -91,6 +91,14 @@ always_comb begin
                 internal_op = ma_intf_pkg::CNV_VV;
                 dst_unit = ma_intf_pkg::CNV_UNIT;
             end
+            ma_pkg::FFT : begin 
+                internal_op = ma_intf_pkg::FFT;
+                dst_unit = ma_intf_pkg::FFT_UNIT;
+            end
+            ma_pkg::IFFT : begin 
+                internal_op = ma_intf_pkg::IFFT;
+                dst_unit = ma_intf_pkg::FFT_UNIT;
+            end
             default     : begin 
                 internal_op = ma_intf_pkg::NOP;
                 dst_unit = ma_intf_pkg::NONE_MODULE;
