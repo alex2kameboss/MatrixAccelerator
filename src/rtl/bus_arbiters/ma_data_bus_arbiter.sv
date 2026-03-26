@@ -5,7 +5,6 @@ module ma_data_bus_arbiter (
     ma_data_bus.memory      vu_intf     ,
     ma_data_bus.memory      mu_intf     ,
     ma_data_bus.memory      nu_intf     ,
-    ma_data_bus.memory      cu_intf       
     ma_data_bus.memory      cu_intf     ,
     ma_data_bus.memory      fft_intf     
 );
@@ -41,6 +40,7 @@ always_comb begin
             mem_intf.op1       = nu_intf.op1     ;
             mem_intf.op2       = nu_intf.op2     ;
             mem_intf.rez_data  = nu_intf.rez_data;
+        end
         ma_intf_pkg::FFT_UNIT : begin
             mem_intf.rez       = fft_intf.rez     ;
             mem_intf.op1       = fft_intf.op1     ;

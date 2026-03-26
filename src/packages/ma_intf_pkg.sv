@@ -1,6 +1,6 @@
 package ma_intf_pkg;
     
-typedef enum logic[2 : 0] { 
+typedef enum logic[3 : 0] { 
     CONTROL_UNIT    ,
     MEMORY          ,
     DMA_UNIT        ,

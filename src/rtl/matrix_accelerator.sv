@@ -147,6 +147,8 @@ ma_newton_unit i_newton_unit (
     .config_intf    ( config_intf       ),
     .data_intf      ( data_intf[NEWTON] ),
     .rsp_intf       ( rsp_intf[NEWTON]  )
+);
+
 ma_fft_unit i_fft_unit (
     .config_intf    ( config_intf   ),
     .data_intf      ( data_intf[FFT]),
@@ -165,7 +167,6 @@ ma_data_bus_arbiter i_memory_arbiter (
     .vu_intf    ( data_intf[VECTOR] ),
     .mu_intf    ( data_intf[MATRIX] ),
     .nu_intf    ( data_intf[NEWTON] ),
-    .cu_intf    ( data_intf[CNV]    )
     .cu_intf    ( data_intf[CNV]    ),
     .fft_intf   ( data_intf[FFT]    )
 );
