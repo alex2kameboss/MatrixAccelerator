@@ -4,6 +4,7 @@ typedef enum logic [6:0] {
     ADD = 1,
     SUB = 2,
     CNV = 4,
+    NEWTON=7,
     DIV = 8,
     SLL = 9, // shift left logic
     SRL = 10, // shift right logic
@@ -12,7 +13,6 @@ typedef enum logic [6:0] {
     IFFT = 13,
     MUL = 16,
     SMUL = 48,
-    NEWTON  , // TODO
     NOP = {7{1'b1}}
 } operation_t;
 
