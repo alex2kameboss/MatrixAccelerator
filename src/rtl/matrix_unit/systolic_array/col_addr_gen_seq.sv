@@ -16,7 +16,9 @@ module col_addr_gen_seq #(
     output  logic                                               done    ,
     output  logic                        [1 : 0]                g_sel   
 );
-    
+
+localparam LOG_N_LANES = $clog2(PRF_N_LANES);
+
 logic   [PRF_LOG_N : 0]    i_out_next, i_limit;
 logic   [PRF_LOG_M : 0]    j_out_next, j_limit;
 logic   [31 : 0]           repeater_cnt, repeater_cnt_next, repeater_limit;
@@ -49,8 +51,8 @@ always_ff @( posedge clk, negedge rst_n )
         j_limit <= 'd0;
         repeater_limit <= 'd0;
     end else if ( en & start ) begin
-        i_limit <= r.height[PRF_LOG_N : 0];
-        repeater_limit <= repeater;
+        i_limit <= |r.height[LOG_N_LANES - 1 : 0] ? r.height[PRF_LOG_N : 0] + (PRF_N_LANES - r.height[LOG_N_LANES - 1 : 0]) : r.height[PRF_LOG_N : 0];
+        repeater_limit <= |repeater[LOG_N_LANES - 1 : 0] ? repeater + (PRF_N_LANES - repeater[LOG_N_LANES - 1 : 0]) : repeater;
         if ( r.dtype == ma_pkg::UINT32 || r.dtype == ma_pkg::INT32 ) begin
             j_limit <= r.width[PRF_LOG_M : 0];
         end else if ( r.dtype == ma_pkg::UINT16 || r.dtype == ma_pkg::INT16 ) begin

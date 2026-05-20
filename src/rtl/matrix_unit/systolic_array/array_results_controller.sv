@@ -20,6 +20,7 @@ module array_results_controller #(
 );
     
 localparam DIAGONAL_COUNTS  =   ARRAY_HEIGHT == ARRAY_HEIGHT ? ARRAY_HEIGHT : ARRAY_HEIGHT + ARRAY_HEIGHT - 1;
+localparam LOG_N_LANES = $clog2(DIAGONAL_COUNTS);
 
 logic   [DATA_WIDTH - 1 : 0]    m, n, p;
 
@@ -29,9 +30,9 @@ always_ff @( posedge clk or negedge reset_n )
         n <= 'd0;
         p <= 'd0;
     end else if ( start ) begin
-        m <= rd.height;
-        n <= rs1.width;
-        p <= rd.width;
+        m <= |rd.height[LOG_N_LANES - 1 : 0] ? rd.height + (DIAGONAL_COUNTS - rd.height[LOG_N_LANES - 1 : 0]) : rd.height;
+        n <= |rs1.width[LOG_N_LANES - 1 : 0] ? rs1.width + (DIAGONAL_COUNTS - rs1.width[LOG_N_LANES - 1 : 0]) : rs1.width;
+        m <= |rd.width[LOG_N_LANES - 1 : 0] ? rd.width + (DIAGONAL_COUNTS - rd.width[LOG_N_LANES - 1 : 0]) : rd.width;
     end
 
 logic                                       loop_done;

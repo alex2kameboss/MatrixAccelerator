@@ -34,6 +34,8 @@ logic   rs1_done, rs2_done;
 logic   concat_en;
 logic   sa_valid;
 
+logic   [$clog2(data_intf.PRF_N_LANES) : 0] mask_value;
+
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
 assign data_intf.unit_id = ma_intf_pkg::MATRIX_UNIT;
@@ -42,7 +44,6 @@ assign data_intf.op1.valid = (~fast_rs1 ? rs1_incr_1 : rs1_incr) | start_delayed
 assign data_intf.op2.scheme = prf_dtypes::ROW;
 assign data_intf.op2.valid = rs_addr_en;
 assign data_intf.rez.scheme = prf_dtypes::COL;
-assign data_intf.rez.lane_valid = {data_intf.PRF_N_LANES{1'b1}};
 assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;
 
@@ -50,6 +51,17 @@ assign operands_addr_gen_en = (rs_addr_en | config_intf.start) & en;
 
 assign op1_addr_gen_incr = rs1_incr | fast_rs1 & start_delayed;
 assign fast_rs1 = config_intf.rs1.dtype == ma_pkg::INT32 | config_intf.rs1.dtype == ma_pkg::UINT32;
+
+genvar idx, val;
+generate;
+    for ( idx = 0; idx < data_intf.PRF_N_LANES; idx = idx + 1 ) begin : lanes_valid_idx
+        wor bit_valid;
+        for ( val = idx + 1; val <= data_intf.PRF_N_LANES; val = val + 1 ) begin : mask_value_check
+assign bit_valid = mask_value == val;
+        end
+assign data_intf.rez.lane_valid[idx] = bit_valid;
+    end
+endgenerate
 
 
 // Sequential Logic ------------------------------------------------------------------------------------------
@@ -82,7 +94,7 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 // Modules Instances -----------------------------------------------------------------------------------------
 row_addr_gen_seq #(
-    .ARRAY_WIDTH    ( SA_WIDTH    ),
+    .ARRAY_WIDTH    ( SA_WIDTH              ),
     .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
     .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M      ( data_intf.PRF_LOG_M   )
@@ -233,6 +245,7 @@ prf_addr_gen_seq #(
     .r       ( config_intf.rd       ),
     .i_out   ( data_intf.rez.i      ),
     .j_out   ( data_intf.rez.j      ),
+    .mask    ( mask_value           ),
     .done    ( rsp_intf.done        )
 );
 
