@@ -377,9 +377,9 @@ endfunction
 function automatic int roundUp (int numToRound, multiple);
     int remainder = numToRound % multiple;
     if (remainder == 0)
-        roundUp = numToRound;
+        return numToRound;
 
-    roundUp = numToRound + multiple - remainder;
+    return numToRound + multiple - remainder;
 endfunction
 
 task store_register;
@@ -1004,6 +1004,149 @@ begin
 end
 endtask
 
+task convolution_operation_test_small;
+    input register      rr      ;
+    input xif_t         rr_prf_x;
+    input xif_t         rr_prf_y;
+    input dtype_t       rr_dt   ;
+    input register      r1      ;
+    input xif_t         r1_prf_x;
+    input xif_t         r1_prf_y;
+    input dtype_t       r1_dt   ;
+    input register      r2      ;
+    input xif_t         r2_prf_x;
+    input xif_t         r2_prf_y;
+    input dtype_t       r2_dt   ;
+    input xif_t         w       ;
+    input xif_t         h       ;
+    input xif_t         w_k     ;
+    input xif_t         h_k     ;
+    input xif_t         rr_addr ;
+    input xif_t         r1_addr ;
+    input xif_t         r2_addr ;
+begin
+    int bytes_rr, bytes_r1, bytes_r2, el;
+    int kernel_w;
+    int i, j, ii, jj;
+
+    bytes_r2 = 1;
+    if ( r2_dt == INT16 | r2_dt == UINT16 )
+        bytes_r2 = 2;
+    else if ( r2_dt == INT32 | r2_dt == UINT32 )
+        bytes_r2 = 4;
+    kernel_w = PRF_N_LANES * 4 / bytes_r2;
+
+    $display("Convolution operation test");
+    define_register_one_step(
+        .r    ( rr          ),
+        .w    ( w - w_k + 1 ),
+        .h    ( h - h_k + 1 ),
+        .dt   ( rr_dt       ),
+        .prf_x( rr_prf_x    ),
+        .prf_y( rr_prf_y    ),
+        .org  ( RECT        )
+    );
+    define_register_one_step(
+        .r    ( r1      ),
+        .w    (roundUp(w, PRF_N_LANES)),
+        .h    ( h       ),
+        .dt   ( r1_dt   ),
+        .prf_x( r1_prf_x),
+        .prf_y( r1_prf_y),
+        .org  ( RECT    )
+    );
+    define_register_one_step(
+        .r    ( r2      ),
+        .w    ( kernel_w),
+        .h    ( h_k     ),
+        .dt   ( r2_dt   ),
+        .prf_x( r2_prf_x),
+        .prf_y( r2_prf_y),
+        .org  ( RECT    )
+    );
+
+    load_register(
+        .r   ( r1       ), 
+        .addr( r1_addr  )
+    );
+    load_register(
+        .r   ( r2       ), 
+        .addr( r2_addr  )
+    );
+
+    define_register_one_step(
+        .r    ( r1      ),
+        .w    ( w       ),
+        .h    ( h       ),
+        .dt   ( r1_dt   ),
+        .prf_x( r1_prf_x),
+        .prf_y( r1_prf_y),
+        .org  ( RECT    )
+    );
+    define_register(
+        .r  ( r2    ),
+        .w  ( w_k   ),
+        .h  ( h_k   ),
+        .dt ( r2_dt )
+    );
+
+    vector_vector_operation(
+        .rr ( rr ), 
+        .r1 ( r1 ), 
+        .r2 ( r2 ), 
+        .o  ( CNV)
+    );
+
+    // round rd to near multiple of n lanes
+    define_register(
+        .r  ( rr    ),
+        .w  (roundUp(w, PRF_N_LANES)),
+        .h  ( h - h_k + 1     ),
+        .dt ( rr_dt )
+    );
+
+    store_register(
+        .r   ( rr       ), 
+        .addr( rr_addr  )
+    );
+
+    // check result
+    bytes_rr = 1;
+    if ( rr_dt == INT16 | rr_dt == UINT16 )
+        bytes_rr = 2;
+    else if ( rr_dt == INT32 | rr_dt == UINT32 )
+        bytes_rr = 4;
+
+    bytes_r1 = 1;
+    if ( r1_dt == INT16 | r1_dt == UINT16 )
+        bytes_r1 = 2;
+    else if ( r1_dt == INT32 | r1_dt == UINT32 )
+        bytes_r1 = 4;
+    
+    for ( i = 0; i < h - h_k + 1; i = i + 1 )
+        for ( j = 0; j < w - w_k + 1; j = j +1 ) begin
+            el = 0;
+            for ( ii = 0; ii < h_k; ii = ii + 1 )
+                for ( jj = 0; jj < w_k; jj = jj + 1 )
+                    el = el + data_concat(r1_addr + ( (i + ii) * roundUp(w, PRF_N_LANES) + j + jj ) * bytes_r1, r1_dt) * data_concat(r2_addr + ( ii * kernel_w + jj ) * bytes_r2, r2_dt);
+            if ( rr_dt == INT32 | rr_dt == UINT32 ) begin
+                assert(el == data_concat(rr_addr + ( i * roundUp(w, PRF_N_LANES) + j ) * bytes_rr, rr_dt)) else
+                $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * roundUp(w, PRF_N_LANES) + j ) * bytes_rr, rr_dt));
+            end
+            else if ( rr_dt == INT16 | rr_dt == UINT16 ) begin
+                assert(el[15 : 0] == data_concat(rr_addr + ( i * roundUp(w, PRF_N_LANES) + j ) * bytes_rr, rr_dt)[15 : 0]) else
+                $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * roundUp(w, PRF_N_LANES) + j ) * bytes_rr, rr_dt));
+            end
+            else if ( rr_dt == INT8 | rr_dt == UINT8 ) begin
+                assert(el[7 : 0] == data_concat(rr_addr + ( i * roundUp(w, PRF_N_LANES) + j ) * bytes_rr, rr_dt)[7 : 0]) else
+                $error("i: %d, j: %d, rd_expected: %d, rd_computed: %d", i, j, el, data_concat(rr_addr + ( i * roundUp(w, PRF_N_LANES) + j ) * bytes_rr, rr_dt));
+            end
+        end
+
+    $display("------------------------------------------------------");
+end
+endtask
+
 task vector_scalar_operation_test;
     input register      rr      ;
     input xif_t         rr_prf_x;
@@ -1509,6 +1652,27 @@ initial begin
         .r2_addr ( 'd0      )
     );
 
+    convolution_operation_test_small(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd64     ),
+        .rr_prf_y( 'd64     ),
+        .rr_dt   ( INT32    ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r1_dt   ( INT32    ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd64     ),
+        .r2_dt   ( INT32    ),
+        .w       ( 'd63     ),
+        .h       ( 'd63     ),
+        .w_k     (PRF_N_LANES),
+        .h_k     (PRF_N_LANES),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
 
     // ------- test shift operations -------
     vector_scalar_operation_test(
