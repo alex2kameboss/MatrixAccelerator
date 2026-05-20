@@ -30,6 +30,7 @@ logic   splitter_en;
 logic   rs1_done, rs2_done;
 
 logic   concat_en;
+logic   [$clog2(data_intf.PRF_N_LANES) : 0] mask_value;
 
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
@@ -37,7 +38,6 @@ assign data_intf.unit_id = ma_intf_pkg::VECTORIAL_UNIT;
 assign data_intf.op1.scheme = prf_dtypes::ROW;
 assign data_intf.op2.scheme = prf_dtypes::ROW;
 assign data_intf.rez.scheme = prf_dtypes::ROW;
-assign data_intf.rez.lane_valid = {data_intf.PRF_N_LANES{1'b1}};
 assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;
 assign scalar_op =  config_intf.internal_op == ma_intf_pkg::ADD_VS | 
@@ -64,6 +64,16 @@ assign fast_rs2 = config_intf.rs2.dtype == ma_pkg::INT32 | config_intf.rs2.dtype
 assign data_intf.op1.valid = en;
 assign data_intf.op2.valid = en;
 
+genvar idx, val;
+generate;
+    for ( idx = 0; idx < data_intf.PRF_N_LANES; idx = idx + 1 ) begin : lanes_valid_idx
+        wor bit_valid;
+        for ( val = idx + 1; val <= data_intf.PRF_N_LANES; val = val + 1 ) begin : mask_value_check
+assign bit_valid = mask_value == val;
+        end
+assign data_intf.rez.lane_valid[idx] = bit_valid;
+    end
+endgenerate
 
 
 // Sequential Logic ------------------------------------------------------------------------------------------
@@ -108,6 +118,7 @@ prf_addr_gen_seq #(
     .r       ( config_intf.rs1      ),
     .i_out   ( data_intf.op1.i      ),
     .j_out   ( data_intf.op1.j      ),
+    .mask    ( /* NOT CONNECTED */  ),
     .done    ( rs1_done             )
 );
 
@@ -124,6 +135,7 @@ prf_addr_gen_seq #(
     .r       ( config_intf.rs2      ),
     .i_out   ( data_intf.op2.i      ),
     .j_out   ( data_intf.op2.j      ),
+    .mask    ( /* NOT CONNECTED */  ),
     .done    ( rs2_done             )
 );
 
@@ -199,6 +211,7 @@ prf_addr_gen_seq #(
     .r       ( config_intf.rd       ),
     .i_out   ( data_intf.rez.i      ),
     .j_out   ( data_intf.rez.j      ),
+    .mask    ( mask_value           ),
     .done    ( rsp_intf.done        )
 );
 

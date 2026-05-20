@@ -1,18 +1,20 @@
 module prf_addr_gen_seq #(
-    parameter   ma_pkg::organization_t  SCHEME      =   ma_pkg::COL ,
-    parameter                           PRF_N_LANES =   8           ,
-    parameter                           PRF_LOG_N   =   10          ,
-    parameter                           PRF_LOG_M   =   10  
+    parameter   ma_pkg::organization_t  SCHEME      =   ma_pkg::COL         ,
+    parameter                           PRF_N_LANES =   8                   ,
+    parameter                           PRF_LOG_N   =   10                  ,
+    parameter                           PRF_LOG_M   =   10                  ,
+    localparam                          LOG_N_LANES =   $clog2(PRF_N_LANES) 
 ) (
-    input   logic                                               clk     ,
-    input   logic                                               rst_n   ,
-    input   logic                                               en      ,
-    input   logic                                               start   ,
-    input   logic                                               incr    ,
-    input   ma_pkg::register_file_line_t                        r       ,
-    output  logic                        [PRF_LOG_N - 1 : 0]    i_out   ,
-    output  logic                        [PRF_LOG_M - 1 : 0]    j_out   ,
-    output  logic                                               done    
+    input   logic                                           clk     ,
+    input   logic                                           rst_n   ,
+    input   logic                                           en      ,
+    input   logic                                           start   ,
+    input   logic                                           incr    ,
+    input   ma_pkg::register_file_line_t                    r       ,
+    output  logic                       [PRF_LOG_N - 1 : 0] i_out   ,
+    output  logic                       [PRF_LOG_M - 1 : 0] j_out   ,
+    output  logic                       [LOG_N_LANES : 0]   mask    ,
+    output  logic                                           done    
 );
     
 logic   [PRF_LOG_N + 1 : 0]    i_out_next, i_limit;
@@ -30,7 +32,43 @@ assign j_out_next = j_out + PRF_N_LANES;
     end else if ( SCHEME == ma_pkg::ROW ) begin : row_order_gen
 assign i_out_next = i_out + PRF_N_LANES;
 assign j_out_next = j_out + 1'b1;    
-    end else begin : error
+    end else begin : error_order_gen
+        $fatal("Iterate %s order not possible", SCHEME);
+    end
+endgenerate
+
+generate
+    if ( SCHEME == ma_pkg::COL ) begin : col_mask_gen
+//assign i_out_next = i_out + 1'b1;
+//assign j_out_next = j_out + PRF_N_LANES;
+always_comb begin
+    mask = PRF_N_LANES;
+    if ( j_done & |j_limit[LOG_N_LANES - 1 : 0]) begin
+        mask = {1'b0, j_limit[LOG_N_LANES - 1 : 0]};
+
+        if ( r.dtype == ma_pkg::UINT16 || r.dtype == ma_pkg::INT16 ) begin
+            mask = mask + r.width[0];
+        end else begin
+            mask = mask + |r.width[1 : 0];
+        end    
+    end
+end
+    end else if ( SCHEME == ma_pkg::ROW ) begin : row_mask_gen
+//assign i_out_next = i_out + PRF_N_LANES;
+//assign j_out_next = j_out + 1'b1;    
+always_comb begin
+    mask = PRF_N_LANES;
+    if ( i_done & |i_limit[LOG_N_LANES - 1 : 0]) begin
+        mask = {1'b0, i_limit[LOG_N_LANES - 1 : 0]};
+
+        if ( r.dtype == ma_pkg::UINT16 || r.dtype == ma_pkg::INT16 ) begin
+            mask = mask + r.height[0];
+        end else begin
+            mask = mask + |r.height[1 : 0];
+        end  
+    end
+end
+    end else begin : error_mask_gen
         $fatal("Iterate %s order not possible", SCHEME);
     end
 endgenerate
