@@ -10,9 +10,12 @@ localparam NUMBER_OF_ALU = data_intf.DATA_WIDTH / config_intf.ALU_WIDTH;
 
 // Wires Definition ------------------------------------------------------------------------------------------
 logic   en;
-logic   scalar_op;
+logic   scalar_op, broadcast;
 
-logic   [data_intf.DATA_WIDTH - 1 : 0]    scalar_line;
+ma_pkg::register_file_line_t              rs1;
+logic   [data_intf.PRF_LOG_M - 1 : 0]     op1_j;
+logic   [data_intf.DATA_WIDTH - 1 : 0]    scalar_line, broadcast_line;
+logic   [data_intf.DATA_WIDTH - 1 : 0]    op1;
 logic   [data_intf.DATA_WIDTH - 1 : 0]    op2;
 
 logic   [config_intf.ALU_WIDTH - 1 : 0]    op1_alu [NUMBER_OF_ALU - 1 : 0];
@@ -47,11 +50,35 @@ assign scalar_op =  config_intf.internal_op == ma_intf_pkg::ADD_VS |
                     config_intf.internal_op == ma_intf_pkg::SRL_VS |
                     config_intf.internal_op == ma_intf_pkg::SRA_VS |
                     config_intf.internal_op == ma_intf_pkg::MUL_VS ; 
+assign broadcast = config_intf.internal_op == ma_intf_pkg::BROADCAST;
 
 assign scalar_line = config_intf.rd.dtype == ma_pkg::INT32 | config_intf.rd.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {config_intf.scalar[31 : 0]}} :
                      config_intf.rd.dtype == ma_pkg::INT16 | config_intf.rd.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {config_intf.scalar[15 : 0]}} :
                                                                                                       {NUMBER_OF_ALU * 4 {config_intf.scalar[7 : 0]}};
-assign op2 = scalar_op ? scalar_line : data_intf.op2_data;                                                                                      
+
+assign broadcast_line = config_intf.rs1.dtype == ma_pkg::INT32 | config_intf.rs1.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {data_intf.op1_data[31 : 0]}} :
+                     config_intf.rs1.dtype == ma_pkg::INT16 | config_intf.rs1.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {data_intf.op1_data[15 : 0]}} :
+                                                                                                      {NUMBER_OF_ALU * 4 {data_intf.op1_data[7 : 0]}};
+
+assign op1 = broadcast ? broadcast_line : data_intf.op1_data;
+
+always_comb begin
+    if ( scalar_op )
+        op2 = scalar_line;
+    else if ( broadcast )
+        op2 = 'd0;
+    else
+        op2 = data_intf.op2_data;
+end
+
+always_comb begin
+    rs1 = config_intf.rs1;
+    if ( broadcast ) begin
+        rs1.width = config_intf.rd.width;
+    end
+end
+
+assign data_intf.op1.j = broadcast ? rs1.prf_y[data_intf.PRF_LOG_M - 1 : 0] : op1_j;
 
 assign operands_addr_gen_en = rs_addr_en | config_intf.start;
 assign op1_addr_gen_incr = rs1_incr | fast_rs1 & start_delayed;
@@ -115,9 +142,9 @@ prf_addr_gen_seq #(
     .start   ( config_intf.start    ),
     .en      ( operands_addr_gen_en ),
     .incr    ( op1_addr_gen_incr    ),
-    .r       ( config_intf.rs1      ),
+    .r       ( rs1                  ),
     .i_out   ( data_intf.op1.i      ),
-    .j_out   ( data_intf.op1.j      ),
+    .j_out   ( op1_j                ),
     .mask    ( /* NOT CONNECTED */  ),
     .done    ( rs1_done             )
 );
@@ -130,7 +157,7 @@ prf_addr_gen_seq #(
     .clk     ( data_intf.clk        ),
     .rst_n   ( data_intf.rst_n      ),
     .start   ( config_intf.start    ),
-    .en      ( operands_addr_gen_en & ~scalar_op ),
+    .en      ( operands_addr_gen_en & ~scalar_op & ~broadcast ),
     .incr    ( op2_addr_gen_incr    ),
     .r       ( config_intf.rs2      ),
     .i_out   ( data_intf.op2.i      ),
@@ -148,7 +175,7 @@ vectorial_splitter #(
     .reset      ( config_intf.start     ),
     .en         ( splitter_en           ),
     .dtype      ( config_intf.rs1.dtype ),
-    .op_in      ( data_intf.op1_data    ),
+    .op_in      ( op1                   ),
     .op_out     ( op1_alu               ),
     .next       ( rs1_incr              )
 );
@@ -175,7 +202,7 @@ ma_alu #(
 ) i_vectorial_alu (
     .clk    ( data_intf.clk         ),
     .en     ( splitter_en           ),
-    .op     ( config_intf.op        ),
+    .op     ( broadcast ? ma_pkg::ADD : config_intf.op        ),
     .dtype  ( config_intf.rs1.dtype ),
     .op1    ( op1_alu[j]            ),
     .op2    ( op2_alu[j]            ),

@@ -88,8 +88,12 @@ always_comb begin
                 internal_op = ma_intf_pkg::CNV_VV;
                 dst_unit = ma_intf_pkg::CNV_UNIT;
             end
+            ma_pkg::BC : begin 
+                internal_op = ma_intf_pkg::BROADCAST;
+                dst_unit = ma_intf_pkg::VECTORIAL_UNIT;
+            end
             default     : begin 
-                internal_op = ma_intf_pkg::NOP;
+                internal_op = ma_intf_pkg::BROADCAST;
                 dst_unit = ma_intf_pkg::NONE_MODULE;
             end
         endcase

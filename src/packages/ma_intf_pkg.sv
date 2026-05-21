@@ -10,26 +10,27 @@ typedef enum logic[2 : 0] {
     NONE_MODULE               
 } unit_id_t;
 
-typedef enum logic[3 : 0] {
+typedef enum logic[4 : 0] {
     // VECTOR-VECTOR
-    ADD_VV  ,
-    SUB_VV  ,
-    CNV_VV  ,
-    DIV_VV  ,
-    MUL_VV  ,
-    SMUL_VV ,
+    ADD_VV      ,
+    SUB_VV      ,
+    CNV_VV      ,
+    DIV_VV      ,
+    MUL_VV      ,
+    SMUL_VV     ,
+    BROADCAST   ,
     // VECTOR-SCALAR
-    ADD_VS  ,
-    SUB_VS  ,
-    DIV_VS  ,
-    SLL_VS  ,
-    SRL_VS  ,
-    SRA_VS  ,
-    MUL_VS  ,
+    ADD_VS      ,
+    SUB_VS      ,
+    DIV_VS      ,
+    SLL_VS      ,
+    SRL_VS      ,
+    SRA_VS      ,
+    MUL_VS      ,
     // MEMORY
-    LOAD    ,
-    STORE   ,
-    NOP     
+    LOAD        ,
+    STORE       ,
+    NOP         
 } internal_op_t;
 
 endpackage
