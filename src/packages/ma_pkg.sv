@@ -4,10 +4,13 @@ typedef enum logic [6:0] {
     ADD = 1,
     SUB = 2,
     CNV = 4,
+    NEWTON=7,
     DIV = 8,
     SLL = 9, // shift left logic
     SRL = 10, // shift right logic
     SRA = 11, // shift right arithmetic
+    FFT = 12,
+    IFFT = 13,
     MUL = 16,
     SMUL = 48,
     BC = 64, // broadcast
@@ -22,6 +25,7 @@ typedef enum logic [3:0] {
     V_SRA,
     // V_DIV, - to much for fpga
     V_MUL,
+    V_NEWTON, // TODO
     V_NOP
 } vectorial_operation_t;
 

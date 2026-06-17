@@ -62,6 +62,32 @@ sources:
     - src/rtl/convolution_unit/cnv_data_splitter.sv
     - src/rtl/convolution_unit/mask_generator.sv
     - src/rtl/convolution_unit/parallel_to_serial.sv
+    # newton unit
+    - src/rtl/newton_unit/au_clz.sv
+    - src/rtl/newton_unit/au_initial_approx.sv
+    - src/rtl/newton_unit/au_newton_step1.sv
+    - src/rtl/newton_unit/au_newton_step2.sv
+    - src/rtl/newton_unit/au_final_multiply.sv
+    - src/rtl/newton_unit/au_inverse_top.sv
+    - src/rtl/newton_unit/au_inverse_pipe.sv
+    # fft unit
+    - src/rtl/fft/butterfly_type1.sv
+    - src/rtl/fft/butterfly_type2.sv
+    - src/rtl/fft/butterfly_type3.sv
+    - src/rtl/fft/butterfly_type4.sv
+    - src/rtl/fft/column_multipliers_16.sv
+    - src/rtl/fft/delay_commutator.sv
+    - src/rtl/fft/FFT16a.sv
+    - src/rtl/fft/FFT256.sv
+    - src/rtl/fft/mult_complex_3DSP.sv
+    - src/rtl/fft/shift_complex.sv
+    - src/rtl/fft/shift.sv
+    - src/rtl/fft/stage1to0.sv
+    - src/rtl/fft/stage2to1.sv
+    - src/rtl/fft/stage3to2.sv
+    - src/rtl/fft/stage4to3.sv
+    - src/rtl/fft/transpose_16.sv
+    - src/rtl/fft/twiddle_256.sv
     # matrix accelerator components
     - src/rtl/matrix_accelerator/ma_decoder.sv
     - src/rtl/matrix_accelerator/ma_control_unit.sv
@@ -70,6 +96,8 @@ sources:
     - src/rtl/matrix_accelerator/ma_matrix_unit.sv
     - src/rtl/matrix_accelerator/ma_vectorial_unit.sv
     - src/rtl/matrix_accelerator/ma_convolution_unit.sv
+    - src/rtl/matrix_accelerator/ma_newton_unit.sv
+    - src/rtl/matrix_accelerator/ma_fft_unit.sv
     - src/rtl/convolution_unit/cnv_data_concat.sv
     # bus arbiter
     - src/rtl/bus_arbiters/ma_data_bus_arbiter.sv
