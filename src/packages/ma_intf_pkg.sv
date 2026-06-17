@@ -20,6 +20,7 @@ typedef enum logic[4 : 0] {
     DIV_VV      ,
     MUL_VV      ,
     SMUL_VV     ,
+    NEWTON_VV   ,
     BROADCAST   ,
     // VECTOR-SCALAR
     ADD_VS      ,
@@ -29,32 +30,13 @@ typedef enum logic[4 : 0] {
     SRL_VS      ,
     SRA_VS      ,
     MUL_VS      ,
+    NEWTON_VS   ,
     // MEMORY
     LOAD        ,
     STORE       ,
-    NOP         
-    ADD_VV  ,
-    SUB_VV  ,
-    CNV_VV  ,
-    DIV_VV  ,
-    MUL_VV  ,
-    SMUL_VV ,
-    NEWTON_VV,
-    // VECTOR-SCALAR
-    ADD_VS  ,
-    SUB_VS  ,
-    DIV_VS  ,
-    SLL_VS  ,
-    SRL_VS  ,
-    SRA_VS  ,
-    MUL_VS  ,
-    NEWTON_VS,
-    // MEMORY
-    LOAD    ,
-    STORE   ,
     // FFT
-    FFT     ,
-    IFFT    ,
+    FFT         ,
+    IFFT        ,
     NOP     
 } internal_op_t;
 

@@ -374,14 +374,14 @@ function int alu (int x, y, operation_t o);
   endcase
 endfunction
 
-<<<<<<< HEAD
 function automatic int roundUp (int numToRound, multiple);
     int remainder = numToRound % multiple;
     if (remainder == 0)
         return numToRound;
 
     return numToRound + multiple - remainder;
-=======
+endfunction
+
 function automatic int unsigned newton_div_ref(int unsigned x_val, int unsigned z_val);
     longint unsigned product;
     product = longint'(unsigned'(x_val)) * 64'd65536;
@@ -402,7 +402,6 @@ function void init_newton_random_mem(int base_x, int base_z, int w, int h);
             i_sim_mem.i_sim_mem.mem[addr_z + 0] = z_val[7:0];
             i_sim_mem.i_sim_mem.mem[addr_z + 1] = z_val[15:8];
         end
->>>>>>> newton
 endfunction
 
 task store_register;
@@ -2171,6 +2170,8 @@ initial begin
         .h       ( 'd32     ),
         .rr_addr ( MEM_SIZE ),
         .r1_addr ( 'd0      )
+    );
+
     newton_random_test(
         .rr      ( 'd2              ),
         .rr_prf_x( 'd0              ),

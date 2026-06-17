@@ -94,6 +94,7 @@ always_comb begin
             ma_pkg::BC : begin 
                 internal_op = ma_intf_pkg::BROADCAST;
                 dst_unit = ma_intf_pkg::VECTORIAL_UNIT;
+            end
             ma_pkg::FFT : begin 
                 internal_op = ma_intf_pkg::FFT;
                 dst_unit = ma_intf_pkg::FFT_UNIT;
