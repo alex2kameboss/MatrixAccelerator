@@ -6,7 +6,8 @@ module ma_data_bus_arbiter (
     ma_data_bus.memory      mu_intf     ,
     ma_data_bus.memory      nu_intf     ,
     ma_data_bus.memory      cu_intf     ,
-    ma_data_bus.memory      fft_intf     
+    ma_data_bus.memory      fft_intf    ,
+    ma_data_bus.memory      ntt_intf     
 );
 
 always_comb begin
@@ -47,6 +48,12 @@ always_comb begin
             mem_intf.op2       = fft_intf.op2     ;
             mem_intf.rez_data  = fft_intf.rez_data;
         end
+        ma_intf_pkg::NTT_UNIT : begin
+            mem_intf.rez       = ntt_intf.rez     ;
+            mem_intf.op1       = ntt_intf.op1     ;
+            mem_intf.op2       = ntt_intf.op2     ;
+            mem_intf.rez_data  = ntt_intf.rez_data;
+        end
         ma_intf_pkg::NONE_MODULE: begin
                 mem_intf.rez        = 'd0;
                 mem_intf.op1        = 'd0;
@@ -68,5 +75,7 @@ assign nu_intf.op1_data = mem_intf.op1_data;
 assign nu_intf.op2_data = mem_intf.op2_data;
 assign fft_intf.op1_data = mem_intf.op1_data;
 assign fft_intf.op2_data = mem_intf.op2_data;
+assign ntt_intf.op1_data = mem_intf.op1_data;
+assign ntt_intf.op2_data = mem_intf.op2_data;
 
 endmodule

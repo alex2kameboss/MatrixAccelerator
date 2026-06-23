@@ -9,6 +9,7 @@ typedef enum logic[3 : 0] {
     CNV_UNIT        ,
     NEWTON_UNIT     ,
     FFT_UNIT        ,
+    NTT_UNIT        ,
     NONE_MODULE               
 } unit_id_t;
 
@@ -37,6 +38,7 @@ typedef enum logic[4 : 0] {
     // FFT
     FFT         ,
     IFFT        ,
+    NTT         ,
     NOP     
 } internal_op_t;
 

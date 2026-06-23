@@ -24,7 +24,7 @@ module matrix_accelerator #(
 localparam ALU_WIDTH = 32;
 localparam ADDR_WIDTH = instr_if.X_MEM_WIDTH;
 
-enum logic [2 : 0] {
+enum logic [3 : 0] {
     MEMORY          ,
     DMA             ,
     VECTOR          ,
@@ -32,6 +32,7 @@ enum logic [2 : 0] {
     CNV             ,
     NEWTON          ,
     FFT             ,
+    NTT             ,
     NUMBER_OF_UNITS
 } units_t;
 
@@ -155,6 +156,12 @@ ma_fft_unit i_fft_unit (
     .rsp_intf       ( rsp_intf[FFT] )
 );
 
+ma_ntt_unit i_ntt_unit (
+    .config_intf    ( config_intf   ),
+    .data_intf      ( data_intf[NTT]),
+    .rsp_intf       ( rsp_intf[NTT] )
+);
+
 ma_memory i_memory (
     .clk_2x ( clk_2x            ),
     .intf   ( data_intf[MEMORY] )
@@ -168,7 +175,8 @@ ma_data_bus_arbiter i_memory_arbiter (
     .mu_intf    ( data_intf[MATRIX] ),
     .nu_intf    ( data_intf[NEWTON] ),
     .cu_intf    ( data_intf[CNV]    ),
-    .fft_intf   ( data_intf[FFT]    )
+    .fft_intf   ( data_intf[FFT]    ),
+    .ntt_intf   ( data_intf[NTT]    )
 );
 
 ma_rsp_intf_arbiter #(

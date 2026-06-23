@@ -103,6 +103,10 @@ always_comb begin
                 internal_op = ma_intf_pkg::IFFT;
                 dst_unit = ma_intf_pkg::FFT_UNIT;
             end
+            ma_pkg::NTT : begin 
+                internal_op = ma_intf_pkg::NTT;
+                dst_unit = ma_intf_pkg::NTT_UNIT;
+            end
             default     : begin 
                 internal_op = ma_intf_pkg::BROADCAST;
                 dst_unit = ma_intf_pkg::NONE_MODULE;
