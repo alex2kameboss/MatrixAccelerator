@@ -131,7 +131,7 @@ always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )                 dma_addr_en <= 'd0;                 else
-    if ( load | store & config_intf.start ) dma_addr_en <= 'd1;                 else
+    if ((load | store) & config_intf.start) dma_addr_en <= 'd1;                 else
     if ( dma_done )                         dma_addr_en <= 'd0;   
 
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )

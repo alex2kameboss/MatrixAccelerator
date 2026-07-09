@@ -108,7 +108,7 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             rs_addr_en <= 1'b0;         else
     if ( config_intf.start & en )       rs_addr_en <= 1'b1;         else
     if ( rs1_done & 
-       (rs2_done | scalar_op) )         rs_addr_en <= 1'b0;  
+    (rs2_done | scalar_op | broadcast)) rs_addr_en <= 1'b0;  
 
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             start_delayed <= 1'b0;      else
