@@ -1585,6 +1585,28 @@ initial begin
     @(posedge clk);
 
     init_mem();
+    
+    vector_vector_operation_test(
+        .rr      ( 'd2      ),
+        .rr_prf_x( 'd0      ),
+        .rr_prf_y( 'd64     ),
+        .r1      ( 'd0      ),
+        .r1_prf_x( 'd0      ),
+        .r1_prf_y( 'd0      ),
+        .r2      ( 'd1      ),
+        .r2_prf_x( 'd0      ),
+        .r2_prf_y( 'd64     ),
+        .o       ( NTT      ),
+        .dt      ( INT32    ),
+        .w       ( 'd64     ),
+        .h       ( 'd64     ),
+        .rr_addr ( MEM_SIZE ),
+        .r1_addr ( 'd0      ),
+        .r2_addr ( 'd0      )
+    );
+
+    $finish();
+
     // ------- test register definition -------
     $display("Define register test");
     for ( int ridx = 0; ridx < NUMBER_OF_REGISTERS; ridx = ridx + 1 ) begin
