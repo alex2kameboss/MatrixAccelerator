@@ -30,6 +30,7 @@ always_comb
         ma_pkg::SRL : vectorial_op = ma_pkg::V_SRL;
         ma_pkg::SRA : vectorial_op = ma_pkg::V_SRA;
         ma_pkg::SMUL: vectorial_op = ma_pkg::V_MUL;
+        ma_pkg::MUL : vectorial_op = ma_pkg::V_MUL;
         ma_pkg::ADD : vectorial_op = ma_pkg::V_ADD;
         default     : vectorial_op = ma_pkg::V_NOP;
     endcase
@@ -57,6 +58,7 @@ always_comb
         ma_pkg::SRL : rez = data_right_shifter;
         ma_pkg::SRA : rez = data_right_shifter;
         ma_pkg::SMUL: rez = op1 * op2;
+        ma_pkg::MUL : rez = op1 * op2;
         default     : rez = op1 + op2;
     endcase
 `endif
