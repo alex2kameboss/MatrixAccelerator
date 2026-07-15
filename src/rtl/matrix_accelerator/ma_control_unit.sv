@@ -91,8 +91,12 @@ always_comb begin
                 internal_op = ma_intf_pkg::CNV_VV;
                 dst_unit = ma_intf_pkg::CNV_UNIT;
             end
-            ma_pkg::BC : begin 
-                internal_op = ma_intf_pkg::BROADCAST;
+            ma_pkg::BC_L : begin 
+                internal_op = ma_intf_pkg::BROADCAST_L;
+                dst_unit = ma_intf_pkg::VECTORIAL_UNIT;
+            end
+            ma_pkg::BC_R : begin 
+                internal_op = ma_intf_pkg::BROADCAST_R;
                 dst_unit = ma_intf_pkg::VECTORIAL_UNIT;
             end
             ma_pkg::FFT : begin 
@@ -104,7 +108,7 @@ always_comb begin
                 dst_unit = ma_intf_pkg::FFT_UNIT;
             end
             default     : begin 
-                internal_op = ma_intf_pkg::BROADCAST;
+                internal_op = ma_intf_pkg::ADD_VV;
                 dst_unit = ma_intf_pkg::NONE_MODULE;
             end
         endcase

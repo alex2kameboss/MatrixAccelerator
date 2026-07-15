@@ -21,7 +21,8 @@ typedef enum logic[4 : 0] {
     MUL_VV      ,
     SMUL_VV     ,
     NEWTON_VV   ,
-    BROADCAST   ,
+    BROADCAST_L ,
+    BROADCAST_R ,
     // VECTOR-SCALAR
     ADD_VS      ,
     SUB_VS      ,
