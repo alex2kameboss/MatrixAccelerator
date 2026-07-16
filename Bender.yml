@@ -56,6 +56,8 @@ sources:
     - src/rtl/matrix_unit/systolic_array/col_addr_gen_seq.sv
     - src/rtl/matrix_unit/systolic_array/array_results_controller.sv
     - src/rtl/matrix_unit/systolic_array/line_mux.sv
+    - src/rtl/matrix_unit/matrix_splitter.sv
+    - src/rtl/matrix_unit/matrix_concat.sv
     # convolution unit
     - src/rtl/convolution_unit/matrix_addr_gen.sv
     - src/rtl/convolution_unit/kernel_addr_gen.sv

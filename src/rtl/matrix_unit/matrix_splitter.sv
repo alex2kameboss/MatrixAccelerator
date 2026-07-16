@@ -1,6 +1,4 @@
-// TODO: update for one operand
-
-module vectorial_splitter #(
+module matrix_splitter #(
     parameter   IN_DATA_WIDTH  =   128  ,
     parameter   OUT_DATA_WIDTH =    32  
 ) (
@@ -74,25 +72,34 @@ assign is_signed = dtype == ma_pkg::INT32 | dtype == ma_pkg::INT16 | dtype == ma
 
 genvar i;
 
-logic   [ 8 - 1 : 0]    batch_data_8b [NUMBER_OF_ALU - 1 : 0];
-logic   [16 - 1 : 0]    batch_data_16b[NUMBER_OF_ALU - 1 : 0];
-logic   [32 - 1 : 0]    batch_data_32b[NUMBER_OF_ALU - 1 : 0];
-
-assign batch_data_8b  = data_8b [(cnt_8b + 1) * NUMBER_OF_ALU - 1 -: NUMBER_OF_ALU ];
-assign batch_data_16b = data_16b[(cnt_16b + 1) * NUMBER_OF_ALU - 1 -: NUMBER_OF_ALU ];
-assign batch_data_32b = data_32b;
-
 generate
     for ( i = 0; i < NUMBER_OF_ALU; i = i + 1 ) begin : dtype_selection
+
+logic   [ 8 - 1 : 0]    mux_data_8b [OUT_DATA_WIDTH / 8  - 1 : 0];
+logic   [16 - 1 : 0]    mux_data_16b[OUT_DATA_WIDTH / 16 - 1 : 0];
+logic   [32 - 1 : 0]    mux_data_32b[OUT_DATA_WIDTH / 32 - 1 : 0];
+
+assign mux_data_8b  = data_8b [(i + 1) * OUT_DATA_WIDTH / 8  - 1 -: OUT_DATA_WIDTH / 8 ];
+assign mux_data_16b = data_16b[(i + 1) * OUT_DATA_WIDTH / 16 - 1 -: OUT_DATA_WIDTH / 16];
+assign mux_data_32b = data_32b[(i + 1) * OUT_DATA_WIDTH / 32 - 1 -: OUT_DATA_WIDTH / 32];
+
+logic   [ 8 - 1 : 0]    win_data_8b ;
+logic   [16 - 1 : 0]    win_data_16b;
+logic   [32 - 1 : 0]    win_data_32b;
+
+assign win_data_8b  = mux_data_8b [cnt_8b];
+assign win_data_16b = mux_data_16b[cnt_16b];
+assign win_data_32b = mux_data_32b[cnt_32b];
+
 logic   [OUT_DATA_WIDTH - 1 : 0]    out;
 
 always_comb
     if ( dtype == ma_pkg::INT32 | dtype == ma_pkg::UINT32 ) begin
-        out = {{(OUT_DATA_WIDTH - 32){is_signed & batch_data_32b[i][31]}}, batch_data_32b[i]};
+        out = {{(OUT_DATA_WIDTH - 32){is_signed & win_data_32b[31]}}, win_data_32b};
     end else if ( dtype == ma_pkg::INT16 | dtype == ma_pkg::UINT16 ) begin
-        out = {{(OUT_DATA_WIDTH - 16){is_signed & batch_data_16b[i][15]}}, batch_data_16b[i]};
+        out = {{(OUT_DATA_WIDTH - 16){is_signed & win_data_16b[15]}}, win_data_16b};
     end else begin
-        out = {{(OUT_DATA_WIDTH - 8){is_signed & batch_data_8b[i][7]}}, batch_data_8b[i]};
+        out = {{(OUT_DATA_WIDTH - 8){is_signed & win_data_8b[7]}}, win_data_8b};
     end
 
 always_ff @(posedge clk, negedge rst_n)
