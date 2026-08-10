@@ -14,7 +14,8 @@ typedef enum logic [6:0] {
     NTT = 14,
     MUL = 16,
     SMUL = 48,
-    BC = 64, // broadcast
+    BC_L = 64, // broadcast left
+    BC_R = 65, // broadcast right
     NOP = {7{1'b1}}
 } operation_t;
 

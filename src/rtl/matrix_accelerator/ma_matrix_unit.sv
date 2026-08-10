@@ -131,7 +131,7 @@ col_addr_gen_seq #(
     .g_sel   ( g_sel_d              )
 );
 
-vectorial_splitter #(
+matrix_splitter #(
     .IN_DATA_WIDTH  ( data_intf.DATA_WIDTH  ),
     .OUT_DATA_WIDTH ( config_intf.ALU_WIDTH )
 ) i_row_splitter (
@@ -217,7 +217,7 @@ array_results_controller #(
     .valid_o        ( sa_valid              )
 );
 
-vectorial_concat #(
+matrix_concat #(
     .OUT_DATA_WIDTH ( data_intf.DATA_WIDTH  ),
     .IN_DATA_WIDTH  ( config_intf.ALU_WIDTH )
 ) i_matrix_concat (

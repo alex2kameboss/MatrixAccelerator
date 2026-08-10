@@ -13,6 +13,7 @@ logic   en;
 logic   scalar_op, broadcast;
 
 ma_pkg::register_file_line_t              rs1;
+logic   [31 : 0]                          op1_j_right;
 logic   [data_intf.PRF_LOG_M - 1 : 0]     op1_j;
 logic   [data_intf.DATA_WIDTH - 1 : 0]    scalar_line, broadcast_line;
 logic   [data_intf.DATA_WIDTH - 1 : 0]    op1;
@@ -50,15 +51,22 @@ assign scalar_op =  config_intf.internal_op == ma_intf_pkg::ADD_VS |
                     config_intf.internal_op == ma_intf_pkg::SRL_VS |
                     config_intf.internal_op == ma_intf_pkg::SRA_VS |
                     config_intf.internal_op == ma_intf_pkg::MUL_VS ; 
-assign broadcast = config_intf.internal_op == ma_intf_pkg::BROADCAST;
+assign broadcast = config_intf.internal_op == ma_intf_pkg::BROADCAST_L |
+                    config_intf.internal_op == ma_intf_pkg::BROADCAST_R;
 
 assign scalar_line = config_intf.rd.dtype == ma_pkg::INT32 | config_intf.rd.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {config_intf.scalar[31 : 0]}} :
                      config_intf.rd.dtype == ma_pkg::INT16 | config_intf.rd.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {config_intf.scalar[15 : 0]}} :
                                                                                                       {NUMBER_OF_ALU * 4 {config_intf.scalar[7 : 0]}};
 
-assign broadcast_line = config_intf.rs1.dtype == ma_pkg::INT32 | config_intf.rs1.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {data_intf.op1_data[31 : 0]}} :
-                     config_intf.rs1.dtype == ma_pkg::INT16 | config_intf.rs1.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {data_intf.op1_data[15 : 0]}} :
-                                                                                                      {NUMBER_OF_ALU * 4 {data_intf.op1_data[7 : 0]}};
+always_comb
+    if ( config_intf.internal_op == ma_intf_pkg::BROADCAST_L )
+        broadcast_line = config_intf.rs1.dtype == ma_pkg::INT32 | config_intf.rs1.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {data_intf.op1_data[31 : 0]}} :
+                        config_intf.rs1.dtype == ma_pkg::INT16 | config_intf.rs1.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {data_intf.op1_data[15 : 0]}} :
+                                                                                                            {NUMBER_OF_ALU * 4 {data_intf.op1_data[7 : 0]}};
+    else
+        broadcast_line = config_intf.rs1.dtype == ma_pkg::INT32 | config_intf.rs1.dtype == ma_pkg::UINT32 ? {NUMBER_OF_ALU {data_intf.op1_data[data_intf.DATA_WIDTH - 1 -: 32]}} :
+                        config_intf.rs1.dtype == ma_pkg::INT16 | config_intf.rs1.dtype == ma_pkg::UINT16 ? {NUMBER_OF_ALU * 2 {data_intf.op1_data[data_intf.DATA_WIDTH - 1 -: 16]}} :
+                                                                                                            {NUMBER_OF_ALU * 4 {data_intf.op1_data[data_intf.DATA_WIDTH - 1 -: 8]}};
 
 assign op1 = broadcast ? broadcast_line : data_intf.op1_data;
 
@@ -78,8 +86,13 @@ always_comb begin
     end
 end
 
-assign data_intf.op1.j = broadcast ? rs1.prf_y[data_intf.PRF_LOG_M - 1 : 0] : op1_j;
-
+always_comb begin
+    case (config_intf.internal_op)
+        ma_intf_pkg::BROADCAST_L: data_intf.op1.j = rs1.prf_y[data_intf.PRF_LOG_M - 1 : 0];
+        ma_intf_pkg::BROADCAST_R: data_intf.op1.j = op1_j_right[data_intf.PRF_LOG_M - 1 : 0];
+        default: data_intf.op1.j = op1_j;
+    endcase
+end
 assign operands_addr_gen_en = rs_addr_en | config_intf.start;
 assign op1_addr_gen_incr = rs1_incr | fast_rs1 & start_delayed;
 assign op2_addr_gen_incr = rs2_incr | fast_rs2 & start_delayed;
@@ -108,7 +121,7 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             rs_addr_en <= 1'b0;         else
     if ( config_intf.start & en )       rs_addr_en <= 1'b1;         else
     if ( rs1_done & 
-       (rs2_done | scalar_op) )         rs_addr_en <= 1'b0;  
+    (rs2_done | scalar_op | broadcast)) rs_addr_en <= 1'b0;  
 
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             start_delayed <= 1'b0;      else
@@ -129,6 +142,18 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
 always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )     concat_en <= 'd0;                    else
                                 concat_en <= splitter_en;
+
+always_ff @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )     op1_j_right <= 'd0;                  else
+    if ( en & config_intf.start ) begin
+        if ( rs1.dtype == ma_pkg::UINT32 || rs1.dtype == ma_pkg::INT32 ) begin
+            op1_j_right <= rs1.prf_y + config_intf.rs1.width - data_intf.PRF_N_LANES;
+        end else if ( rs1.dtype == ma_pkg::UINT16 || rs1.dtype == ma_pkg::INT16 ) begin
+            op1_j_right <= rs1.prf_y + {1'h0, config_intf.rs1.width[31 : 1]} - data_intf.PRF_N_LANES;
+        end else begin
+            op1_j_right <= rs1.prf_y + {2'h0, config_intf.rs1.width[31 : 2]} - data_intf.PRF_N_LANES;
+        end
+    end
 
 
 // Modules Instances -----------------------------------------------------------------------------------------
