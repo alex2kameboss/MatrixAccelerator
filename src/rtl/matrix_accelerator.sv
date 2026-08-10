@@ -32,7 +32,7 @@ enum logic [3 : 0] {
     CNV             ,
     NEWTON          ,
     FFT             ,
-    NTT             ,
+    COMPLEX_MULT    ,
     NUMBER_OF_UNITS
 } units_t;
 
@@ -156,10 +156,10 @@ ma_fft_unit i_fft_unit (
     .rsp_intf       ( rsp_intf[FFT] )
 );
 
-ma_ntt_unit i_ntt_unit (
-    .config_intf    ( config_intf   ),
-    .data_intf      ( data_intf[NTT]),
-    .rsp_intf       ( rsp_intf[NTT] )
+ma_complex_mult_unit i_complex_mult_unit (
+    .config_intf    ( config_intf           ),
+    .data_intf      (data_intf[COMPLEX_MULT]),
+    .rsp_intf       ( rsp_intf[COMPLEX_MULT])
 );
 
 ma_memory i_memory (
@@ -168,15 +168,15 @@ ma_memory i_memory (
 );
 
 ma_data_bus_arbiter i_memory_arbiter (
-    .control    ( config_intf       ),
-    .mem_intf   ( data_intf[MEMORY] ),
-    .dma_intf   ( data_intf[DMA]    ),
-    .vu_intf    ( data_intf[VECTOR] ),
-    .mu_intf    ( data_intf[MATRIX] ),
-    .nu_intf    ( data_intf[NEWTON] ),
-    .cu_intf    ( data_intf[CNV]    ),
-    .fft_intf   ( data_intf[FFT]    ),
-    .ntt_intf   ( data_intf[NTT]    )
+    .control    ( config_intf               ),
+    .mem_intf   ( data_intf[MEMORY]         ),
+    .dma_intf   ( data_intf[DMA]            ),
+    .vu_intf    ( data_intf[VECTOR]         ),
+    .mu_intf    ( data_intf[MATRIX]         ),
+    .nu_intf    ( data_intf[NEWTON]         ),
+    .cu_intf    ( data_intf[CNV]            ),
+    .fft_intf   ( data_intf[FFT]            ),
+    .cm_intf    ( data_intf[COMPLEX_MULT]   )
 );
 
 ma_rsp_intf_arbiter #(

@@ -1,4 +1,4 @@
-module ma_ntt_unit (
+module ma_complex_mult_unit (
     ma_config_bus.accelerator   config_intf ,
     ma_data_bus.accelerator     data_intf   ,
     ma_rsp_intf.accelerator     rsp_intf    
@@ -33,7 +33,7 @@ logic   [$clog2(data_intf.PRF_N_LANES) : 0] mask_value;
 
 
 // Combinatorial Logic ---------------------------------------------------------------------------------------
-assign data_intf.unit_id = ma_intf_pkg::NTT_UNIT;
+assign data_intf.unit_id = ma_intf_pkg::COMPLEX_MULT_UNIT;
 assign data_intf.op1.scheme = prf_dtypes::ROW;
 assign data_intf.op2.scheme = prf_dtypes::ROW;
 assign data_intf.rez.scheme = prf_dtypes::ROW;
@@ -123,7 +123,7 @@ mrsn_complex_multiply #(
     .WIDTH  ( 32    ),
     .W0     ( 13    ),
     .W1     ( 17    )
-) i_ntt_unit (
+) i_complex_mult (
     .clk_i  ( data_intf.clk     ), 
     .rst_ni ( data_intf.rst_n   ),
     .en_i   ( en                ),
