@@ -1,8 +1,6 @@
 package ma_intf_pkg;
     
 typedef enum logic[4 : 0] { 
-    CONTROL_UNIT        ,
-    MEMORY              ,
     DMA_UNIT            ,
     VECTORIAL_UNIT      ,
     MATRIX_UNIT         ,
@@ -12,7 +10,8 @@ typedef enum logic[4 : 0] {
     COMPLEX_MULT_UNIT   ,
     NTT_UNIT            ,
     INTT_UNIT           ,
-    NONE_MODULE                   
+    MEMORY              ,
+    NONE_MODULE         
 } unit_id_t;
 
 typedef enum logic[4 : 0] {
