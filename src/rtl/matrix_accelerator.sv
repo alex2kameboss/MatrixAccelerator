@@ -21,20 +21,10 @@ module matrix_accelerator #(
     AXI_BUS.Master                              axi             
 );
 
+import ma_intf_pkg::*;
+
 localparam ALU_WIDTH = 32;
 localparam ADDR_WIDTH = instr_if.X_MEM_WIDTH;
-
-enum logic [3 : 0] {
-    MEMORY          ,
-    DMA             ,
-    VECTOR          ,
-    MATRIX          ,
-    CNV             ,
-    NEWTON          ,
-    FFT             ,
-    COMPLEX_MULT    ,
-    NUMBER_OF_UNITS
-} units_t;
 
 // interfaces
 ma_config_bus #(
@@ -42,7 +32,8 @@ ma_config_bus #(
     .XLEN       ( ADDR_WIDTH)
 ) config_intf();
 
-ma_rsp_intf rsp_intf[NUMBER_OF_UNITS - 1 : 0]();
+ma_rsp_intf rsp_intf[NONE_MODULE - 2 : 0]();
+ma_rsp_intf ctrl_rsp_intf();
 
 ma_data_bus #(
     .PRF_LOG_P  ( PRF_LOG_P ),
@@ -50,7 +41,7 @@ ma_data_bus #(
     .PRF_LOG_N  ( PRF_LOG_N ),
     .PRF_LOG_M  ( PRF_LOG_M ),
     .SRAM_WIDTH ( ALU_WIDTH )
-) data_intf[NUMBER_OF_UNITS - 1 : 0] ( 
+) data_intf[NONE_MODULE - 1 : 0] ( 
     .clk    ( clk   ),
     .rst_n  ( rst_n )
 ); // one for every units + 1 for memory
@@ -102,7 +93,7 @@ ma_control_unit #(
     .clk            ( clk               ),
     .rst_n          ( rst_n             ),
     .config_intf    ( config_intf       ),
-    .rsp_intf       ( rsp_intf[MEMORY]  ),
+    .rsp_intf       ( ctrl_rsp_intf     ),
     .valid          ( valid             ),
     .ready          ( ready             ),
     .funct3         ( funct3            ),
@@ -118,48 +109,48 @@ ma_control_unit #(
 );
 
 ma_dma i_dma_unit (
-    .config_intf ( config_intf      ),
-    .data_intf   ( data_intf[DMA]   ),
-    .rsp_intf    ( rsp_intf[DMA]    ),
-    .aclk        ( aclk             ),
-    .arst_n      ( arst_n           ),
-    .axi         ( axi              )
+    .config_intf ( config_intf          ),
+    .data_intf   ( data_intf[DMA_UNIT]  ),
+    .rsp_intf    ( rsp_intf[DMA_UNIT]   ),
+    .aclk        ( aclk                 ),
+    .arst_n      ( arst_n               ),
+    .axi         ( axi                  )
 );
 
 ma_vectorial_unit i_vectorial_unit (
-    .config_intf ( config_intf          ),
-    .data_intf   ( data_intf[VECTOR]    ),
-    .rsp_intf    ( rsp_intf[VECTOR]     )
+    .config_intf ( config_intf              ),
+    .data_intf   ( data_intf[VECTORIAL_UNIT]),
+    .rsp_intf    ( rsp_intf[VECTORIAL_UNIT] )
 );
 
 ma_matrix_unit i_matrix_unit (
-    .config_intf ( config_intf          ),
-    .data_intf   ( data_intf[MATRIX]    ),
-    .rsp_intf    ( rsp_intf[MATRIX]     )
+    .config_intf ( config_intf              ),
+    .data_intf   ( data_intf[MATRIX_UNIT]   ),
+    .rsp_intf    ( rsp_intf[MATRIX_UNIT]    )
 );
 
 ma_convolution_unit i_convolution_unit (
-    .config_intf    ( config_intf   ),
-    .data_intf      ( data_intf[CNV]),
-    .rsp_intf       ( rsp_intf[CNV] )
+    .config_intf    ( config_intf       ),
+    .data_intf      (data_intf[CNV_UNIT]),
+    .rsp_intf       ( rsp_intf[CNV_UNIT])
 );
 
 ma_newton_unit i_newton_unit (
-    .config_intf    ( config_intf       ),
-    .data_intf      ( data_intf[NEWTON] ),
-    .rsp_intf       ( rsp_intf[NEWTON]  )
+    .config_intf    ( config_intf           ),
+    .data_intf      ( data_intf[NEWTON_UNIT]),
+    .rsp_intf       ( rsp_intf[NEWTON_UNIT] )
 );
 
 ma_fft_unit i_fft_unit (
-    .config_intf    ( config_intf   ),
-    .data_intf      ( data_intf[FFT]),
-    .rsp_intf       ( rsp_intf[FFT] )
+    .config_intf    ( config_intf       ),
+    .data_intf      (data_intf[FFT_UNIT]),
+    .rsp_intf       (rsp_intf[FFT_UNIT] )
 );
 
 ma_complex_mult_unit i_complex_mult_unit (
-    .config_intf    ( config_intf           ),
-    .data_intf      (data_intf[COMPLEX_MULT]),
-    .rsp_intf       ( rsp_intf[COMPLEX_MULT])
+    .config_intf    ( config_intf                   ),
+    .data_intf      ( data_intf[COMPLEX_MULT_UNIT]  ),
+    .rsp_intf       ( rsp_intf[COMPLEX_MULT_UNIT]   )
 );
 
 ma_memory i_memory (
@@ -168,23 +159,23 @@ ma_memory i_memory (
 );
 
 ma_data_bus_arbiter i_memory_arbiter (
-    .control    ( config_intf               ),
-    .mem_intf   ( data_intf[MEMORY]         ),
-    .dma_intf   ( data_intf[DMA]            ),
-    .vu_intf    ( data_intf[VECTOR]         ),
-    .mu_intf    ( data_intf[MATRIX]         ),
-    .nu_intf    ( data_intf[NEWTON]         ),
-    .cu_intf    ( data_intf[CNV]            ),
-    .fft_intf   ( data_intf[FFT]            ),
-    .cm_intf    ( data_intf[COMPLEX_MULT]   )
+    .control    ( config_intf                   ),
+    .mem_intf   ( data_intf[MEMORY]             ),
+    .dma_intf   ( data_intf[DMA_UNIT]           ),
+    .vu_intf    ( data_intf[VECTORIAL_UNIT]     ),
+    .mu_intf    ( data_intf[MATRIX_UNIT]        ),
+    .nu_intf    ( data_intf[NEWTON_UNIT]        ),
+    .cu_intf    ( data_intf[CNV_UNIT]           ),
+    .fft_intf   ( data_intf[FFT_UNIT]           ),
+    .cm_intf    ( data_intf[COMPLEX_MULT_UNIT]  )
 );
 
 ma_rsp_intf_arbiter #(
-    .NUMBER_OF_UNITS    ( NUMBER_OF_UNITS - 1   )
+    .NUMBER_OF_UNITS    ( NONE_MODULE - 1   )
 ) i_rsp_arbiter (
-    .config_intf    ( config_intf                       ),
-    .rsp_intf_out   ( rsp_intf[MEMORY]                  ),
-    .rsp_intf_in    ( rsp_intf[NUMBER_OF_UNITS - 1 : 1] )
+    .config_intf    ( config_intf   ),
+    .rsp_intf_out   ( ctrl_rsp_intf ),
+    .rsp_intf_in    ( rsp_intf      )
 );
 
 endmodule
