@@ -153,6 +153,30 @@ ma_complex_mult_unit i_complex_mult_unit (
     .rsp_intf       ( rsp_intf[COMPLEX_MULT_UNIT]   )
 );
 
+ma_ntt_real_unit i_ntt_real_unit (
+    .config_intf    ( config_intf               ),
+    .data_intf      ( data_intf[NTT_REAL_UNIT]  ),
+    .rsp_intf       ( rsp_intf[NTT_REAL_UNIT]   )
+);
+
+ma_ntt_complex_unit i_ntt_complex_unit (
+    .config_intf    ( config_intf                   ),
+    .data_intf      ( data_intf[NTT_COMPLEX_UNIT]   ),
+    .rsp_intf       ( rsp_intf[NTT_COMPLEX_UNIT]    )
+);
+
+ma_intt_complex_unit i_intt_complex_unit (
+    .config_intf    ( config_intf                   ),
+    .data_intf      ( data_intf[INTT_COMPLEX_UNIT]  ),
+    .rsp_intf       ( rsp_intf[INTT_COMPLEX_UNIT]   )
+);
+
+ma_intt_real_unit i_intt_real_unit (
+    .config_intf    ( config_intf               ),
+    .data_intf      ( data_intf[INTT_REAL_UNIT] ),
+    .rsp_intf       ( rsp_intf[INTT_REAL_UNIT]  )
+);
+
 ma_memory i_memory (
     .clk_2x ( clk_2x            ),
     .intf   ( data_intf[MEMORY] )
@@ -167,7 +191,11 @@ ma_data_bus_arbiter i_memory_arbiter (
     .nu_intf    ( data_intf[NEWTON_UNIT]        ),
     .cu_intf    ( data_intf[CNV_UNIT]           ),
     .fft_intf   ( data_intf[FFT_UNIT]           ),
-    .cm_intf    ( data_intf[COMPLEX_MULT_UNIT]  )
+    .cm_intf    ( data_intf[COMPLEX_MULT_UNIT]  ),
+    .nttr_intf  ( data_intf[NTT_REAL_UNIT]      ),
+    .nttc_intf  ( data_intf[NTT_COMPLEX_UNIT]   ),
+    .inttc_intf ( data_intf[INTT_COMPLEX_UNIT]  ),
+    .inttr_intf ( data_intf[INTT_REAL_UNIT]     )
 );
 
 ma_rsp_intf_arbiter #(

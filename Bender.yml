@@ -8,6 +8,7 @@ dependencies:
   common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",             rev: master       }
   cv_x_if:            { git: "https://github.com/alex2kameboss/core-v-xif-fix.git",           rev: demo         }
   poly_mem:           { git: "https://gitlab.com/catalin.ciobanu/PolyMem_System_Verilog.git", rev: refactoring  }
+  mersenne_ntt:       { git: "https://github.com/mgologanu/MersenneNTT.git",                  rev: main         }
 
 workspace:
   checkout_dir: "src/ips"
@@ -62,6 +63,7 @@ sources:
     - src/rtl/convolution_unit/matrix_addr_gen.sv
     - src/rtl/convolution_unit/kernel_addr_gen.sv
     - src/rtl/convolution_unit/cnv_data_splitter.sv
+    - src/rtl/convolution_unit/cnv_data_concat.sv
     - src/rtl/convolution_unit/mask_generator.sv
     - src/rtl/convolution_unit/parallel_to_serial.sv
     # newton unit
@@ -91,32 +93,28 @@ sources:
     - src/rtl/fft/transpose_16.sv
     - src/rtl/fft/twiddle_256.sv
     # ntt unit
-    - src/rtl/ntt/mrsn_add_sub.sv
-    - src/rtl/ntt/mrsn_complex_multiply.sv
+    - src/rtl/ntt/prf_complex_addr_gen_seq.sv
     # matrix accelerator components
-    - src/rtl/matrix_accelerator/ma_decoder.sv
-    - src/rtl/matrix_accelerator/ma_control_unit.sv
-    - src/rtl/matrix_accelerator/ma_memory.sv
-    - src/rtl/matrix_accelerator/ma_dma.sv
-    - src/rtl/matrix_accelerator/ma_matrix_unit.sv
-    - src/rtl/matrix_accelerator/ma_vectorial_unit.sv
-    - src/rtl/matrix_accelerator/ma_convolution_unit.sv
-    - src/rtl/matrix_accelerator/ma_newton_unit.sv
-    - src/rtl/matrix_accelerator/ma_fft_unit.sv
     - src/rtl/matrix_accelerator/ma_complex_mult_unit.sv
-    - src/rtl/convolution_unit/cnv_data_concat.sv
+    - src/rtl/matrix_accelerator/ma_control_unit.sv
+    - src/rtl/matrix_accelerator/ma_convolution_unit.sv
+    - src/rtl/matrix_accelerator/ma_decoder.sv
+    - src/rtl/matrix_accelerator/ma_dma.sv
+    - src/rtl/matrix_accelerator/ma_extension_driver.sv
+    - src/rtl/matrix_accelerator/ma_fft_unit.sv
+    - src/rtl/matrix_accelerator/ma_intt_complex_unit.sv
+    - src/rtl/matrix_accelerator/ma_intt_real_unit.sv
+    - src/rtl/matrix_accelerator/ma_matrix_unit.sv
+    - src/rtl/matrix_accelerator/ma_memory.sv
+    - src/rtl/matrix_accelerator/ma_newton_unit.sv
+    - src/rtl/matrix_accelerator/ma_ntt_complex_unit.sv
+    - src/rtl/matrix_accelerator/ma_ntt_real_unit.sv
+    - src/rtl/matrix_accelerator/ma_vectorial_unit.sv
     # bus arbiter
     - src/rtl/bus_arbiters/ma_data_bus_arbiter.sv
     - src/rtl/bus_arbiters/ma_rsp_intf_arbiter.sv
     # top
     - src/rtl/matrix_accelerator.sv
-
-    - target : not(vivado)
-      files:
-        - src/rtl/ntt/LUT6_2.sv
-        - src/rtl/ntt/LUT6.sv
-        - src/rtl/ntt/MUXCY.sv
-        - src/rtl/ntt/XORCY.sv
 
     - target: test_wo_core
       defines:

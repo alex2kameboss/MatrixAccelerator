@@ -119,7 +119,12 @@ always_comb begin : validate_instr // TODO: when add new instruction, update her
             instr.r_type.func7 == ma_pkg::BC_R   |
             instr.r_type.func7 == ma_pkg::FFT    |
             instr.r_type.func7 == ma_pkg::IFFT   |
-            instr.r_type.func7 == ma_pkg::NTT    |
+            instr.r_type.func7 == ma_pkg::NTT_R  |
+            instr.r_type.func7 == ma_pkg::NTT_C  |
+            instr.r_type.func7 == ma_pkg::INTT_R |
+            instr.r_type.func7 == ma_pkg::INTT_C |
+            instr.r_type.func7 == ma_pkg::CM     |
+            instr.r_type.func7 == ma_pkg::CMC    |
             instr.r_type.func7 == ma_pkg::NEWTON);
 end
 

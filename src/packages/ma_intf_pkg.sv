@@ -8,8 +8,10 @@ typedef enum logic[4 : 0] {
     NEWTON_UNIT         ,
     FFT_UNIT            ,
     COMPLEX_MULT_UNIT   ,
-    NTT_UNIT            ,
-    INTT_UNIT           ,
+    NTT_REAL_UNIT       ,
+    NTT_COMPLEX_UNIT    ,         
+    INTT_COMPLEX_UNIT   ,
+    INTT_REAL_UNIT      ,
     MEMORY              ,
     NONE_MODULE         
 } unit_id_t;
@@ -40,7 +42,13 @@ typedef enum logic[4 : 0] {
     // FFT
     FFT         ,
     IFFT        ,
-    NTT         ,
+    // NTT
+    NTT_R       ,
+    NTT_C       ,
+    INTT_C      ,
+    INTT_R      ,
+    CM          , // complex mult
+    CMC         , // complex mult with conjugate
     NOP     
 } internal_op_t;
 

@@ -107,9 +107,29 @@ always_comb begin
                 internal_op = ma_intf_pkg::IFFT;
                 dst_unit = ma_intf_pkg::FFT_UNIT;
             end
-            ma_pkg::NTT : begin 
-                internal_op = ma_intf_pkg::NTT;
-                dst_unit = ma_intf_pkg::NTT_UNIT;
+            ma_pkg::NTT_R : begin 
+                internal_op = ma_intf_pkg::NTT_R;
+                dst_unit = ma_intf_pkg::NTT_REAL_UNIT;
+            end
+            ma_pkg::NTT_C : begin 
+                internal_op = ma_intf_pkg::NTT_C;
+                dst_unit = ma_intf_pkg::NTT_COMPLEX_UNIT;
+            end
+            ma_pkg::INTT_R : begin 
+                internal_op = ma_intf_pkg::INTT_R;
+                dst_unit = ma_intf_pkg::INTT_REAL_UNIT;
+            end
+            ma_pkg::INTT_C : begin 
+                internal_op = ma_intf_pkg::INTT_C;
+                dst_unit = ma_intf_pkg::INTT_COMPLEX_UNIT;
+            end
+            ma_pkg::CM : begin 
+                internal_op = ma_intf_pkg::CM;
+                dst_unit = ma_intf_pkg::COMPLEX_MULT_UNIT;
+            end
+            ma_pkg::CMC : begin 
+                internal_op = ma_intf_pkg::CMC;
+                dst_unit = ma_intf_pkg::COMPLEX_MULT_UNIT;
             end
             default     : begin 
                 internal_op = ma_intf_pkg::ADD_VV;

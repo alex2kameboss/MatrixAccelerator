@@ -28,11 +28,17 @@ packages:
     source:
       Path: src/ips/cv_x_if
     dependencies: []
-  poly_mem:
-    revision: e8f0646d18b68df40792a3c14dcd36bb67000fb3
+  mersenne_ntt:
+    revision: null
     version: null
     source:
-      Git: https://gitlab.com/catalin.ciobanu/PolyMem_System_Verilog.git
+      Path: working_dir/mersenne_ntt
+    dependencies: []
+  poly_mem:
+    revision: null
+    version: null
+    source:
+      Path: src/ips/poly_mem
     dependencies: []
   tech_cells_generic:
     revision: null

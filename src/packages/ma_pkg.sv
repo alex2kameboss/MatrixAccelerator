@@ -11,9 +11,14 @@ typedef enum logic [6:0] {
     SRA = 11, // shift right arithmetic
     FFT = 12,
     IFFT = 13,
-    NTT = 14,
+    NTT_R = 14,
+    NTT_C = 15,
     MUL = 16,
+    INTT_R = 17,
+    INTT_C = 18,
     SMUL = 48,
+    CM = 49,
+    CMC = 50,
     BC_L = 64, // broadcast left
     BC_R = 65, // broadcast right
     NOP = {7{1'b1}}

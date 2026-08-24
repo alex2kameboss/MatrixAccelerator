@@ -7,7 +7,11 @@ module ma_data_bus_arbiter (
     ma_data_bus.memory      nu_intf     ,
     ma_data_bus.memory      cu_intf     ,
     ma_data_bus.memory      fft_intf    ,
-    ma_data_bus.memory      cm_intf          
+    ma_data_bus.memory      cm_intf     ,     
+    ma_data_bus.memory      nttr_intf   ,     
+    ma_data_bus.memory      nttc_intf   ,     
+    ma_data_bus.memory      inttc_intf  ,        
+    ma_data_bus.memory      inttr_intf          
 );
 
 always_comb begin
@@ -54,6 +58,30 @@ always_comb begin
             mem_intf.op2       = cm_intf.op2     ;
             mem_intf.rez_data  = cm_intf.rez_data;
         end
+        ma_intf_pkg::NTT_REAL_UNIT : begin
+            mem_intf.rez       = nttr_intf.rez     ;
+            mem_intf.op1       = nttr_intf.op1     ;
+            mem_intf.op2       = nttr_intf.op2     ;
+            mem_intf.rez_data  = nttr_intf.rez_data;
+        end
+        ma_intf_pkg::NTT_COMPLEX_UNIT : begin
+            mem_intf.rez       = nttc_intf.rez     ;
+            mem_intf.op1       = nttc_intf.op1     ;
+            mem_intf.op2       = nttc_intf.op2     ;
+            mem_intf.rez_data  = nttc_intf.rez_data;
+        end
+        ma_intf_pkg::INTT_COMPLEX_UNIT : begin
+            mem_intf.rez       = inttc_intf.rez     ;
+            mem_intf.op1       = inttc_intf.op1     ;
+            mem_intf.op2       = inttc_intf.op2     ;
+            mem_intf.rez_data  = inttc_intf.rez_data;
+        end
+        ma_intf_pkg::INTT_REAL_UNIT : begin
+            mem_intf.rez       = inttr_intf.rez     ;
+            mem_intf.op1       = inttr_intf.op1     ;
+            mem_intf.op2       = inttr_intf.op2     ;
+            mem_intf.rez_data  = inttr_intf.rez_data;
+        end
         ma_intf_pkg::NONE_MODULE: begin
                 mem_intf.rez        = 'd0;
                 mem_intf.op1        = 'd0;
@@ -77,5 +105,13 @@ assign fft_intf.op1_data = mem_intf.op1_data;
 assign fft_intf.op2_data = mem_intf.op2_data;
 assign cm_intf.op1_data = mem_intf.op1_data;
 assign cm_intf.op2_data = mem_intf.op2_data;
+assign nttr_intf.op1_data = mem_intf.op1_data;
+assign nttr_intf.op2_data = mem_intf.op2_data;
+assign nttc_intf.op1_data = mem_intf.op1_data;
+assign nttc_intf.op2_data = mem_intf.op2_data;
+assign inttc_intf.op1_data = mem_intf.op1_data;
+assign inttc_intf.op2_data = mem_intf.op2_data;
+assign inttr_intf.op1_data = mem_intf.op1_data;
+assign inttr_intf.op2_data = mem_intf.op2_data;
 
 endmodule
