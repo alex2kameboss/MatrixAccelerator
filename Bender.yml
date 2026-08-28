@@ -124,6 +124,7 @@ sources:
         - src/tests/tb_cnv.sv
         - src/tests/clk_rstn.sv
         - src/tests/tb_ma_wo_core.sv
+        - src/tests/tb_ma_ntt.sv
       
     - target: vivado
       files:

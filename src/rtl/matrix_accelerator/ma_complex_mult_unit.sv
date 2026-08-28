@@ -14,7 +14,7 @@ localparam W_NOTUSED = WIDTH - W0 - W1;
 
 
 // Wires Definition ------------------------------------------------------------------------------------------
-logic   en;
+logic   en, conjugate;
 
 logic   [config_intf.ALU_WIDTH - 1 : 0]    op1_alu [NUMBER_OF_ALU - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]    op2_alu [NUMBER_OF_ALU - 1 : 0];
@@ -39,6 +39,7 @@ assign data_intf.op2.scheme = prf_dtypes::COL;
 assign data_intf.rez.scheme = prf_dtypes::COL;
 assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;
+assign conjugate = config_intf.internal_op == ma_intf_pkg::CMC;
 
 assign data_intf.rez.valid = concat_en;
 assign concat_en = ntt_delay_line[NTT_LATENCY - 1];
@@ -83,7 +84,7 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 // Modules Instances -----------------------------------------------------------------------------------------
 prf_addr_gen_seq #(
-    .SCHEME         ( ma_pkg::COL           ),
+    .SCHEME         ( ma_pkg::ROW           ),
     .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
     .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M      ( data_intf.PRF_LOG_M   )
@@ -101,7 +102,7 @@ prf_addr_gen_seq #(
 );
 
 prf_addr_gen_seq #(
-    .SCHEME         ( ma_pkg::COL           ),
+    .SCHEME         ( ma_pkg::ROW           ),
     .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
     .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M      ( data_intf.PRF_LOG_M   )
@@ -130,9 +131,9 @@ mrsn_complex_multiply #(
     .rst_ni ( data_intf.rst_n   ),
     .en_i   ( en                ),
     .a_re_i ( op1_alu[2 * j + 0]),
-    .a_im_i ( op1_alu[2 * j + 1]),
+    .a_im_i ( op1_alu[2 * j + 1] ^ {config_intf.ALU_WIDTH{conjugate}}),
     .b_re_i ( op2_alu[2 * j + 0]),
-    .b_im_i ( op2_alu[2 * j + 1]),
+    .b_im_i ( op2_alu[2 * j + 1] ^ {config_intf.ALU_WIDTH{conjugate}}),
     .z_re_o ( res_alu[2 * j + 0]),
     .z_im_o ( res_alu[2 * j + 1])
 );
@@ -140,7 +141,7 @@ mrsn_complex_multiply #(
 endgenerate
 
 prf_addr_gen_seq #(
-    .SCHEME         ( ma_pkg::COL           ),
+    .SCHEME         ( ma_pkg::ROW           ),
     .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
     .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M      ( data_intf.PRF_LOG_M   )

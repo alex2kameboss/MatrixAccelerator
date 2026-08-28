@@ -29,6 +29,7 @@ logic   operands_addr_gen_en;
 
 logic   rs_done;
 
+logic   start_1;
 logic   concat_en, out_sel;
 logic   [$clog2(data_intf.PRF_N_LANES) : 0] mask_value;
 
@@ -80,10 +81,14 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( config_intf.start & en )       rs_addr_en <= 1'b1;         else
     if ( rs_done )                      rs_addr_en <= 1'b0;  
 
+always @( posedge data_intf.clk, negedge data_intf.rst_n )
+    if ( ~data_intf.rst_n )             start_1 <= 1'b0;            else
+                                        start_1 <= config_intf.start;
+
 // 101010...
 always @( posedge data_intf.clk, negedge data_intf.rst_n )
     if ( ~data_intf.rst_n )             rs_incr <= 1'b0;            else
-    if ( config_intf.start & en )       rs_incr <= 1'b1;            else
+    if ( start_1 & en )                 rs_incr <= 1'b1;            else
     if ( rs_addr_en )                   rs_incr <= ~rs_incr;        
 
 always @( posedge data_intf.clk, negedge data_intf.rst_n )

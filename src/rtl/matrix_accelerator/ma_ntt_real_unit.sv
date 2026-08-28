@@ -86,7 +86,7 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 // Modules Instances -----------------------------------------------------------------------------------------
 prf_addr_gen_seq #(
-    .SCHEME         ( ma_pkg::COL           ),
+    .SCHEME         ( ma_pkg::ROW           ),
     .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
     .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M      ( data_intf.PRF_LOG_M   )
@@ -115,7 +115,7 @@ mrsn_ntt_real16 #(
 );
 
 prf_addr_gen_seq #(
-    .SCHEME         ( ma_pkg::COL           ),
+    .SCHEME         ( ma_pkg::ROW           ),
     .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
     .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M      ( data_intf.PRF_LOG_M   )

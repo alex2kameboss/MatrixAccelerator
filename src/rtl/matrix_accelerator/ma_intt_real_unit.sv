@@ -6,7 +6,7 @@ module ma_intt_real_unit (
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
 localparam NUMBER_OF_ALU = data_intf.DATA_WIDTH / config_intf.ALU_WIDTH;
-localparam NTT_LATENCY = 10;
+localparam NTT_LATENCY = 9;
 localparam WIDTH = config_intf.ALU_WIDTH;
 localparam W0 = 13;
 localparam W1 = 17;
@@ -88,7 +88,7 @@ always @( posedge data_intf.clk, negedge data_intf.rst_n )
 
 // Modules Instances -----------------------------------------------------------------------------------------
 prf_addr_gen_seq #(
-    .SCHEME         ( ma_pkg::COL           ),
+    .SCHEME         ( ma_pkg::ROW           ),
     .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
     .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M      ( data_intf.PRF_LOG_M   )
@@ -108,7 +108,7 @@ prf_addr_gen_seq #(
 mrsn_intt_real16 #(
     .WIDTH  ( 32 ),
     .LEN    ( 16 )
-) mrsn_intt_real16 (
+) i_mrsn_intt_real16 (
     .clk_i  ( data_intf.clk     ),
     .rst_ni ( data_intf.rst_n   ),
     .en_i   ( en                ),
@@ -117,6 +117,7 @@ mrsn_intt_real16 #(
 );
 
 prf_addr_gen_seq #(
+    .SCHEME         ( ma_pkg::ROW           ),
     .PRF_N_LANES    ( data_intf.PRF_N_LANES ),
     .PRF_LOG_N      ( data_intf.PRF_LOG_N   ),
     .PRF_LOG_M      ( data_intf.PRF_LOG_M   )
