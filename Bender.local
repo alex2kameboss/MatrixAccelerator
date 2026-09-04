@@ -1,2 +1,0 @@
-overrides:
-  mersenne_ntt: { path: "working_dir/mersenne_ntt" } # Temporary override by Bender using `bender clone` command

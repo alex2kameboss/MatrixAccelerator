@@ -6,7 +6,7 @@ module ma_intt_real_unit (
 
 // Local Parameters Definition  ------------------------------------------------------------------------------
 localparam NUMBER_OF_ALU = data_intf.DATA_WIDTH / config_intf.ALU_WIDTH;
-localparam NTT_LATENCY = 9;
+localparam NTT_LATENCY = 23;
 localparam WIDTH = config_intf.ALU_WIDTH;
 localparam W0 = 13;
 localparam W1 = 17;
@@ -15,10 +15,11 @@ localparam W_NOTUSED = WIDTH - W0 - W1;
 
 // Wires Definition ------------------------------------------------------------------------------------------
 logic   en;
+logic   [31 : 0] q, rq;
 
 logic   [config_intf.ALU_WIDTH - 1 : 0]    op1_alu [NUMBER_OF_ALU - 1 : 0];
 logic   [config_intf.ALU_WIDTH - 1 : 0]    op2_alu [NUMBER_OF_ALU - 1 : 0];
-logic   [config_intf.ALU_WIDTH - 1 : 0]    res_alu [NUMBER_OF_ALU - 1 : 0];
+logic signed  [config_intf.ALU_WIDTH - 1 : 0]    res_alu [NUMBER_OF_ALU - 1 : 0];
 
 logic   ntt_en;
 logic   [NTT_LATENCY - 1 : 0]   ntt_delay_line;
@@ -38,6 +39,9 @@ assign data_intf.op1.scheme = prf_dtypes::COL;
 assign data_intf.rez.scheme = prf_dtypes::COL;
 assign rsp_intf.unit_id = data_intf.unit_id;
 assign en = config_intf.dst_unit == data_intf.unit_id;
+
+assign q = config_intf.scalar[31 : 0];
+assign rq = config_intf.scalar[63 : 32];
 
 assign data_intf.rez.valid = concat_en;
 assign concat_en = ntt_delay_line[NTT_LATENCY - 1];
@@ -105,15 +109,17 @@ prf_addr_gen_seq #(
     .done    ( rs_done              )
 );
 
-mrsn_intt_real16 #(
+mrsn_intt_real16_crt_barrett #(
     .WIDTH  ( 32 ),
     .LEN    ( 16 )
 ) i_mrsn_intt_real16 (
     .clk_i  ( data_intf.clk     ),
     .rst_ni ( data_intf.rst_n   ),
     .en_i   ( en                ),
+    .q      ( q                 ),
+    .Rq     ( rq                ),
     .c_i    ( op1_alu           ),
-    .a_o    ( res_alu           )
+    .zq     ( res_alu           )
 );
 
 prf_addr_gen_seq #(

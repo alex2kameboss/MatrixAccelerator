@@ -29,10 +29,10 @@ packages:
       Path: src/ips/cv_x_if
     dependencies: []
   mersenne_ntt:
-    revision: null
+    revision: 7b9d82e59b753b6d1e04e0f8e894a35777c65257
     version: null
     source:
-      Path: working_dir/mersenne_ntt
+      Git: https://github.com/mgologanu/MersenneNTT.git
     dependencies: []
   poly_mem:
     revision: null

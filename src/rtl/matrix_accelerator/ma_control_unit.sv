@@ -63,6 +63,22 @@ always_comb begin
             ma_pkg::SRL : internal_op = ma_intf_pkg::SRL_VS;
             ma_pkg::SRA : internal_op = ma_intf_pkg::SRA_VS;
             ma_pkg::MUL : internal_op = ma_intf_pkg::MUL_VS;
+            ma_pkg::NTT_R : begin 
+                internal_op = ma_intf_pkg::NTT_R;
+                dst_unit = ma_intf_pkg::NTT_REAL_UNIT;
+            end
+            ma_pkg::NTT_C : begin 
+                internal_op = ma_intf_pkg::NTT_C;
+                dst_unit = ma_intf_pkg::NTT_COMPLEX_UNIT;
+            end
+            ma_pkg::INTT_R : begin 
+                internal_op = ma_intf_pkg::INTT_R;
+                dst_unit = ma_intf_pkg::INTT_REAL_UNIT;
+            end
+            ma_pkg::INTT_C : begin 
+                internal_op = ma_intf_pkg::INTT_C;
+                dst_unit = ma_intf_pkg::INTT_COMPLEX_UNIT;
+            end
             default     : internal_op = ma_intf_pkg::NOP;
         endcase
     end else if ( funct3 == ma_pkg::VV ) begin
@@ -106,22 +122,6 @@ always_comb begin
             ma_pkg::IFFT : begin 
                 internal_op = ma_intf_pkg::IFFT;
                 dst_unit = ma_intf_pkg::FFT_UNIT;
-            end
-            ma_pkg::NTT_R : begin 
-                internal_op = ma_intf_pkg::NTT_R;
-                dst_unit = ma_intf_pkg::NTT_REAL_UNIT;
-            end
-            ma_pkg::NTT_C : begin 
-                internal_op = ma_intf_pkg::NTT_C;
-                dst_unit = ma_intf_pkg::NTT_COMPLEX_UNIT;
-            end
-            ma_pkg::INTT_R : begin 
-                internal_op = ma_intf_pkg::INTT_R;
-                dst_unit = ma_intf_pkg::INTT_REAL_UNIT;
-            end
-            ma_pkg::INTT_C : begin 
-                internal_op = ma_intf_pkg::INTT_C;
-                dst_unit = ma_intf_pkg::INTT_COMPLEX_UNIT;
             end
             ma_pkg::CM : begin 
                 internal_op = ma_intf_pkg::CM;

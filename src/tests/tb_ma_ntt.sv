@@ -436,7 +436,7 @@ function int data_concat (int ad, dtype_t dt);
     endcase
 endfunction
 
-task ntt_step_test;
+task ntt_step_test_vs;
     input register          rr              ;
     input xif_t             rr_prf_x        ;
     input xif_t             rr_prf_y        ;
@@ -448,6 +448,7 @@ task ntt_step_test;
     input xif_t             r1_addr         ;
     input logic [31 : 0]    in      [255:0] ;
     input logic [31 : 0]    out     [255:0] ;
+    input logic [63 : 0]    r2 = 'd0        ;
 begin
     int i, j;
     $display("NTT step test");
@@ -484,11 +485,112 @@ begin
         .addr( r1_addr  )
     );
 
-    vector_vector_operation(
-        .rr ( rr ), 
-        .r1 ( r1 ), 
-        .r2 ( 0  ), 
-        .o  ( o  )
+
+    vector_scalar_operation (
+        .rr ( rr    ),
+        .r1 ( r1    ),
+        .r2 ( r2    ),
+        .o  ( o     )
+    );
+
+    store_register(
+        .r   ( rr       ), 
+        .addr( rr_addr  )
+    );
+
+    // check result
+    for ( i = 0; i < 16; i = i + 1 )
+        for ( j = 0; j < 16; j = j + 1 )
+            assert({i_sim_mem.i_sim_mem.mem[rr_addr + (i * 16 + j) * 4 + 3], 
+                    i_sim_mem.i_sim_mem.mem[rr_addr + (i * 16 + j) * 4 + 2], 
+                    i_sim_mem.i_sim_mem.mem[rr_addr + (i * 16 + j) * 4 + 1], 
+                    i_sim_mem.i_sim_mem.mem[rr_addr + (i * 16 + j) * 4]} == out[i * 16 + j]) else
+            $error("idx: %d, computed: %d, expected %d", i * j,
+                    {i_sim_mem.i_sim_mem.mem[rr_addr + (i * 16 + j) * 4 + 3], i_sim_mem.i_sim_mem.mem[rr_addr + (i * 16 + j) * 4 + 2], i_sim_mem.i_sim_mem.mem[rr_addr + (i * 16 + j) * 4 + 1], i_sim_mem.i_sim_mem.mem[rr_addr + (i * 16 + j) * 4]},
+                    out[i * 16 + j]);
+
+    $display("------------------------------------------------------");
+end
+endtask
+
+task ntt_step_test_vv;
+    input register          rr              ;
+    input xif_t             rr_prf_x        ;
+    input xif_t             rr_prf_y        ;
+    input register          r1              ;
+    input xif_t             r1_prf_x        ;
+    input xif_t             r1_prf_y        ;
+    input register          r2              ;
+    input xif_t             r2_prf_x        ;
+    input xif_t             r2_prf_y        ;
+    input operation_t       o               ;
+    input xif_t             rr_addr         ;
+    input xif_t             r1_addr         ;
+    input xif_t             r2_addr         ;
+    input logic [31 : 0]    in1     [255:0] ;
+    input logic [31 : 0]    in2     [255:0] ;
+    input logic [31 : 0]    out     [255:0] ;
+begin
+    int i, j;
+    $display("NTT step test");
+
+    $display("Init memory");
+    for ( i = 0; i < 16; i = i + 1 )
+        for ( j = 0; j < 16; j = j + 1 ) begin
+            {i_sim_mem.i_sim_mem.mem[r1_addr + (i * 16 + j) * 4 + 3], 
+            i_sim_mem.i_sim_mem.mem[r1_addr + (i * 16 + j) * 4 + 2], 
+            i_sim_mem.i_sim_mem.mem[r1_addr + (i * 16 + j) * 4 + 1], 
+            i_sim_mem.i_sim_mem.mem[r1_addr + (i * 16 + j) * 4]} = in1[i * 16 + j];
+
+            {i_sim_mem.i_sim_mem.mem[r2_addr + (i * 16 + j) * 4 + 3], 
+            i_sim_mem.i_sim_mem.mem[r2_addr + (i * 16 + j) * 4 + 2], 
+            i_sim_mem.i_sim_mem.mem[r2_addr + (i * 16 + j) * 4 + 1], 
+            i_sim_mem.i_sim_mem.mem[r2_addr + (i * 16 + j) * 4]} = in2[i * 16 + j];
+        end
+
+    define_register_one_step(
+        .r    ( rr      ),
+        .w    ( 16      ),
+        .h    ( 16      ),
+        .dt   ( UINT32  ),
+        .prf_x( rr_prf_x),
+        .prf_y( rr_prf_y),
+        .org  ( RECT    )
+    );
+    define_register_one_step(
+        .r    ( r1      ),
+        .w    ( 16       ),
+        .h    ( 16       ),
+        .dt   ( UINT32  ),
+        .prf_x( r1_prf_x),
+        .prf_y( r1_prf_y),
+        .org  ( RECT    )
+    );
+    define_register_one_step(
+        .r    ( r2      ),
+        .w    ( 16       ),
+        .h    ( 16       ),
+        .dt   ( UINT32  ),
+        .prf_x( r2_prf_x),
+        .prf_y( r2_prf_y),
+        .org  ( RECT    )
+    );
+
+    load_register(
+        .r   ( r1       ), 
+        .addr( r1_addr  )
+    );
+    load_register(
+        .r   ( r2       ), 
+        .addr( r2_addr  )
+    );
+
+
+    vector_vector_operation (
+        .rr ( rr    ),
+        .r1 ( r1    ),
+        .r2 ( r2    ),
+        .o  ( o     )
     );
 
     store_register(
@@ -527,7 +629,7 @@ initial begin
     @(posedge clk);
     @(posedge clk);
 
-    ntt_step_test(
+    ntt_step_test_vs(
         .rr         ( 1 ),
         .rr_prf_x   ( 32 ),
         .rr_prf_y   ( 32 ),
@@ -538,10 +640,11 @@ initial begin
         .rr_addr    ( MEM_SIZE / 2 ),
         .r1_addr    ( 0 ),
         .in         ( '{default:'d1} ),
-        .out        ( '{default:'d1} )
+        .out        ( '{default:'d1} ),
+        .r2         ( 64'haaaaaaaa_bbbbbbbb )
     );
 
-    ntt_step_test(
+    ntt_step_test_vs(
         .rr         ( 1 ),
         .rr_prf_x   ( 32 ),
         .rr_prf_y   ( 32 ),
@@ -552,38 +655,49 @@ initial begin
         .rr_addr    ( MEM_SIZE / 2 ),
         .r1_addr    ( 0 ),
         .in         ( '{default:'d1} ),
-        .out        ( '{default:'d1} )
+        .out        ( '{default:'d1} ),
+        .r2         ( 64'haaaaaaaa_bbbbbbbb )
     );
 
-    ntt_step_test(
+    ntt_step_test_vv(
         .rr         ( 1 ),
         .rr_prf_x   ( 32 ),
         .rr_prf_y   ( 32 ),
         .r1         ( 0 ),
         .r1_prf_x   ( 0 ),
         .r1_prf_y   ( 0 ),
+        .r2         ( 2 ),
+        .r2_prf_x   ( 64 ),
+        .r2_prf_y   ( 64 ),
         .o          ( CM ),
         .rr_addr    ( MEM_SIZE / 2 ),
         .r1_addr    ( 0 ),
-        .in         ( '{default:'d1} ),
+        .r2_addr    ( MEM_SIZE / 4 ),
+        .in1        ( '{default:'d1} ),
+        .in2        ( '{default:'d1} ),
         .out        ( '{default:'d1} )
     );
 
-    ntt_step_test(
+    ntt_step_test_vv(
         .rr         ( 1 ),
         .rr_prf_x   ( 32 ),
         .rr_prf_y   ( 32 ),
         .r1         ( 0 ),
         .r1_prf_x   ( 0 ),
         .r1_prf_y   ( 0 ),
+        .r2         ( 2 ),
+        .r2_prf_x   ( 64 ),
+        .r2_prf_y   ( 64 ),
         .o          ( CMC ),
         .rr_addr    ( MEM_SIZE / 2 ),
         .r1_addr    ( 0 ),
-        .in         ( '{default:'d1} ),
+        .r2_addr    ( MEM_SIZE / 4 ),
+        .in1        ( '{default:'d1} ),
+        .in2        ( '{default:'d1} ),
         .out        ( '{default:'d1} )
     );
 
-    ntt_step_test(
+    ntt_step_test_vs(
         .rr         ( 1 ),
         .rr_prf_x   ( 32 ),
         .rr_prf_y   ( 32 ),
@@ -594,10 +708,11 @@ initial begin
         .rr_addr    ( MEM_SIZE / 2 ),
         .r1_addr    ( 0 ),
         .in         ( '{default:'d1} ),
-        .out        ( '{default:'d1} )
+        .out        ( '{default:'d1} ),
+        .r2         ( 64'haaaaaaaa_bbbbbbbb )
     );
 
-    ntt_step_test(
+    ntt_step_test_vs(
         .rr         ( 1 ),
         .rr_prf_x   ( 32 ),
         .rr_prf_y   ( 32 ),
@@ -608,7 +723,8 @@ initial begin
         .rr_addr    ( MEM_SIZE / 2 ),
         .r1_addr    ( 0 ),
         .in         ( '{default:'d1} ),
-        .out        ( '{default:'d1} )
+        .out        ( '{default:'d1} ),
+        .r2         ( 64'haaaaaaaa_bbbbbbbb )
     );
 
     @(posedge clk);
