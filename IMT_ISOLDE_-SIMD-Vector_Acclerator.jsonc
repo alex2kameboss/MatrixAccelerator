@@ -1,0 +1,185 @@
+{
+  // =====================
+  // Basic Info (required)
+  // =====================
+  "basicInfo": {
+    // Licensing
+    "licensing": "Open-source (GPL v3.0)",
+
+    // Target FPGA / ASIC
+    "targetFpgaOrAsic": "VCU128",
+
+    // Design language
+    "designLanguage": "SystemVerilog"
+  },
+
+  // =====================
+  // System-Level Features (optional)
+  // =====================
+  "systemLevelFeatures": {
+    // Tight or Loose Coupling
+    "couplingType": "Tightly-coupled",
+
+    // Data Types
+    "dataTypes": "INT8-32, UINT8-32",
+
+    // ISA
+    "isa": "Custom RISC-V extension",
+
+    // Peak Ops/Cycle
+    "peakOpsPerCycle": null,
+
+    // Interfaces
+    "interfaces": "CV-X-IF, AXI",
+
+    // Supported Operations
+    "supportedOperations": "The supported operations are addition, subtraction, dot product, cross product, convolution, and shift operations",
+
+    // Compiler Support
+    "compilerSupport": "Custom OpenSource RISC-V GCC toolchain",
+
+    // External Memory Required
+    "externalMemoryRequired": "Yes",
+
+    // Cache / Scratchpad
+    "cacheOrScratchpad": "No"
+  },
+
+  // =====================
+  // Architecture
+  // =====================
+  "architecture": {
+    // Type (required)
+    "type": "Von Neumann",
+
+    // No. Clock Domains (in sync with system, not internally generated) (required)
+    "numClockDomains": 1,
+
+    // Control Inteface (optional)
+    "controlInterface": {
+      // ISA Extension
+      "isaExtension": "Custom",
+
+      // Memory Mapped
+      "memoryMapped": null,
+
+      // Protocol
+      "protocol": "CV-X-IF"
+    },
+
+    // Memory Interface (optional)
+    "memoryInterface": {
+      // Interface Protocol
+      "interfaceProtocol": "AXI4",
+
+      // Hierarchy Level
+      "hierarchyLevel": null,
+
+      // Cached?
+      "cached": null,
+
+      // IOMMU?
+      "iommu": null
+    },
+
+    // Interrupts (optional)
+    "interrupts": "No"
+  },
+
+  // =====================
+  // Microarchitecture (optional)
+  // =====================
+  "microarchitecture": {
+    "parametrization": {
+      // Parametric No. of Units?
+      "parametricNumUnits": "No",
+
+      // Parametric Config?
+      "parametricConfig": "Yes, number of lanes, internal memory size"
+    },
+
+    "programmability": {
+      // Programmable Cores?
+      "programmableCores": "Yes (CVA6)",
+
+      // ISA Extension
+      "isaExtension": "Custom"
+    }
+  },
+
+  // =====================
+  // Software (optional)
+  // =====================
+  "software": {
+    "compiler": {
+      // Requires specialized compiler?
+      "requiresSpecializedCompiler": true,
+
+      // Supported compiler(s)
+      "supportedCompilers": null
+    },
+
+    "hardwareAbstractionLayer": {
+      // HAL functions
+      "halFunctions": null
+    },
+
+    "highLevelApi": {
+      // Is there a high-level API/SDK?
+      "hasHighLevelApi": "No, inline assembly",
+
+      // SDK repository
+      "sdkRepository": "https://github.com/alex2kameboss/MA-riscv-gnu-toolchain",
+
+      // Is there a domain specific compiler?
+      "hasDomainSpecificCompiler": null
+    }
+  },
+
+  // =====================
+  // Integration
+  // =====================
+  "integration": {
+    // ipDistribution.* (required)
+    "ipDistribution": {
+      // Manifest type
+      "manifestType": "Bender.yml",
+
+      // Standalone simulation?
+      "standaloneSimulation": "Yes",
+
+      // If above, SW requirements?
+      "standaloneSimulationSwRequirements": "QuestaSim",
+
+      // Integration documented / examples?
+      "integrationDocsOrExamples": "https://github.com/alex2kameboss/MatrixAcceleratorDemo"
+    },
+
+    // synthesis.* (required)
+    "synthesis": {
+      // Is IP syntesizable?
+      "isSynthesizable": "Yes",
+
+      // FPGA synthesis examples avail?
+      "fpgaSynthesisExamples": "Yes",
+
+      // ASIC synthesis examples avail?
+      "asicSynthesisExamples": null
+    },
+
+    // simulation.* (required)
+    "simulation": {
+      // Closed-source simulation?
+      "closedSourceSimulation": "QuestaSim",
+
+      // Open-source simulation?
+      "openSourceSimulation": null
+    },
+
+    // Other integration elements (optional)
+    "evaluation": {
+      // PPA results available?
+      "ppaResultsAvailable": "Yes"
+    }
+  }
+}
